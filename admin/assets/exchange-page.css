@@ -1,0 +1,66 @@
+.progress, .progress .progress-fill {
+    display: block;
+    height: 32px;
+    border-radius: 4px;
+}
+.progress {
+    width: 100%;
+    background-color: #eee;
+    border: 1px solid #ddd;
+    margin-bottom: 25px;
+}
+.progress .progress-fill {
+    background: #008ec2;
+    width: 0%;
+    max-width: 100%;
+    transition: .5s linear width;
+}
+.button.button-danger {
+    color: #fff;
+    background-color: #d9534f;
+    border-color: #d43f3a;
+}
+.button.button-danger:hover {
+    color: #fff;
+    background-color: #d9534f;
+    border-color: #d43f3a;
+    opacity: 0.9;
+}
+.ex-timer {
+    font-size: 36px;
+    line-height: 40px;
+    text-align: center;
+    color: #333;
+}
+#cache-report {
+    background-color: #e5e5e5;
+}
+#exchange-logs {
+    padding: 8px 14px;
+    width:100%;
+    resize:vertical;
+    margin:20px 0;
+}
+
+
+.inside.dragged {
+    border: 4px dashed #b4b9be;
+}
+
+.alert {
+    display:block;
+    width:100%;
+    padding:.25em .5em;
+    font-size:1.25em;
+    text-align: center;
+    color:white;
+    border-radius: 3px; 
+}
+
+.alert-success {
+    background-color:green;
+}
+
+.alert-danger {
+    background-color:red;
+}

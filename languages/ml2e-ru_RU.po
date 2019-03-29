@@ -1,0 +1,103 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: plugin\n"
+"POT-Creation-Date: 2019-02-25 22:03+0400\n"
+"PO-Revision-Date: 2019-02-25 22:03+0400\n"
+"Last-Translator: \n"
+"Language-Team: NikolayS93 <NikolayS93@yandex.ru>\n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.1\n"
+"X-Poedit-Basepath: ../.\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Poedit-KeywordsList: __;__e;_n:1,2;_x:1,2c;_ex:1,2c\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: includes/classes\n"
+"X-Poedit-SearchPathExcluded-1: languages\n"
+"X-Poedit-SearchPathExcluded-2: .git\n"
+
+#: admin/template/metabox2.php:7
+msgctxt "Uploader: Drop files here - or - Select Files"
+msgid "or"
+msgstr ""
+
+#: admin/template/metabox2.php:23
+#, php-format
+msgid "Maximum upload file size: %s."
+msgstr ""
+
+#: include/class/PathFinder.php:18
+#, php-format
+msgid ""
+"<strong>%s</strong>: Sorry but <strong>%s</strong> not has write permissions"
+msgstr ""
+
+#: include/class/PathFinder.php:19 include/class/PathFinder.php:29
+msgid "Fatal error"
+msgstr ""
+
+#: include/class/PathFinder.php:28
+#, php-format
+msgid "<strong>%s</strong>: Sorry but <strong>%s</strong> not readble"
+msgstr ""
+
+#: ml2-exchange.php:97
+msgid "CommerceML2 Exchange"
+msgstr ""
+
+#: ml2-exchange.php:100
+msgid "Exchange"
+msgstr "Обмен данными"
+
+#: ml2-exchange.php:115
+msgid "Report"
+msgstr ""
+
+#: ml2-exchange.php:127
+msgid "Status"
+msgstr "Состояние"
+
+#: ml2-exchange.php:139
+msgid "Upload New Files"
+msgstr "Загрузить новые файлы"
+
+#: ml2-exchange.php:271
+#, php-format
+msgid "Slug \"%s\" is too long (28 characters max). Shorten it, please."
+msgstr ""
+
+#: ml2-exchange.php:273
+#, php-format
+msgid ""
+"Slug \"%s\" is not allowed because it is a reserved term. Change it, please."
+msgstr ""
+
+#: ml2-exchange.php:288
+msgid "Please, provide an attribute name and slug."
+msgstr ""
+
+#: ml2-exchange.php:294
+#, php-format
+msgid "Slug \"%s\" is already in use. Change it, please."
+msgstr ""
+
+#: vendor/NikolayS93/wp-admin-form/src/templates/select.php:8
+msgid "Choose an option"
+msgstr ""
+
+#: vendor/NikolayS93/wp-admin-table/WPListTable.php:37
+msgid "Title"
+msgstr ""
+
+#: vendor/NikolayS93/wp-admin-table/WPListTable.php:104
+msgid "Edit"
+msgstr ""
+
+#: vendor/NikolayS93/wp-admin-table/WPListTable.php:115
+#: vendor/NikolayS93/wp-admin-table/WPListTable.php:145
+msgid "Delete"
+msgstr ""
