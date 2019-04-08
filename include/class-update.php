@@ -6,6 +6,9 @@ use NikolayS93\Exchange\Utils;
 use NikolayS93\Exchange\Model\TermModel;
 use NikolayS93\Exchange\Model\ProductModel;
 
+use NikolayS93\Exchange\Model\ExchangeTerm;
+use NikolayS93\Exchange\Model\ExchangeAttribute;
+
 class Update
 {
 
@@ -48,115 +51,9 @@ class Update
         return $wpdb->prepare($query, $insert);
     }
 
-    /***************************************************************************
-     * Update taxonomy's terms
-     */
-    public static function terms( Array &$terms, $args = array() )
-    {
-        global $wpdb;
-
-        $args = wp_parse_args( $args, array(
-            'taxonomy' => 'product_cat',
-        ) );
-
-        foreach ($terms as &$term)
-        {
-        	$term_id = $term->get_id();
-            // if( (!$term_id = $term->get_id()) && !is_debug() ) continue;
-
-            $term_args = array(
-                'name' => $term->get_name(),
-                'description' => $term->get_description(),
-            );
-
-            if( $parent_id = $term->get_parent_id( $force = true ) ) {
-                $term_args['parent'] = $parent_id;
-            }
-
-            if( is_debug() ) {
-                var_dump("TERM_ID: " . (int) $term_id, $term_args, $args);
-                return;
-            }
-
-            if( $term_id ) {
-                $result = wp_update_term( $term_id, $args['taxonomy'], $term_args );
-            }
-            else {
-            	// Slice name
-                $term_name = $term_args['name'];
-                unset($term_args['name']);
-
-                $result = wp_insert_term( $term_name, $args['taxonomy'], $term_args );
-
-                if( !is_wp_error($result) ) $term->term->term_id = $result['term_id'];
-            }
-
-            /**
-             * @todo check this
-             */
-            if( is_wp_error($result) ) {
-                /**
-                 * if is term exists
-                 * Некоторые аттрибуты могут иметь одинаковый слаг, попробуем залить аттрибуты разных категорий в один слаг
-                 */
-                if( 'term_exists' == $result->get_error_code() ) {
-                    $term->term->term_id = $result->get_error_data();
-                }
-            }
-        }
-    }
-
-    public static function properties( $properties = array() )
-    {
-        $success = true;
-
-        foreach ($properties as $propSlug => $property)
-        {
-            $insert = false;
-            $slug = strlen($propSlug) >= 28 ? $property['slug'] : $propSlug;
-            $taxonomy = wc_attribute_taxonomy_name( $slug );
-
-            /**
-             * Register Property's Taxonomies;
-             */
-            if ( !taxonomy_exists( $taxonomy ) ) {
-                $insert = proccess_add_attribute( array(
-                    'attribute_name' => $slug,
-                    'attribute_label' => $property['name'],
-                    'attribute_type' => 'select',
-                    'attribute_orderby' => 'menu_order',
-                    'attribute_public' => 1
-                ) );
-
-                if( is_wp_error($insert) ) {
-                    /**
-                     * @todo add error log
-                     */
-                    continue;
-                }
-
-                /**
-                 * @var bool if is need retry
-                 * Почему то термины не вставляются сразу же после вставки таксономии (proccess_add_attribute)
-                 * Нужно будет пройтись еще раз и вставить термины.
-                 */
-                $success = 'Требуется дополнительная выгрузка аттрибутов';
-            }
-            else {
-                Parser::fillExistsTermData( $property['values'] );
-                // if ( !is_wp_error($insert) ) {
-                    Update::terms( $property['values'], array('taxonomy' => $taxonomy) );
-                    Update::update_termmetas( $property['values'], array('taxonomy' => $taxonomy) );
-                // }
-            }
-        }
-
-        return $success;
-    }
-
     public static function posts( &$products )
     {
-        global $wpdb, $site_url, $date_now, $gmdate_now;
+        global $wpdb, $site_url, $date_now, $gmdate_now, $user_id;
 
         if( empty($products) || !is_array($products) ) return;
 
@@ -167,23 +64,216 @@ class Update
         $date_now = date('Y-m-d H:i:s');
         $gmdate_now = gmdate('Y-m-d H:i:s');
 
-        $structure = static::get_sql_structure( ProductModel::get_structure() );
-        $duplicate = static::get_sql_duplicate( ProductModel::get_structure() );
+        $posts_structure = ExchangePost::get_structure('posts');
 
-        foreach ($products as &$product) {
+        $structure = static::get_sql_structure( $posts_structure );
+        $duplicate = static::get_sql_duplicate( $posts_structure );
+        $sql_placeholder = static::get_sql_placeholder( $posts_structure );
+
+        foreach ($products as &$product)
+        {
             $product->prepare();
             $product->fill( $insert, $phs );
+
+            $p = $product->getObject();
+            array_push($insert, $p->ID, $p->post_author, $p->post_date, $p->post_date_gmt, $p->post_content, $p->post_title, $p->post_excerpt, $p->post_status, $p->comment_status, $p->ping_status, $p->post_password, $p->post_name, $p->to_ping, $p->pinged, $p->post_modified, $p->post_modified_gmt, $p->post_content_filtered, $p->post_parent, $p->guid, $p->menu_order, $p->post_type, $p->post_mime_type, $p->comment_count);
+
+            array_push($phs, $sql_placeholder);
         }
 
-        if( !count($insert) || !count($phs) ) return;
+        /**
+         * Update posts
+         */
+        if( sizeof($insert) && sizeof($phs) ) {
+            $query = static::get_sql_update($wpdb->posts, $structure, $insert, $phs, $duplicate);
+            $wpdb->query( $query );
+        }
+    }
 
-        $query = static::get_sql_update($wpdb->posts, $structure, $insert, $phs, $duplicate);
+    public static function postmeta( &$products )
+    {
+        foreach ($products as &$product)
+        {
+            /**
+             * @todo think how to get inserted meta
+             */
+            if( (!$post_id = $product->get_id()) && !is_debug() ) continue;
 
-        if( is_debug() ) {
-            return;
+            /**
+             * Get list of all meta by product
+             */
+            $listOfMeta = $product->getMeta();
+            foreach ($listOfMeta as $mkey => $mvalue)
+            {
+                update_post_meta( $post_id, "_{$mkey}", $mvalue );
+            }
+        }
+    }
+
+    public static function terms( &$terms )
+    {
+        global $wpdb, $user_id;
+
+        $updated = array();
+
+        foreach ($terms as &$term)
+        {
+            $term->prepare();
+
+            /**
+             * @var Int WP_Term->term_id
+             */
+        	$term_id = $term->get_id();
+
+            /**
+             * @var WP_Term
+             */
+            $obTerm = $term->getTerm();
+
+            /**
+             * @todo add apply filter
+             * @var array
+             */
+            $arTerm = array_filter( (array) $obTerm );
+
+            /**
+             * @todo need double iteration for parents
+             */
+            if( $term_id ) {
+                $result = wp_update_term( $term_id, $arTerm['taxonomy'], $arTerm );
+            }
+            else {
+                $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], $arTerm );
+            }
+
+            if( !is_wp_error($result) ) {
+                $term_id = $result['term_id'];
+                $term->set_id( $term_id );
+                $updated[ $result['term_id'] ] = $term;
+            }
+            else {
+                /**
+                 * if is term exists
+                 * Некоторые аттрибуты могут иметь одинаковый слаг, попробуем залить аттрибуты разных категорий в один слаг
+                 * @todo check this
+                 * @warning Crunch!
+                 */
+                if( 'term_exists' == $result->get_error_code() ) {
+                    $term_id = $result->get_error_data();
+                    $term->set_id( $term_id );
+                }
+                else {
+                    Utils::addLog( $result );
+                }
+            }
         }
 
-        $wpdb->query( $query );
+        return $updated;
+    }
+
+    public static function termmeta($terms)
+    {
+        global $wpdb;
+
+        $insert = array();
+        $phs = array();
+
+        $meta_structure = ExchangeTerm::get_structure('termmeta');
+
+        $structure = static::get_sql_structure( $meta_structure );
+        $duplicate = static::get_sql_duplicate( $meta_structure );
+        $sql_placeholder = static::get_sql_placeholder( $meta_structure );
+
+        foreach ($terms as $term)
+        {
+            if( !$term->get_id() ) { // Utils::addLog( new WP_Error() );
+                continue;
+            }
+
+            array_push($insert, $term->meta_id, $term->get_id(), $term->getExtID(), $term->getExternal());
+            array_push($phs, $sql_placeholder);
+        }
+
+        if( !empty($insert) && !empty($phs) ) {
+            $query = static::get_sql_update($wpdb->termmeta, $structure, $insert, $phs, $duplicate);
+            $updated_rows = $wpdb->query( $query );
+        }
+
+        return $updated_rows;
+    }
+
+    public static function properties( &$properties = array() )
+    {
+        global $wpdb;
+
+        $retry = false;
+
+        foreach ($properties as $propSlug => $property)
+        {
+            $slug = $property->getSlug();
+
+            /**
+             * Register Property's Taxonomies;
+             */
+            if( !taxonomy_exists($slug) ) {
+                /**
+                 * @var Array
+                 */
+                $external = $property->getExternal();
+                $attribute = $property->fetch();
+
+                if ( empty( $attribute['attribute_name'] ) || empty( $attribute['attribute_label'] ) ) {
+                    Utils::addLog( new \WP_Error( 'error', __( 'Please, provide an attribute name and slug.', 'woocommerce' ) ) );
+                    continue;
+                }
+                elseif ( ( $valid_attribute_name = \NikolayS93\Exchange\valid_attribute_name( $attribute['attribute_name'] ) ) && is_wp_error( $valid_attribute_name ) ) {
+                    Utils::addLog( $valid_attribute_name );
+                    continue;
+                }
+                elseif ( taxonomy_exists( wc_attribute_taxonomy_name( $attribute['attribute_name'] ) ) ) {
+                    Utils::addLog(new \WP_Error( 'error', sprintf( __( 'Slug "%s" is already in use. Change it, please.', 'woocommerce' ), sanitize_title( $attribute['attribute_name'] ) ) ));
+                    continue;
+                }
+
+                $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
+
+                do_action( 'woocommerce_attribute_added', $wpdb->insert_id, $attribute );
+
+                // flush_rewrite_rules();
+                delete_transient( 'wc_attribute_taxonomies' );
+
+                if( is_wp_error($insert) ) {
+                    Utils::addLog( $insert );
+                    continue;
+                }
+                elseif( $wpdb->insert_id && $external ) {
+                    $property->set_id( $wpdb->insert_id );
+                    $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomymeta', array(
+                        'tax_id' => $wpdb->insert_id,
+                        'meta_key' => ExchangeTerm::getExtID(),
+                        'meta_value' => $property->getExternal(),
+                    ) );
+
+                    $retry = true;
+                    if( is_wp_error($insert) ) {
+                        Utils::addLog( $insert );
+                        continue;
+                    }
+                }
+                else {
+                    Utils::addLog(new \WP_Error( 'error', __('Empty attr insert or attr external by ' . $attribute['attribute_label'])));
+                }
+
+                /**
+                 * @var bool
+                 * Почему то термины не вставляются сразу же после вставки таксономии (proccess_add_attribute)
+                 * Нужно будет пройтись еще раз и вставить термины.
+                 */
+                $retry = true;
+            }
+        }
+
+        return $retry;
     }
 
     /**
@@ -191,57 +281,6 @@ class Update
      */
     public static function offers( Array &$offers )
     {
-    }
-
-    public static function update_termmetas( &$terms )
-    {
-        global $wpdb, $user_id;
-
-        if( empty($terms) || !is_array($terms) ) return;
-
-        $insert = array();
-        $phs = array();
-
-        $structure = static::get_sql_structure( TermModel::get_meta_structure() );
-        $duplicate = static::get_sql_duplicate( TermModel::get_meta_structure() );
-
-        foreach ($terms as $term) {
-            if( !$term_id = $term->get_id() ) continue;
-
-            $term->prepare();
-            $term->fill_meta( $insert, $phs );
-        }
-
-        if( !count($insert) || !count($phs) ) return;
-
-        $query = static::get_sql_update($wpdb->termmeta, $structure, $insert, $phs, $duplicate);
-
-        if( is_debug() ) {
-            var_dump( substr($query, 0, 1000) );
-            return;
-        }
-
-        $wpdb->query( $query );
-    }
-
-    public static function postmetas( Array &$products ) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
-    {
-        global $wpdb, $user_id;
-
-        foreach ($products as $exProduct)
-        {
-            if( (!$post_id = $exProduct->get_id()) && !is_debug() ) continue;
-
-            $properties = array(
-                'sku'  => $exProduct->sku,
-                'unit' => $exProduct->unit,
-            );
-
-            foreach ($properties as $property_key => $property)
-            {
-                update_post_meta( $post_id, "_{$property_key}", $property );
-            }
-        }
     }
 
     public static function offerPostMetas( Array &$offers ) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')

@@ -2,16 +2,22 @@
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchange\Decorator\ProductDecorator;
-use NikolayS93\Exchange\Decorator\OfferDecorator;
-use NikolayS93\Exchange\Decorator\TermDecorator;
-use NikolayS93\Exchange\Model\TermModel;
+use NikolayS93\Exchange\Model\ExchangeTerm;
+use NikolayS93\Exchange\Model\ExchangeAttribute;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
 use CommerceMLParser\ORM\Collection;
 use CommerceMLParser\Event;
 
 use CommerceMLParser\Creational\Singleton;
 
 if ( !defined( 'ABSPATH' ) ) exit('You shall not pass');
+
+function own_strtolower($str) {
+    $str = function_exists('mb_strtolower') ? mb_strtolower($str) : strtolower($str);
+
+    return $str;
+}
 
 class Parser
 {
@@ -27,21 +33,42 @@ class Parser
     private $arProducts   = array();
     private $arOffers     = array();
 
-    function __init()
+    /**
+     * Временная переменная, нужна только для связи товаров с атрибутами
+     * @var array
+     */
+    private $arTaxonomies = array();
+
+    function __init( $fillExists = false )
     {
-        $Parser = \CommerceMLParser\Parser::getInstance();
-        $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
-        $Parser->addListener("WarehouseEvent", array($this, 'parseWarehousesEvent'));
-        $Parser->addListener("PropertyEvent",  array($this, 'parsePropertiesEvent'));
-        $Parser->addListener("ProductEvent",   array($this, 'parseProductsEvent'));
-        $Parser->addListener("OfferEvent",     array($this, 'parseOffersEvent'));
+        $filename = static::get_file( FILENAME );
 
-        /** 1c no has develop section (values only)
-        $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
+        if( $filename ) {
+            $Parser = \CommerceMLParser\Parser::getInstance();
+            $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
+            $Parser->addListener("WarehouseEvent", array($this, 'parseWarehousesEvent'));
+            $Parser->addListener("PropertyEvent",  array($this, 'parsePropertiesEvent'));
+            $Parser->addListener("ProductEvent",   array($this, 'parseProductsEvent'));
+            $Parser->addListener("OfferEvent",     array($this, 'parseOffersEvent'));
 
-        $Parser->parse( static::get_file( FILENAME ) );
+            /** 1c no has develop section (values only)
+            $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-        $this->prepare();
+            $Parser->parse( $filename );
+
+            $this->prepare();
+
+            if( $fillExists ) {
+                ExchangeTerm::fillExistsFromDB( $this->arCategories );
+                ExchangeTerm::fillExistsFromDB( $this->arDevelopers );
+                ExchangeTerm::fillExistsFromDB( $this->arWarehouses );
+
+                ExchangeAttribute::fillExistsFromDB( $this->arProperties );
+
+                ExchangeProduct::fillExistsFromDB( $this->arProducts );
+                // ExchangeProduct::fillExistsFromDB( $this->arOffers );
+            }
+        }
     }
 
     public static function get_dir( $namespace = '' )
@@ -70,18 +97,22 @@ class Parser
 
     public static function get_file( $filename = null, $namespace = 'catalog' )
     {
+        if( !$filename ) return $filename;
+
         $dir = static::get_dir( $namespace );
         $objects = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir),
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
-        foreach($objects as $path => $object) {
+        foreach($objects as $path => $object)
+        {
             if( !$object->isFile() || !$object->isReadable() ) continue;
-            if( 'xml' != strtolower($object->getExtension()) ) continue;
-            if( false === strpos( $object->getBasename(), $filename ) ) continue;
+            if( 'xml' != own_strtolower($object->getExtension()) ) continue;
 
-            return $path;
+            if( 0 === strpos( $object->getBasename(), $filename ) ) {
+                return $path;
+            }
         }
 
         return '';
@@ -215,22 +246,27 @@ class Parser
         /** @var CommerceMLParser\Model\Property */
         $property = $propertyEvent->getProperty();
 
-        $id = $property->getId();
+        $property_id = $property->getId();
         $tax = array(
-            'name' => $property->getName(),
+            'attribute_label' => $property->getName(),
         );
 
-        $taxonomy = new ExchangeTaxonomy( $tax, $id );
+        $taxonomy = new ExchangeAttribute( $tax, $property_id );
         $taxonomy_slug = $taxonomy->getSlug();
 
-        foreach ($property->getValues()->fetch() as $id => $name) {
-            $taxonomy->__add( new ExchangeTerm( array(
-                'name' => $name,
-                'taxonomy' => $taxonomy_slug,
-            ), $id ) );
+        $values = $property->getValues();
+
+        if( !empty($values) ) {
+            foreach ($values as $term_id => $name)
+            {
+                $taxonomy->addTerm( new ExchangeTerm( array(
+                    'name' => $name,
+                    'taxonomy' => $taxonomy_slug,
+                ), $term_id ) );
+            }
         }
 
-        $this->arProperties[ $id ] = $taxonomy;
+        $this->arProperties[ $property_id ] = $taxonomy;
     }
 
     function parseProductsEvent(Event\ProductEvent $productEvent)
@@ -240,8 +276,96 @@ class Parser
 
         $id = $product->getId();
 
+        $this->arProducts[ $id ] = new ExchangeProduct( array(
+            'post_title'   => $product->getName(),
+            'post_excerpt' => $product->getDescription(),
+        ), $id );
+
+        /**
+         * Set category
+         * @var Collection $categoriesCollection List of EXT
+         */
+        $categoriesCollection = $product->getCategories();
+
+        if( !$categoriesCollection->isEmpty() ) {
+            /**
+             * @var String $category External code
+             */
+            foreach ($categoriesCollection as $category)
+            {
+                $obCategory = new ExchangeTerm( array('taxonomy' => 'product_cat'), $category );
+                $this->arProducts[ $id ]->setRelationship( 'product_cat', $obCategory );
+            }
+        }
+
+        /**
+         * Set proerties
+         */
+        $propertiesCollection = $product->getProperties();
+
+        if( !$propertiesCollection->isEmpty() ) {
+            /**
+             * @var Types\PropertyValue $property
+             */
+
+            foreach ($propertiesCollection as $property)
+            {
+                $property_id = $property->getId();
+
+                if( empty( $this->arProperties ) && empty( $this->arTaxonomies ) ) {
+                    $this->arTaxonomies = getTaxonomies();
+                }
+
+                $obProperty = null;
+                if( isset($this->arTaxonomies[ $property_id ]) ) {
+                    $obProperty = $this->arTaxonomies[ $property_id ];
+                }
+                elseif( isset($this->arProperties[ $property_id ]) ) {
+                    $obProperty = $this->arProperties[ $property_id ];
+                }
+                // else {
+                //     $obProperty = \NikolayS93\Exchange\Model\getTaxonomyByExternal( $property_id );
+                // }
+
+                if( $obProperty ) {
+                    $property_term = new ExchangeTerm( array('taxonomy' => $obProperty->getSlug()), $property_id );
+                    $this->arProducts[ $id ]->setRelationship( 'property', $property_term );
+                }
+            }
+        }
+
+        /**
+         * Set developer
+         * @var Collection $developersCollection List of..
+         */
+        $developersCollection = $product->getManufacturer();
+
+        if( !$developersCollection->isEmpty() ) {
+            /**
+             * @var Partner $developer Изготовитель
+             */
+            foreach ($developersCollection as $developer)
+            {
+                $developer_id = $developer->getId();
+                $developer_args = array(
+                    'name'        => $developer->getName(),
+                    'description' => $developer->getComment(),
+                    'taxonomy'    => 'manufacturer',
+                );
+
+                $developer_term = new ExchangeTerm( $developer_args, $developer_id );
+                $this->arDevelopers[ $developer_id ] = $developer_term;
+                $this->arProducts[ $id ]->setRelationship( 'developer', $developer_term );
+            }
+        }
+
+
+        /**
+         * Set requisites
+         */
         /**
          * Only one base unit for simple
+         * @var collection current
          */
         $baseunit = $product->getBaseUnit()->current();
 
@@ -249,12 +373,19 @@ class Parser
             $baseunit_name = $baseunit->getNameFull();
         }
 
+        /** @var Collection $taxRatesCollection СтавкиНалогов */
+        $taxRatesCollection = $product->getTaxRate();
+        $taxRate = $taxRatesCollection->current();
+
         $meta = array(
-            '_sku'           => $product->getSku(),
-            '_barcode'       => $product->getBarcode(),
-            '_unit'          => $baseunit_name,
+            '_sku'  => $product->getSku(),
+            '_unit' => $baseunit_name,
+            '_tax'  => $taxRate->getRate(),
         );
 
+        if( $barcode = $product->getBarcode() ) {
+            $meta['_barcode'] = $barcode;
+        }
 
         $excludeRequisites = apply_filters('parseProductExcludeRequisites', array('ВидНоменклатуры', 'ТипНоменклатуры', 'Код'));
 
@@ -275,10 +406,7 @@ class Parser
             }
         }
 
-        $this->arProducts[ $id ] = new ExchangeProduct( array(
-            'post_title'   => $product->getName(),
-            'post_excerpt' => $product->getDescription(),
-        ), $id, $meta );
+        $this->arProducts[ $id ]->setMeta( $meta );
     }
 
     function parseOffersEvent(Event\OfferEvent $offerEvent)
@@ -298,36 +426,63 @@ class Parser
          */
         $price = $offer->getPrices()->current()->getPrice();
 
+        $this->arOffers[ $id ] = new ExchangeOffer(array(
+            'post_title'   => $offer->getName(),
+            // 'post_excerpt' => $offer->getDescription(),
+            'post_type'    => 'offer',
+        ), $offer_id);
+
         $meta = array(
             '_price'         => $price,
             '_regular_price' => $price,
             '_manage_stock'  => 'yes',
             '_stock_status'  => $quantity ? 'instock' : 'outofstock',
             '_stock'         => $quantity,
-            '_weight'        => $product->getWeight(),
-            // '_stock_wh'      => array(),
+            // '_weight'        => $offer->getWeight(),
         );
 
-        $this->arOffers[ $id ] = new ExchangeOffer(array(
-            'post_title'   => $product->getName(),
-            'post_excerpt' => $product->getDescription(),
-            'post_type'    => 'offer',
-        ), $offer_id, $meta);
+        /** @var collection [description] */
+        $warehousesCollection = $offer->getWarehouses();
+
+        if( !$warehousesCollection->isEmpty() ) {
+
+            $meta['_stock_wh'] = array();
+            foreach ($warehousesCollection as $warehouse)
+            {
+                $warehouse_id = $warehouse->getId();
+                $qty = $warehouse->getQuantity();
+
+                $warehouse = new ExchangeTerm( array('taxonomy' => 'warehouse'), $warehouse_id );
+
+                if( 0 < $qty ) {
+                    $this->arOffers[ $id ]->setRelationship( 'warehouse', $warehouse );
+                }
+                else {
+                    /**
+                     * @todo remove relationship
+                     */
+                }
+
+                $meta['_stock_wh'][ $warehouse->getExternal() ] = $qty;
+            }
+        }
+
+        $this->arOffers[ $id ]->setMeta( $meta );
     }
 
     // ====================================================================== //
     private function prepare()
     {
-        $ParseRequisitesAsCategories    = (array) apply_filters('ParseRequisitesAsCategories', array('new' => 'Новинка'));
-        $ParseRequisitesAsProperties    = (array) apply_filters('ParseRequisitesAsProperties', array('size' => 'Размер'));
-        $ParseRequisitesAsManufacturers = (array) apply_filters('ParseRequisitesAsManufacturers', array('manufacturer' => 'Производитель'));
-        $ParseRequisitesAsWarehouses    = (array) apply_filters('ParseRequisitesAsWarehouses', array('warehouse' => 'Склад'));
+        $ParseRequisitesAsCategories = (array) apply_filters('ParseRequisitesAsCategories', array('new' => 'Новинка'));
+        $ParseRequisitesAsProperties = (array) apply_filters('ParseRequisitesAsProperties', array('size' => 'Размер'));
+        $ParseRequisitesAsDevelopers = (array) apply_filters('ParseRequisitesAsDevelopers', array('developer' => 'мшПроизводитель'));
+        $ParseRequisitesAsWarehouses = (array) apply_filters('ParseRequisitesAsWarehouses', array('warehouse' => 'Склад'));
 
         $RequisitesAsProperties = array(
-            'arCategories'    => $ParseRequisitesAsCategories,
-            'arProperties'    => $ParseRequisitesAsProperties,
-            'arManufacturers' => $ParseRequisitesAsManufacturers,
-            'arWarehouses'    => $ParseRequisitesAsWarehouses,
+            'arCategories' => $ParseRequisitesAsCategories,
+            'arProperties' => $ParseRequisitesAsProperties,
+            'arDevelopers' => $ParseRequisitesAsDevelopers,
+            'arWarehouses' => $ParseRequisitesAsWarehouses,
         );
 
         /**
@@ -346,8 +501,8 @@ class Parser
                             $tax = 'product_cat';
                             break;
 
-                        case 'arManufacturers':
-                            $tax = 'manufacturer';
+                        case 'arDevelopers':
+                            $tax = 'developer';
                             break;
 
                         case 'arWarehouses':
@@ -360,118 +515,66 @@ class Parser
                      */
                     foreach ($map as $externalCode => $propertyName)
                     {
-                        /**
-                         * @var string $_tax may be use as NikolayS93\Exchange\Model\ProductModel->$_tax
-                         *          arCategories, arProperties, arManufacturers, arWarehouses
-                         * @var string $externalCode have the form as new, size, manufacturer, warehouse
-                         *          or 700898df-83f3-11e7-afd4-1c872c77ed7c
-                         * @var string $propertyName Term name
-                         *          Новинка, Размер, Производитель, Склад
-                         * @var $this object with all collections
-                         */
-                        if( isset($product->requisites[ $propertyName ]) ) {
-                            /**
-                             * Collect tax data from products
-                             * @note Has a Warning
-                             */
-                            // @$this->$_tax[ $externalCode ] = $propertyName;
-                            // and to the same as
-                            /**
-                             * @var array $thisTax list of term in tax
-                             */
-                            $thisTax = &$this->$_tax;
-                            $externalCode = strtolower($externalCode);
-
-                            /** @var string $propertyExternalCode external code for propery values */
-                            $propertyExternalCode = strtolower(Utils::esc_cyr($product->requisites[ $propertyName ]));
+                        if( $meta = $product->getMeta($propertyName) ) {
+                            // $taxonomy = $tax;
 
                             if( 'arProperties' == $_tax ) {
-                                if( !isset($thisTax[ $externalCode ]) || !is_array($thisTax[ $externalCode ]) ) {
-                                    $thisTax[ $externalCode ] = array();
+                                if( empty($this->arProperties[ $externalCode ]) ) {
+                                    $this->arProperties[ $externalCode ] = new ExchangeAttribute( (object) array(
+                                        'attribute_label' => $propertyName,
+                                        'attribute_name' => $externalCode,
+                                    ), $externalCode );
                                 }
 
-                                /** Do not rerite name if is exists */
-                                if( empty($thisTax[ $externalCode ]['name']) ) {
-                                    $thisTax[ $externalCode ]['name'] = $propertyName;
-                                }
+                                $term = new ExchangeTerm( array('name' => $meta) );
 
-                                if( empty($thisTax[ $externalCode ]['slug']) ) {
-                                    $thisTax[ $externalCode ]['slug'] = strtolower(Utils::esc_cyr($propertyName));
-                                }
-
-                                if( !isset($thisTax[ $externalCode ]['values']) || !is_array($thisTax[ $externalCode ]['values']) ) {
-                                    $thisTax[ $externalCode ]['values'] = array();
-                                }
-
-                                $thisTax[ $externalCode ]['values'][ $propertyExternalCode ]
-                                    = $term
-                                    = new TermModel( $propertyExternalCode, (object) array(
-                                        'name' => $product->requisites[ $propertyName ],
-                                        'slug' => $propertyExternalCode,
-                                    ), 'XML/' . $externalCode );
-
-                                /**
-                                 * Change data in a product
-                                 * @var $tax $_tax in product model
-                                 */
-                                $productTax = &$this->arProducts[$i]->$tax;
-
-                                if( !isset($productTax[ $externalCode ]) || !is_array($productTax[ $externalCode ]) ) {
-                                    $productTax[ $externalCode ] = array();
-                                }
-
-                                $productTax[ $externalCode ][] = $term->get_external(); // $propertyExternalCode;
+                                $taxonomy = $this->arProperties[ $externalCode ];
+                                $taxonomy->addTerm( $term );
                             }
                             else {
-                                $thisTax[]
-                                    = $term
-                                    = new TermModel( $propertyExternalCode, (object) array(
-                                        'name' => $product->requisites[ $propertyName ],
-                                        'slug' => $propertyExternalCode,
-                                    ) );
-
-                                /**
-                                 * Change data in a product
-                                 * @var $tax $_tax in product model
-                                 */
-                                $productTax = &$this->arProducts[$i]->$tax;
-                                $productTax[] = $term->get_external();
+                                $term = new ExchangeTerm( array('name' => $meta, 'taxonomy' => $externalCode) );
+                                $this->$_tax[] = $term;
                             }
 
-                            unset($this->arProducts[$i]->requisites[ $propertyName ]);
+                            $product->setRelationship($tax, $term); // , $taxonomy
                         }
+
+                        /**
+                         * Delete empty
+                         */
+                        $product->delMeta($propertyName);
                     }
                 }
 
                 /**
                  * Set manufacturer terms
                  */
-                if( is_array($product->manufacturer) ) {
-                    foreach ($product->manufacturer as $ext => $manufacturer_name)
-                    {
-                        $this->arManufacturers[ $ext ] = new TermModel( $ext, (object) array(
-                            'name' => $manufacturer_name,
-                            'slug' => strtolower(Utils::esc_cyr($manufacturer_name)),
-                        ) );
-                    }
-                }
+                // if( is_array($product->developer) ) {
+                //     foreach ($product->developer as $ext => $manufacturer_name)
+                //     {
+                //         $this->arManufacturers[ $ext ] = new TermModel( $ext, (object) array(
+                //             'name' => $manufacturer_name,
+                //             'slug' => strtolower(Utils::esc_cyr($manufacturer_name)),
+                //         ) );
+                //     }
+                // }
 
-                if( is_array($product->properties) ) {
-                    foreach ($product->properties as $ext => $property_name)
-                    {
-                        if( !isset($this->arProperties[ $ext ]['values'][ $property_name ]) ) {
+                // if( is_array($product->properties) ) {
+                //     foreach ($product->properties as $ext => $property_name)
+                //     {
+                //         if( !isset($this->arProperties[ $ext ]['values'][ $property_name ]) ) {
 
-                            $external = strtolower(Utils::esc_cyr($property_name));
-                            $TermModel = new TermModel( $ext, (object) array(
-                                'name' => $property_name,
-                                'slug' => strtolower(Utils::esc_cyr($property_name)),
-                            ), 'xml/' . $this->arProperties[ $ext ]['slug'] . '/' . $external );
+                //             $external = strtolower(Utils::esc_cyr($property_name));
+                //             $TermModel = new TermModel( $ext, (object) array(
+                //                 'name' => $property_name,
+                //                 'slug' => strtolower(Utils::esc_cyr($property_name)),
+                //             ), 'xml/' . $this->arProperties[ $ext ]['slug'] . '/' . $external );
 
-                            $this->arProperties[ $ext ]['values'][ $external ] = $TermModel;
-                            $product->properties[ $ext ] = $TermModel->get_external();
-                        }
-                    }
-                }
+                //             $this->arProperties[ $ext ]['values'][ $external ] = $TermModel;
+                //             $product->properties[ $ext ] = $TermModel->get_external();
+                //         }
+                //     }
+                // }
 
                 /**
                  * Do fetch normalize product catalog
@@ -479,163 +582,6 @@ class Parser
                 // $product->fetchOffers();
 
             endforeach;
-        }
-    }
-
-    /**
-     * [fillExistsProductData description]
-     * @param  array  &$products      products or offers collections
-     * @param  boolean $orphaned_only [description]
-     * @return [type]                 [description]
-     */
-    static public function fillExistsProductData( &$products, $orphaned_only = false )
-    {
-        /** @global wpdb wordpress database object */
-        global $wpdb;
-
-        /** @var List of external code items list in database attribute context (%s='%s') */
-        $externals = array();
-
-        /** @var array list of objects exists from posts db */
-        $exists = array();
-
-        /** @var $product NikolayS93\Exchange\Model\ProductModel or */
-        /** @var $product NikolayS93\Exchange\Model\OfferModel */
-        foreach ($products as $rawExternalCode => $product)
-        {
-            if( !$orphaned_only || ($orphaned_only && !$product->get_id()) ) {
-                $externals[] = "`post_mime_type` = 'XML/$rawExternalCode'";
-            }
-        }
-
-        if( !empty($externals) ) {
-            //ID, post_date, post_date_gmt, post_name, post_mime_type
-            $exists_query = "
-                SELECT *
-                FROM $wpdb->posts
-                WHERE post_type = 'product'
-                AND (\n". implode(" \t\n OR ", $externals) . "\n)";
-
-            $exists = $wpdb->get_results( $exists_query );
-
-            unset($externals);
-        }
-
-        foreach ($exists as $exist)
-        {
-            /** @var post_mime_type without XML\ */
-            $mime = substr($exist->post_mime_type, 4);
-
-            if( $mime && isset($products[ $mime ]->post) ) {
-                /** @var stdObject (similar WP_Post) */
-                $post = &$products[ $mime ]->post;
-                $_post = $products[ $mime ]->post;
-
-                $_post->ID = (int) $exist->ID;
-
-                /**
-                 * If is already exists
-                 */
-                if( !empty($exist->post_name) )    $_post->post_name = (string) $exist->post_name;
-                if( !empty($exist->post_title) )   $_post->post_title = (string) $exist->post_title;
-                if( !empty($exist->post_content) ) $_post->post_content = (string) $exist->post_content;
-                if( !empty($exist->post_excerpt) ) $_post->post_excerpt = (string) $exist->post_excerpt;
-
-                /**
-                 * Pass post modified (Update product only)
-                 */
-                $_post->post_date = (string) $exist->post_date;
-                $_post->post_date_gmt = (string) $exist->post_date_gmt;
-
-                /**
-                 * What do you want to keep the same?
-                 */
-                $post = apply_filters( 'exchange-keep-product', $_post, $post, $exist );
-            }
-        }
-    }
-
-    static public function fillExistsTermData( &$terms ) // , $taxonomy = ''
-    {
-        /** @global wpdb wordpress database object */
-        global $wpdb;
-
-        /** @var boolean get data for items who not has term_id */
-        $orphaned_only = true;
-
-        /** @var List of external code items list in database attribute context (%s='%s') */
-        $externals = array();
-
-        /** @var array list of objects exists from posts db */
-        $_exists = array();
-        $exists = array();
-
-        foreach ($terms as $rawExternalCode => $term) {
-            $_external = $term->get_external();
-            $_p_external = $term->get_parent_external();
-
-            if( !$term->get_id() ) {
-                $externals[] = "`meta_value` = '". $_external ."'";
-            }
-
-            if( $_p_external && $_external != $_p_external && !$term->get_parent_id() ) {
-                $externals[] = "`meta_value` = '". $_p_external ."'";
-            }
-        }
-
-        /**
-         * Get from database
-         */
-        if( !empty($externals) ) {
-            $externals = array_unique($externals);
-
-            $exists_query = "
-                SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
-                FROM $wpdb->termmeta tm
-                INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '". EX_EXT_METAFIELD ."'
-                    AND (". implode(" \t\n OR ", $externals) . ")";
-
-            $_exists = $wpdb->get_results( $exists_query );
-        }
-
-        /**
-         * Resort for convenience
-         */
-        foreach($_exists as $exist)
-        {
-            $exists[ $exist->meta_value ] = $exist;
-        }
-        unset($_exists);
-
-        foreach ($terms as &$term)
-        {
-            if(!empty( $exists[ $term->get_external() ] )) {
-                $term->set_id( $exists[ $term->get_external() ]->term_id );
-                $term->set_property('meta_id', $exists[ $term->get_external() ]->meta_id);
-            }
-
-            if(!empty( $exists[ $term->get_parent_external() ] )) {
-                $term->set_parent_id( $exists[ $term->get_parent_external() ]->term_id );
-            }
-        }
-    }
-
-    /**
-     * for compatibility only
-     */
-    public function parse_exists_products( $orphaned_only = false )
-    {
-        /**
-         * @todo multiple offers
-         */
-        static::fillExistsProductData( $this->arProducts, $orphaned_only );
-    }
-
-    public function parse_exists_terms()
-    {
-        foreach ($this->terms as $taxonomy => &$arTerms) {
-            static::fillExistsTermData( $arTerms, $taxonomy );
         }
     }
 }

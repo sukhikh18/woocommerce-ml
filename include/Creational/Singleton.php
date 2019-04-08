@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Plugin\Creational;
+namespace NikolayS93\Exchange\Creational;
 
 trait Singleton
 {

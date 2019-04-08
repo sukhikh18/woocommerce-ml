@@ -1,7 +1,6 @@
 <?php
 
-namespace CommerceMLParser\ORM;
-
+namespace NikolayS93\Exchange\ORM;
 
 use CommerceMLParser\Model\Interfaces\IdModel;
 

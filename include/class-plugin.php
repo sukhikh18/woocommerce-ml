@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Plugin;
+namespace NikolayS93\Exchange;
 
 use NikolayS93\WPAdminPage as Admin;
 
@@ -32,7 +32,7 @@ class Plugin
         if(!defined(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT')) define(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT', null);
         if(!defined(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT')) define(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT', null);
         if(!defined(__NAMESPACE__ . '\XML_CHARSET') ) define(__NAMESPACE__ . '\XML_CHARSET', 'UTF-8');
-        if(!defined(__NAMESPACE__ . '\EXT_ID')) define(__NAMESPACE__ . '\EXT_ID', '_ext_ID');
+        if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', '_ext_ID');
 
         if (!defined('EX_SUPPRESS_NOTICES')) define('EX_SUPPRESS_NOTICES', false);
         if (!defined('EX_DISABLE_VARIATIONS')) define('EX_DISABLE_VARIATIONS', false);
@@ -48,46 +48,6 @@ class Plugin
             ? sanitize_text_field($_REQUEST['filename']) : '');
 
         load_plugin_textdomain( DOMAIN, false, basename(PLUGIN_DIR) . '/languages/' );
-
-        /**
-         * include required files
-         */
-        // require_once PLUGIN_DIR . '/include/utils.php';
-
-        // $autoload = PLUGIN_DIR . '/vendor/autoload.php';
-        // if( file_exists($autoload) ) include $autoload;
-
-        // /**
-        //  * WP Exchange Models
-        //  */
-        // require_once PLUGIN_DIR . '/include/class/Model/TermModel.php';
-        // require_once PLUGIN_DIR . '/include/class/Model/ItemModel.php';
-        // require_once PLUGIN_DIR . '/include/class/Model/ProductModel.php';
-        // require_once PLUGIN_DIR . '/include/class/Model/OfferModel.php';
-
-        // /**
-        //  * Decorators
-        //  */
-        // require_once PLUGIN_DIR . '/include/class/Decorator/ProductDecorator.php';
-        // require_once PLUGIN_DIR . '/include/class/Decorator/OfferDecorator.php';
-        // require_once PLUGIN_DIR . '/include/class/Decorator/TermDecorator.php';
-
-        // /**
-        //  * Main control class
-        //  */
-        // require_once PLUGIN_DIR . '/include/class/PathFinder.php';
-        // require_once PLUGIN_DIR . '/include/class/Parser.php';
-        // require_once PLUGIN_DIR . '/include/class/Request.php';
-
-        // require_once PLUGIN_DIR . '/include/class/Update.php';
-        // // require_once PLUGIN_DIR . '/include/class/Update/Terms.php';
-        // // require_once PLUGIN_DIR . '/include/class/Update/Posts.php';
-        // // require_once PLUGIN_DIR . '/include/class/Update/Relationships.php';
-
-        // require_once PLUGIN_DIR . '/include/class/Archive/ProductsArchive.php';
-
-        // require_once PLUGIN_DIR . '/include/register.php';
-        // require_once PLUGIN_DIR . "/include/exchange.php";
     }
 
     function addMenuPage( $pagename = '', $args = array() )

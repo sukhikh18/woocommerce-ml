@@ -1,5 +1,7 @@
 <?php
 
+namespace NikolayS93\Exchange\ORM;
+
 trait ExchangeItemMeta
 {
     private $meta = array();
@@ -26,5 +28,10 @@ trait ExchangeItemMeta
         else {
             $this->meta[ $key ] = $value;
         }
+    }
+
+    function delMeta( $key )
+    {
+        unset( $this->meta[ $key ] );
     }
 }

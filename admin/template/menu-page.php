@@ -9,12 +9,32 @@ namespace NikolayS93\Exchange;
 
 $time = getTime();
 
-$categories = Parser::getInstance()->getCategories();
-$properties = Parser::getInstance()->getProperties();
-$manufacturer = Parser::getInstance()->getManufacturer();
-$warehouses = Parser::getInstance()->getWarehouses();
-$products = Parser::getInstance()->getProducts();
-$offers = Parser::getInstance()->getOffers();
+$Parser = Parser::getInstance( $fillExists = true );
+
+$categories = $Parser->getCategories();
+$properties = $Parser->getProperties();
+$developers = $Parser->getDevelopers();
+$warehouses = $Parser->getWarehouses();
+
+$products = $Parser->getProducts();
+$offers = $Parser->getOffers();
+
+$attributeValues = array();
+foreach ($properties as $property)
+{
+    foreach ($property->getTerms() as $term)
+    {
+        $attributeValues[] = $term;
+    }
+}
+
+// Update::terms( $categories );
+// Update::terms( $developers );
+// Update::terms( $warehouses );
+// Update::properties( $properties );
+// Update::terms( $attributeValues );
+
+// Update::posts( $products );
 
 ?>
 <pre style='max-width: 900px;margin: 0 auto;display: flex;'>
@@ -30,7 +50,7 @@ $offers = Parser::getInstance()->getOffers();
         <h3>Свойства</h3>
         <?php print_r( $properties ); ?>
         <h3>Производители</h3>
-        <?php print_r( $manufacturer ); ?>
+        <?php print_r( $developers ); ?>
         <h3>Склады</h3>
         <?php print_r( $warehouses ); ?>
     </div>

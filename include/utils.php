@@ -4,6 +4,34 @@ namespace NikolayS93\Exchange;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // disable direct access
 
+class Utils
+{
+    static function esc_cyr($s, $context = 'url')
+    {
+        if( 'url' == $context ) {
+            $s = strip_tags( (string) $s);
+            $s = str_replace(array("\n", "\r"), " ", $s);
+            $s = preg_replace("/\s+/", ' ', $s);
+        }
+        $s = trim($s);
+        $s = function_exists('mb_strtolower') ? mb_strtolower($s) : strtolower($s);
+        $s = strtr($s, array('а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e','ж'=>'j','з'=>'z','и'=>'i','й'=>'y','к'=>'k','л'=>'l','м'=>'m','н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u','ф'=>'f','х'=>'h','ц'=>'c','ч'=>'ch','ш'=>'sh','щ'=>'shch','ы'=>'y','э'=>'e','ю'=>'yu','я'=>'ya','ъ'=>'','ь'=>''));
+        if( 'url' == $context ) {
+            $s = preg_replace("/[^0-9a-z-_ ]/i", "", $s);
+            $s = str_replace(" ", "-", $s);
+        }
+        return $s;
+    }
+
+    /**
+     * @todo
+     */
+    static function addLog( \WP_Error $err )
+    {
+        return $err;
+    }
+}
+
 function check_zip()
 {
     @exec("which unzip", $_, $status);
@@ -574,34 +602,6 @@ function valid_attribute_name( $attribute_name ) {
     } elseif ( \wc_check_if_attribute_name_is_reserved( $attribute_name ) ) {
         return new \WP_Error( 'error', sprintf( __( 'Slug "%s" is not allowed because it is a reserved term. Change it, please.', 'woocommerce' ), sanitize_title( $attribute_name ) ) );
     }
-
-    return true;
-}
-
-function proccess_add_attribute($attribute) {
-    global $wpdb;
-// check_admin_referer( 'woocommerce-add-new_attribute' );
-
-    if( empty($attribute['attribute_type']) ) { $attribute['attribute_type'] = 'text'; }
-    if( empty($attribute['attribute_orderby']) ) { $attribute['attribute_orderby'] = 'menu_order'; }
-    if( empty($attribute['attribute_public']) ) { $attribute['attribute_public'] = 0; }
-
-    if ( empty( $attribute['attribute_name'] ) || empty( $attribute['attribute_label'] ) ) {
-        return new \WP_Error( 'error', __( 'Please, provide an attribute name and slug.', 'woocommerce' ) );
-    }
-    elseif ( ( $valid_attribute_name = valid_attribute_name( $attribute['attribute_name'] ) ) && is_wp_error( $valid_attribute_name ) ) {
-        return $valid_attribute_name;
-    }
-    elseif ( taxonomy_exists( wc_attribute_taxonomy_name( $attribute['attribute_name'] ) ) ) {
-        return new \WP_Error( 'error', sprintf( __( 'Slug "%s" is already in use. Change it, please.', 'woocommerce' ), sanitize_title( $attribute['attribute_name'] ) ) );
-    }
-
-    $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
-
-    do_action( 'woocommerce_attribute_added', $wpdb->insert_id, $attribute );
-
-// flush_rewrite_rules();
-    delete_transient( 'wc_attribute_taxonomies' );
 
     return true;
 }

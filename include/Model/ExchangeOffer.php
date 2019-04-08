@@ -1,5 +1,7 @@
 <?php
 
+namespace NikolayS93\Exchange\Model;
+
 /**
  * Works with posts, postmeta
  */
