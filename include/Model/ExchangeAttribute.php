@@ -120,7 +120,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     public function fetch()
     {
         $attribute =  array(
-            'attribute_name'    => $this->attribute_name,
+            'attribute_name'    => str_replace('pa_', '', $this->attribute_name),
             'attribute_label'   => $this->attribute_label,
             'attribute_type'    => $this->attribute_type,
             'attribute_orderby' => $this->attribute_orderby,
@@ -160,48 +160,60 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         $this->ext = (String) $ext;
     }
 
-    static public function fillExistsFromDB( &$tax ) // , $taxonomy = ''
+    static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''
     {
-        return;
-
         /** @global wpdb wordpress database object */
         global $wpdb;
 
         /** @var boolean get data for items who not has term_id */
-        $orphaned_only = true;
+        // $orphaned_only = true;
 
         /** @var List of external code items list in database attribute context (%s='%s') */
-        $externals = array();
+        // $externals = array();
+        $termExternals = array();
 
-        /** @var array list of objects exists from posts db */
-        $_exists = array();
-        $exists = array();
-
-        foreach ($terms as $rawExternalCode => $term) {
-            $_external = $term->getExternal();
-            $_p_external = $term->getParentExternal();
-
-            if( !$term->get_id() ) {
-                $externals[] = "`meta_value` = '". $_external ."'";
-            }
-
-            if( $_p_external && $_external != $_p_external && !$term->get_parent_id() ) {
-                $externals[] = "`meta_value` = '". $_p_external ."'";
+        foreach ($obAttributeTaxonomies as $obAttributeTaxonomy)
+        {
+            /**
+             * Get taxonomy (attribute)
+             * var_dump( $obAttributeTaxonomy );
+             */
+            /**
+             * Get terms (attribute values)
+             * @var ExchangeTerm $term
+             */
+            foreach ($obAttributeTaxonomy->getTerms() as $obExchangeTerm)
+            {
+                $termExternals[] = "`meta_value` = '". $obExchangeTerm->getExternal() ."'";
             }
         }
 
-        $externals = array_unique($externals);
+        // foreach ($terms as $rawExternalCode => $term) {
+        //     $_external = $term->getExternal();
+        //     $_p_external = $term->getParentExternal();
+
+        //     if( !$term->get_id() ) {
+        //         $externals[] = "`meta_value` = '". $_external ."'";
+        //     }
+
+        //     if( $_p_external && $_external != $_p_external && !$term->get_parent_id() ) {
+        //         $externals[] = "`meta_value` = '". $_p_external ."'";
+        //     }
+        // }
 
         /**
          * Get from database
+         * @var array list of objects exists from posts db
          */
-        if( !empty($externals) ) {
+        $exists  = array();
+        $_exists = array();
+        if( !empty($termExternals) ) {
             $exists_query = "
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
                 WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", $externals) . ")";
+                    AND (". implode(" \t\n OR ", $termExternals) . ")";
 
             $_exists = $wpdb->get_results( $exists_query );
         }
@@ -215,18 +227,24 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         }
         unset($_exists);
 
-        foreach ($terms as &$term)
+        foreach ($obAttributeTaxonomies as &$obAttributeTaxonomy)
         {
-            $ext = $term->getExternal();
+            /**
+             * Get taxonomy (attribute)
+             * var_dump( $obAttributeTaxonomy );
+             */
+            /**
+             * Get terms (attribute values)
+             * @var ExchangeTerm $term
+             */
+            foreach ($obAttributeTaxonomy->getTerms() as &$obExchangeTerm)
+            {
+                $ext = $obExchangeTerm->getExternal();
 
-            if(!empty( $exists[ $ext ] )) {
-                $term->set_id( $exists[ $ext ]->term_id );
-                $term->meta_id = $exists[ $ext ]->meta_id;
-            }
-
-            $parent_ext = $term->getParentExternal();
-            if(!empty( $exists[ $parent_ext ] )) {
-                $term->set_parent_id( $exists[ $parent_ext ]->term_id );
+                if(!empty( $exists[ $ext ] )) {
+                    $obExchangeTerm->set_id( $exists[ $ext ]->term_id );
+                    $obExchangeTerm->meta_id = $exists[ $ext ]->meta_id;
+                }
             }
         }
     }

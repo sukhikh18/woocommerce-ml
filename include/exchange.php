@@ -2,6 +2,21 @@
 
 namespace NikolayS93\Exchange;
 
+function get_mode()
+{
+    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Utils::get( 'status', false );
+
+    if( Utils::get_status(3) == $status ) {
+        return 'set_relationships';
+    }
+
+    if( Utils::get_status(3) == $status ) {
+        return 'deactivate';
+    }
+
+    return MODE;
+}
+
 add_action( '1c4wp_exchange', function() {
     \NikolayS93\Exchange\Request::set_strict_mode();
     ob_start( array('\NikolayS93\Exchange\Request', 'output_callback') );
@@ -72,7 +87,7 @@ add_action( '1c4wp_exchange', function() {
      * zip=yes|no - Сервер поддерживает Zip
      * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
      */
-    if ('init' == MODE) {
+    if ('init' == get_mode()) {
         /** Zip required (if not must die) */
         check_zip();
 
@@ -100,7 +115,7 @@ add_action( '1c4wp_exchange', function() {
      * C. Получение файла обмена с сайта
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
      */
-    elseif ('query' == MODE) {
+    elseif ('query' == get_mode()) {
         // ex_mode__query($_REQUEST['type']);
     }
 
@@ -113,7 +128,7 @@ add_action( '1c4wp_exchange', function() {
      * Загрузка CommerceML2 файла или его части в виде POST.
      * @return success
      */
-    elseif ('file' == MODE) {
+    elseif ('file' == get_mode()) {
         /**
          * Принимает файл и распаковывает его
          */
@@ -157,66 +172,118 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
      * @return progress|success|failure
      */
-    elseif ('import' == MODE && Utils::get_status(3) != $status ) {
+    elseif ('import' == get_mode()) {
         $version = get_option( 'exchange_version', '' );
 
         ex_set_transaction_mode();
 
-        if( $categories = Parser::getInstance()->getCategories() ) {
-            Parser::fillExistsTermData( $categories );
+        /**
+         * Parse
+         */
+        $Parser = Parser::getInstance( $fillExists = true );
 
-            Update::terms( $categories, array('taxonomy' => 'product_cat') );
-            Update::update_termmetas( $categories, array('taxonomy' => 'product_cat') );
-        }
+        $categories = $Parser->getCategories();
+        $properties = $Parser->getProperties();
+        $developers = $Parser->getDevelopers();
+        $warehouses = $Parser->getWarehouses();
 
-        if( $properties = Parser::getInstance()->getProperties() ) {
-            if( true !== ($res = Update::properties( $properties )) ) {
-                exit("progress\n" . $res);
+        $products = $Parser->getProducts();
+        $offers = $Parser->getOffers();
+
+        $attributeValues = array();
+        foreach ($properties as $property)
+        {
+            /** Collection to simple array */
+            foreach ($property->getTerms() as $term)
+            {
+                $attributeValues[] = $term;
             }
         }
 
-        if( $manufacturer = Parser::getInstance()->getManufacturer() ) {
-            Parser::fillExistsTermData( $manufacturer );
+        /**
+         * Write
+         */
+        Update::terms( $categories );
+        Update::termmeta( $categories );
 
-            Update::terms( $manufacturer, array('taxonomy' => 'manufacturer') );
-            Update::update_termmetas( $manufacturer, array('taxonomy' => 'manufacturer') );
+        Update::terms( $developers );
+        Update::termmeta( $developers );
+
+        Update::terms( $warehouses );
+        Update::termmeta( $warehouses );
+
+        Update::properties( $properties );
+
+        Update::terms( $attributeValues );
+        Update::termmeta( $attributeValues );
+
+        if( version_compare($version, '3.0') < 0 ) {
+            if( Utils::get_status(1) != $status ) {
+                /**
+                 * Нужна отдышка перед загрузкой товаров
+                 */
+                $status = Utils::get_status(1);
+                Utils::set( 'status', $status );
+            }
         }
 
-        if( $warehouses = Parser::getInstance()->getWarehouses() ) {
-            Parser::fillExistsTermData( $warehouses );
+        /**
+         * В новой версии выгрузка делится на бОльшее количество файлов (запросов)
+         */
+        Update::posts( $products );
+        Update::postmeta( $products );
 
-            Update::terms( $warehouses, array('taxonomy' => 'warehouses') );
-            Update::update_termmetas( $warehouses, array('taxonomy' => 'warehouses') );
-        }
+        Update::offers( $offers );
+        Update::offerPostMetas( $offers );
 
-        if( $products = Parser::getInstance()->getProducts() ) {
-            Parser::fillExistsProductData( $products, false );
-            Update::posts( $products );
-            Parser::fillExistsProductData( $products, $orphaned = true );
-            // $products = $Parser->parse_exists_products( $orphaned = true );
-            Update::postmetas( $products );
-
-            Update::relationships( $products, array('taxonomy' => 'product_cat') );
-            Update::relationships( $products, array('taxonomy' => 'properties') );
-            Update::relationships( $products, array('taxonomy' => 'manufacturer') );
-        }
-
-        if( $offers = Parser::getInstance()->getOffers() ) {
-            Parser::fillExistsProductData( $offers, false );
-            Update::offers( $offers );
-            Parser::fillExistsProductData( $offers, $orphaned = true );
-            Update::offers( $offers );
-            Update::offerPostMetas( $offers );
-        }
-
-        if (version_compare($version, '3.0') < 0 && false !== strpos(FILENAME, 'offers')) {
-            $status = Utils::get_status(3);
+        /**
+         * Но зависимости все равно лучше записать в следующий подход
+         */
+        if( Utils::get_status(2) != $status ) {
+            $status = Utils::get_status(2);
             Utils::set( 'status', $status );
 
+            if( version_compare($version, '3.0') < 0 ) {
+                exit("progress\nStatus: 2");
+            }
+            else {
+                exit("success\nStatus: 2");
+            }
+        }
+
+        // need deactivate
+
+        exit("progress\nStatus: -1");
+    }
+
+    /**
+     * В новой версии сюда попадаем уже при деактивации (чтобы не ходить по всем файлам)
+     */
+    elseif ('set_relationships' == get_mode()) {
+        $Parser = Parser::getInstance( $fillExists = true );
+        $products = $Parser->getProducts();
+
+        foreach ($products as $product)
+        {
+            if( !$product_id = $product->get_id() ) continue;
+
+            $product->updateAttributes();
+            $product->updateObjectTerms();
+        }
+
+        $status = Utils::get_status(3);
+        Utils::set( 'status', $status );
+
+        /**
+         * Когда второй файл (Предложения) обработаны в прошлых версиях, на этом все..
+         * Но нам еще нужно деактивировать товары
+         * @since CommerceML 3.0 insert deactivate, complete
+         */
+        if (version_compare($version, '3.0') < 0 && false !== strpos(FILENAME, 'offers')) {
             exit("progress\nВыгрузка данных из файла успешно завершена");
         }
         else {
-            exit("success\nВыгрузка данных из файла успешно завершена");
+            exit("progress\nВыгрузка данных из файла успешно завершена");
         }
     }
 
@@ -226,7 +293,7 @@ add_action( '1c4wp_exchange', function() {
      * @since  3.0
      * @return progress|success|failure
      */
-    elseif ('deactivate' == MODE || Utils::get_status(3) == $status) {
+    elseif ('deactivate' == get_mode()) {
         /**
          * Reset start date
          */
@@ -235,7 +302,7 @@ add_action( '1c4wp_exchange', function() {
         /**
          * Чистим и пересчитываем количество записей в терминах
          */
-                $filename = FILENAME;
+        $filename = FILENAME;
         /**
          * Get valid namespace ('import', 'offers', 'orders')
          */
@@ -298,7 +365,7 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=complete
      * @since  3.0
      */
-    elseif ('complete' == MODE) {
+    elseif ('complete' == get_mode()) {
 
         exit("success\nВыгрузка данных завершена");
     }

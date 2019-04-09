@@ -51,6 +51,7 @@ function __init() {
 
     require_once PLUGIN_DIR . '/include/Model/Interfaces/ExternalCode.php';
 
+    require_once PLUGIN_DIR . '/include/Model/Relationship.php';
     require_once PLUGIN_DIR . '/include/Model/ExchangePost.php';
     require_once PLUGIN_DIR . '/include/Model/ExchangeProduct.php';
     require_once PLUGIN_DIR . '/include/Model/ExchangeOffer.php';
@@ -112,6 +113,19 @@ function __init() {
         }
     ) );
 }
+
+add_filter( '1c4wp_update_term', __NAMESPACE__ . '\update_term_filter', $priority = 10, $accepted_args = 1 );
+function update_term_filter( $arTerm ) {
+    /**
+     * @todo fixit
+     * Update only parents (Need for second query)
+     */
+    $res['panret'] = $arTerm['parent'];
+
+    return $res;
+}
+
+
 
 // register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
 // register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'uninstall' ) );

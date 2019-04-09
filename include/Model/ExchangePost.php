@@ -61,36 +61,44 @@ class ExchangePost
         return false;
     }
 
-    function setRelationship( $context = '', ExchangeTerm $term ) // , ExchangeAttribute $tax = null
+    function getTarget( $context )
     {
+        $target = null;
+
         switch ($context) {
             case 'properties':
             case 'arProperties':
             case 'property':
-                $target = &$this->properties;
+                $target = 'properties';
                 break;
 
             case 'warehouse':
             case 'warehouses':
             case 'arWarehouses':
-                $target = &$this->warehouse;
+                $target = 'warehouse';
                 break;
 
             case 'developer':
             case 'developers':
             case 'arDevelopers':
-                $target = &$this->developer;
+                $target = 'properties';
                 break;
 
             case 'product_cat':
             case 'products_cat':
             case 'product_cats':
             default:
-                $target = &$this->product_cat;
+                $target = 'product_cat';
                 break;
         }
 
-        $target[] = new Relationship( array(
+        return $target;
+    }
+
+    function setRelationship( $context = '', ExchangeTerm $term ) // , ExchangeAttribute $tax = null
+    {
+        $target = $this->getTarget( $context );
+        $this->$target[] = new Relationship( array(
             'external' => $term->getExternal(),
             'id'       => $term->get_id(),
         ) );
@@ -119,6 +127,15 @@ class ExchangePost
 
         $this->post = new \WP_Post( (object) $args );
         $this->setMeta($meta);
+    }
+
+    function get_id()
+    {
+        return $this->post->ID;
+    }
+
+    function prepare()
+    {
     }
 
     function getObject()
@@ -162,7 +179,11 @@ class ExchangePost
     static public function fillExistsFromDB( &$products, $orphaned_only = false )
     {
         /** @global wpdb wordpress database object */
-        global $wpdb;
+        global $wpdb, $site_url;
+
+        $site_url = get_site_url();
+        $date_now = date('Y-m-d H:i:s');
+        $gmdate_now = gmdate('Y-m-d H:i:s');
 
         /** @var List of external code items list in database attribute context (%s='%s') */
         $externals = array();
@@ -192,6 +213,9 @@ class ExchangePost
             unset($externals);
         }
 
+        $startExchange = get_option( 'exchange_start-date', '' );
+        $intStartExchange = strtotime($startExchange);
+
         foreach ($exists as $exist)
         {
             /** @var post_mime_type without XML/ */
@@ -212,11 +236,27 @@ class ExchangePost
                 if( !empty($exist->post_content) ) $_post->post_content = (string) $exist->post_content;
                 if( !empty($exist->post_excerpt) ) $_post->post_excerpt = (string) $exist->post_excerpt;
 
+                $intPostDate = strtotime($exist->post_date);
+
                 /**
-                 * Pass post modified (Update product only)
+                 * Early created (will be modified)
                  */
-                $_post->post_date = (string) $exist->post_date;
-                $_post->post_date_gmt = (string) $exist->post_date_gmt;
+                if( $intPostDate && $intPostDate < $intStartExchange ) {
+                    $_post->post_date         = (string) $exist->post_date;
+                    $_post->post_date_gmt     = (string) $exist->post_date_gmt;
+                    $_post->post_modified     = $date_now;
+                    $_post->post_modified_gmt = $gmdate_now;
+                }
+
+                /**
+                 * New post
+                 */
+                else {
+                    $_post->post_date         = $date_now;
+                    $_post->post_date_gmt     = $gmdate_now;
+                    $_post->post_modified     = $date_now;
+                    $_post->post_modified_gmt = $gmdate_now;
+                }
 
                 /**
                  * What do you want to keep the same?

@@ -8,6 +8,7 @@ use NikolayS93\Exchange\Model\ProductModel;
 
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
+use NikolayS93\Exchange\Model\ExchangePost;
 
 class Update
 {
@@ -53,16 +54,12 @@ class Update
 
     public static function posts( &$products )
     {
-        global $wpdb, $site_url, $date_now, $gmdate_now, $user_id;
+        global $wpdb, $date_now, $gmdate_now, $user_id;
 
         if( empty($products) || !is_array($products) ) return;
 
         $insert = array();
         $phs = array();
-
-        $site_url = get_site_url();
-        $date_now = date('Y-m-d H:i:s');
-        $gmdate_now = gmdate('Y-m-d H:i:s');
 
         $posts_structure = ExchangePost::get_structure('posts');
 
@@ -73,8 +70,6 @@ class Update
         foreach ($products as &$product)
         {
             $product->prepare();
-            $product->fill( $insert, $phs );
-
             $p = $product->getObject();
             array_push($insert, $p->ID, $p->post_author, $p->post_date, $p->post_date_gmt, $p->post_content, $p->post_title, $p->post_excerpt, $p->post_status, $p->comment_status, $p->ping_status, $p->post_password, $p->post_name, $p->to_ping, $p->pinged, $p->post_modified, $p->post_modified_gmt, $p->post_content_filtered, $p->post_parent, $p->guid, $p->menu_order, $p->post_type, $p->post_mime_type, $p->comment_count);
 
@@ -131,19 +126,18 @@ class Update
             $obTerm = $term->getTerm();
 
             /**
-             * @todo add apply filter
              * @var array
              */
-            $arTerm = array_filter( (array) $obTerm );
+            $arTerm = (array) $obTerm;
 
             /**
              * @todo need double iteration for parents
              */
             if( $term_id ) {
-                $result = wp_update_term( $term_id, $arTerm['taxonomy'], $arTerm );
+                $result = wp_update_term( $term_id, $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_update_term', $arTerm )) );
             }
             else {
-                $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], $arTerm );
+                $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_insert_term', $arTerm )) );
             }
 
             if( !is_wp_error($result) ) {
@@ -194,6 +188,7 @@ class Update
             array_push($phs, $sql_placeholder);
         }
 
+        $updated_rows = 0;
         if( !empty($insert) && !empty($phs) ) {
             $query = static::get_sql_update($wpdb->termmeta, $structure, $insert, $phs, $duplicate);
             $updated_rows = $wpdb->query( $query );
@@ -236,6 +231,10 @@ class Update
                 }
 
                 $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
+                /**
+                 * For exists imitation
+                 */
+                register_taxonomy( $slug, 'product' );
 
                 do_action( 'woocommerce_attribute_added', $wpdb->insert_id, $attribute );
 
@@ -287,9 +286,9 @@ class Update
     {
         global $wpdb, $user_id;
 
-        foreach ($offers as $exOffer)
+        foreach ($offers as $obExchangeOffer)
         {
-            if( (!$post_id = $exOffer->get_id()) && !is_debug() ) continue;
+            if( !$post_id = $obExchangeOffer->get_id() ) continue;
 
             /**
              * @todo How to check new product?
@@ -304,8 +303,8 @@ class Update
             //         // '_wc_average_rating' => '0',
             //         // '_edit_lock' => '',
             //         '_product_attributes' => 'a:0:{}',
-            //         '_regular_price' => $exOffer->price,
-            //         '_price' => $exOffer->price,
+            //         '_regular_price' => $obExchangeOffer->getMeta('_regular_price'),
+            //         '_price' => $obExchangeOffer->getMeta('_price'),
             //         '_manage_stock' => 'yes',
             //         '_stock_status' => 1 <= $exOffer->quantity ? 'instock' : 'outofstock',
             //         '_stock' => $exOffer->quantity,
@@ -343,41 +342,45 @@ class Update
             //         $properties['_stock_wh'] = $exOffer->stock_wh;
             //     }
             // }
-            // else {
-            // }
+
             $properties = array();
 
-            if( $exOffer->unit ) {
-                $properties['_unit'] = $exOffer->unit;
+            if( $unit = $obExchangeOffer->getMeta('unit') ) {
+                $properties['_unit'] = $unit;
             }
 
-            if( $exOffer->price ) {
-                $properties['_regular_price'] = $exOffer->price;
-                $properties['_price'] = $exOffer->price;
+            if( $price = $obExchangeOffer->getMeta('price') ) {
+                $properties['_regular_price'] = $price;
+                $properties['_price'] = $price;
             }
 
-            if( '' !== $exOffer->quantity ) {
+            $stock = $obExchangeOffer->getMeta('stock');
+            $qty   = $obExchangeOffer->getMeta('quantity');
+
+            if( null !== $stock || null !== $qty ) {
+                $qty = max($stock, $qty);
+
                 $properties['_manage_stock'] = 'yes';
-                $properties['_stock_status'] = 1 <= $exOffer->quantity ? 'instock' : 'outofstock';
-                $properties['_stock']        = $exOffer->quantity;
+                $properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
+                $properties['_stock']        = $qty;
             }
 
-            if( $exOffer->weight ) {
-                $properties['_weight'] = $exOffer->weight;
+            if( $weight = $obExchangeOffer->getMeta('weight') ) {
+                $properties['_weight'] = $weight;
             }
 
-            if( $exOffer->prices ) {
-                $properties['_prices'] = $exOffer->prices;
-            }
+            // if( $exOffer->prices ) {
+            //     $properties['_prices'] = $exOffer->prices;
+            // }
 
-            if( $exOffer->stock_wh ) {
-                $properties['_stock_wh'] = $exOffer->stock_wh;
-            }
+            // if( $exOffer->stock_wh ) {
+            //     $properties['_stock_wh'] = $exOffer->stock_wh;
+            // }
 
             foreach ($properties as $property_key => $property)
             {
                 update_post_meta( $post_id, $property_key, $property );
-                // wp_cache_delete( $post_id, "_{$property_key}_meta" );
+                // wp_cache_delete( $post_id, "{$property_key}_meta" );
             }
         }
     }
@@ -389,136 +392,6 @@ class Update
     {
         /** @global wpdb $wpdb built in wordpress db object */
         global $wpdb;
-
-        $args = wp_parse_args( $args, array(
-            'taxonomy' => 'product_cat', // $category, $warehouse, $brand, $attribute
-        ) );
-
-        $exsists_terms = array();
-
-        $term_sql = array();
-
-        foreach ($products as $product) {
-            /**
-             * Получаем все термины данного товара
-             */
-            if( ($terms = $product->get_taxonomy( $args['taxonomy'] )) && is_array($terms) ) {
-                foreach ($terms as $term)
-                {
-                    if( is_array($term) ) {
-                        foreach ($term as $attr) {
-                            $extCode = 0 === strpos($attr, 'XML') ? $attr : 'XML/' . $attr;
-                            $term_sql[] = "`meta_value` = '$extCode'";
-                        }
-
-                        continue;
-                    }
-
-                    $extCode = 0 === strpos($term, 'XML') ? $term : 'XML/' . $term;
-                    $term_sql[] = "`meta_value` = '$extCode'";
-                }
-            }
-        }
-
-        if( !empty($term_sql) ) {
-            $exsists_terms_query = "
-                SELECT term_id, meta_key, meta_value
-                FROM $wpdb->termmeta
-                WHERE meta_key = '". EX_EXT_METAFIELD ."'
-                    AND (". implode(" \t\n OR ", array_unique($term_sql)) . ")";
-
-            /**
-             * Получаем массив всех упомянутых EXT_ID(терминов) => term_id
-             */
-            $_exsists_terms = $wpdb->get_results( $exsists_terms_query );
-
-            /**
-             * resort array
-             */
-            foreach ($_exsists_terms as $k => $exsists_term) {
-                $exsists_terms[ $exsists_term->meta_value ] = $exsists_term->term_id;
-            }
-        }
-
-        unset($_exsists_terms);
-
-        foreach ($products as $product) {
-            /**
-             * Если ID товара не найден пропкускаем товар
-             * Теоретически такого совершаться не должно
-             */
-            if( !$product_id = $product->get_id() ) continue;
-
-            if( ($terms = $product->get_taxonomy( $args['taxonomy'] )) && is_array($terms) ) {
-                $relationships = array();
-                $attributes = array();
-
-                foreach ($terms as $tax => $term)
-                {
-                    if( is_array($term) ) {
-                        $relationships = array();
-
-                        foreach ($term as $attr)
-                        {
-                            $extCode = 0 === strpos($attr, 'XML') ? $attr : 'XML/' . $attr;
-
-                            if( !isset($exsists_terms[ $extCode ]) ) continue;
-
-                            if( $term_id = $exsists_terms[ $extCode ] ) {
-                                $relationships[] = (int) $term_id;
-                            }
-                        }
-
-                        if( empty($relationships) ) continue;
-                        wp_set_object_terms( $product_id, $relationships, 'pa_' . $tax, false );
-
-                        if( 'properties' == $args['taxonomy'] ) $attributes[] = 'pa_' . $tax;
-
-                        continue;
-                    }
-
-                    $extCode = 0 === strpos($term, 'XML') ? $term : 'XML/' . $term;
-
-                    /**
-                     * Если такого термина не существует, пропускаем
-                     */
-                    if( !isset($exsists_terms[ $extCode ]) ) continue;
-
-                    if( $term_id = $exsists_terms[ $extCode ] ) {
-                        $relationships[] = (int) $term_id;
-                    }
-                }
-
-                if( !empty($attributes) ) {
-                    $product_attributes = array();
-
-                    foreach ($attributes as $attribute) {
-                        $product_attributes[ $attribute ] = array (
-                            'name' => $attribute,
-                            'value' => '',
-                            'position' => 1,
-                            'is_visible' => 1,
-                            'is_variation' => 0,
-                            'is_taxonomy' => 1
-                        );
-                    }
-
-                    update_post_meta($product_id, '_product_attributes', $product_attributes);
-                }
-
-                /**
-                 * Если категорий для товаров не найдено, пропускаем данный товар
-                 */
-                if( empty($relationships) ) continue;
-
-                /**
-                 * Добавляем терминов товару
-                 * $append = true - иначе, удалим связи с акциями,
-                 * новинками и т.д. как правило не созданные в 1с
-                 */
-                wp_set_object_terms( $product_id, $relationships, $args['taxonomy'], $append = true );
-            }
-        }
     }
 
     // public static function warehouses_ext()

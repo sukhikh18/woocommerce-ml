@@ -22,29 +22,43 @@ $offers = $Parser->getOffers();
 $attributeValues = array();
 foreach ($properties as $property)
 {
+    /** Collection to simple array */
     foreach ($property->getTerms() as $term)
     {
         $attributeValues[] = $term;
     }
 }
 
-// Update::terms( $categories );
-// Update::terms( $developers );
-// Update::terms( $warehouses );
-// Update::properties( $properties );
-// Update::terms( $attributeValues );
+Update::terms( $categories );
+Update::termmeta( $categories );
 
-// Update::posts( $products );
+Update::terms( $developers );
+Update::termmeta( $developers );
+
+Update::terms( $warehouses );
+Update::termmeta( $warehouses );
+
+Update::properties( $properties );
+Update::terms( $attributeValues );
+Update::termmeta( $attributeValues );
+
+Update::posts( $products );
+Update::postmeta( $products );
+
+Update::offers( $offers );
+Update::offerPostMetas( $offers );
+
+Update::relationships( $products );
 
 ?>
-<pre style='max-width: 900px;margin: 0 auto;display: flex;'>
-    <div style="width: 450px;overflow: auto;float: left;">
+<pre style='max-width: 1000px;margin: 0 auto;display: flex;'>
+    <div style="width: 500px;overflow: auto;float: left;">
         <h3>Товары</h3>
         <?php print_r( $products ); ?>
         <h3>Предложения</h3>
         <?php print_r( $offers ); ?>
     </div>
-    <div style="width: 450px;overflow: auto;float: left;">
+    <div style="width: 500px;overflow: auto;float: left;">
         <h3>Категории</h3>
         <?php print_r( $categories ); ?>
         <h3>Свойства</h3>

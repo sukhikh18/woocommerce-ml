@@ -9,7 +9,16 @@ trait ExchangeItemMeta
     function getMeta( $key = '' )
     {
         if( $key ) {
-            return isset($this->meta[$key]) ? $this->meta[$key] : null;
+
+            if( isset( $this->meta[ '_'.$key ] ) ) {
+                return $this->meta[ '_'.$key ];
+            }
+
+            if( isset($this->meta[$key]) ) {
+                return $this->meta[$key];
+            }
+
+            return null;
         }
 
         return (array) $this->meta;

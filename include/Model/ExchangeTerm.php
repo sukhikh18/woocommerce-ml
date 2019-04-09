@@ -134,8 +134,17 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     public function set_id( $term_id )
     {
-        $this->term['term_id'] = (int) $term_id;
-        $this->term_taxonomy['term_id'] = (int) $term_id;
+        if( is_object( $term_id ) ) {
+            $this->term['term_id'] = (int) $term_id->term_id;
+        }
+        elseif( is_array( $term_id ) ) {
+            $this->term['term_id'] = (int) $term_id['term_id'];
+        }
+        else {
+            $this->term['term_id'] = (int) $term_id;
+        }
+
+        $this->term_taxonomy['term_id'] = $this->term['term_id'];
 
         /**
          * Its true?
@@ -194,7 +203,10 @@ class ExchangeTerm implements Interfaces\ExternalCode
         /** @global wpdb wordpress database object */
         global $wpdb;
 
-        /** @var boolean get data for items who not has term_id */
+        /**
+         * @var boolean get data for items who not has term_id
+         * @todo
+         */
         $orphaned_only = true;
 
         /** @var List of external code items list in database attribute context (%s='%s') */
@@ -242,6 +254,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
         }
         unset($_exists);
 
+        $needRepeat = false;
         foreach ($terms as &$term)
         {
             $ext = $term->getExternal();
@@ -252,9 +265,16 @@ class ExchangeTerm implements Interfaces\ExternalCode
             }
 
             $parent_ext = $term->getParentExternal();
-            if(!empty( $exists[ $parent_ext ] )) {
-                $term->set_parent_id( $exists[ $parent_ext ]->term_id );
+            if( $parent_ext ) {
+                if(!empty( $exists[ $parent_ext ] )) {
+                    $term->set_parent_id( $exists[ $parent_ext ]->term_id );
+                }
+                else {
+                    $needRepeat = true;
+                }
             }
         }
+
+        return $needRepeat;
     }
 }

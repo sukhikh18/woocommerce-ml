@@ -66,7 +66,12 @@ class Parser
                 ExchangeAttribute::fillExistsFromDB( $this->arProperties );
 
                 ExchangeProduct::fillExistsFromDB( $this->arProducts );
-                // ExchangeProduct::fillExistsFromDB( $this->arOffers );
+                ExchangeProduct::fillExistsFromDB( $this->arOffers );
+
+                foreach ($this->arProducts as &$product)
+                {
+                    $product->fillRelatives();
+                }
             }
         }
     }
@@ -166,18 +171,18 @@ class Parser
          * If u need one offer only for simple product (for ex.)
          * @param array &$offers offers collection
          */
-        foreach ($this->arOffers as $key => $offer)
-        {
-            list($realkey) = explode('#', $key);
+        // foreach ($this->arOffers as $key => $offer)
+        // {
+        //     list($realkey) = explode('#', $key);
 
-            if( isset($this->arOffers[$realkey]) && $this->arOffers[$realkey] !== $offer ) {
-                $mainOffer = &$this->arOffers[$realkey];
-                $mainOffer->price = max(array($mainOffer->price, $offer->price));
-                $mainOffer->quantity += $offer->quantity;
+        //     if( isset($this->arOffers[$realkey]) && $this->arOffers[$realkey] !== $offer ) {
+        //         $mainOffer = &$this->arOffers[$realkey];
+        //         $mainOffer->price = max(array($mainOffer->price, $offer->price));
+        //         $mainOffer->quantity += $offer->quantity;
 
-                unset($mainOffer, $this->arOffers[$key]);
-            }
-        }
+        //         unset($mainOffer, $this->arOffers[$key]);
+        //     }
+        // }
 
         return $this->arOffers;
     }
@@ -195,7 +200,12 @@ class Parser
             'description' => '', // 1c 8.2 not has a cat description?
         );
 
-        if( $parent ) $term['parent_ext'] = $parent->getId();
+        if( $parent ) {
+            /**
+             * External string ID
+             */
+            $term['parent_ext'] = $parent->getId();
+        }
 
         $meta = $category->getProperties()->fetch();
 
@@ -424,13 +434,21 @@ class Parser
         /**
          * Only one price coast for simple
          */
-        $price = $offer->getPrices()->current()->getPrice();
+        $price = 0;
+        $prices = $offer->getPrices();
+        if( !$prices->isEmpty() ) {
+            $price = $offer->getPrices()->current()->getPrice();
+        }
 
+        /**
+         * @todo
+         * Change product id to offer id for multiple offres
+         */
         $this->arOffers[ $id ] = new ExchangeOffer(array(
             'post_title'   => $offer->getName(),
             // 'post_excerpt' => $offer->getDescription(),
             'post_type'    => 'offer',
-        ), $offer_id);
+        ), $product_id);
 
         $meta = array(
             '_price'         => $price,
