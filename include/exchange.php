@@ -2,16 +2,21 @@
 
 namespace NikolayS93\Exchange;
 
-function get_mode()
+function get_mode($status, $version)
 {
-    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Utils::get( 'status', false );
+    if( version_compare($version, '3.0') < 0 ) {
+        if( Utils::get_status(2) == $status ) {
+            return 'set_relationships';
+        }
 
-    if( Utils::get_status(3) == $status ) {
-        return 'set_relationships';
+        if( Utils::get_status(3) == $status ) {
+            return 'deactivate';
+        }
     }
-
-    if( Utils::get_status(3) == $status ) {
-        return 'deactivate';
+    else {
+        if( 'deactivate' == MODE && Utils::get_status(2) == $status ) {
+            return 'set_relationships';
+        }
     }
 
     return MODE;
@@ -36,6 +41,17 @@ add_action( '1c4wp_exchange', function() {
     }
 
     /**
+     * Get status (from request for debug)
+     */
+    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Utils::get( 'status', false );
+
+    /**
+     * CommerceML protocol version
+     * @var string (float value)
+     */
+    $version = get_option( 'exchange_version', '' );
+
+    /**
      * @url http://v8.1c.ru/edi/edi_stnd/131/
      *
      * A. Начало сеанса (Авторизация)
@@ -46,7 +62,7 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
      * @return success\nCookie\nCookie_value
      */
-    if ('checkauth' == MODE) {
+    if ('checkauth' == get_mode($status, $version)) {
         foreach (array('HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION') as $server_key) {
             if (!isset($_SERVER[$server_key])) continue;
 
@@ -73,11 +89,6 @@ add_action( '1c4wp_exchange', function() {
     check_wp_auth();
 
     /**
-     * Get status (from request for debug)
-     */
-    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Utils::get( 'status', false );
-
-    /**
      * B. Запрос параметров от сайта
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=init
      * B. Уточнение параметров сеанса
@@ -87,7 +98,7 @@ add_action( '1c4wp_exchange', function() {
      * zip=yes|no - Сервер поддерживает Zip
      * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
      */
-    if ('init' == get_mode()) {
+    if ('init' == get_mode($status, $version)) {
         /** Zip required (if not must die) */
         check_zip();
 
@@ -115,7 +126,7 @@ add_action( '1c4wp_exchange', function() {
      * C. Получение файла обмена с сайта
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
      */
-    elseif ('query' == get_mode()) {
+    elseif ('query' == get_mode($status, $version)) {
         // ex_mode__query($_REQUEST['type']);
     }
 
@@ -128,7 +139,7 @@ add_action( '1c4wp_exchange', function() {
      * Загрузка CommerceML2 файла или его части в виде POST.
      * @return success
      */
-    elseif ('file' == get_mode()) {
+    elseif ('file' == get_mode($status, $version)) {
         /**
          * Принимает файл и распаковывает его
          */
@@ -172,9 +183,7 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
      * @return progress|success|failure
      */
-    elseif ('import' == get_mode()) {
-        $version = get_option( 'exchange_version', '' );
-
+    elseif ('import' == get_mode($status, $version)) {
         ex_set_transaction_mode();
 
         /**
@@ -224,6 +233,7 @@ add_action( '1c4wp_exchange', function() {
                  */
                 $status = Utils::get_status(1);
                 Utils::set( 'status', $status );
+                exit("progress\nStatus: 1");
             }
         }
 
@@ -240,14 +250,19 @@ add_action( '1c4wp_exchange', function() {
          * Но зависимости все равно лучше записать в следующий подход
          */
         if( Utils::get_status(2) != $status ) {
-            $status = Utils::get_status(2);
+            $status = Utils::get_status(2); // set_relationships
             Utils::set( 'status', $status );
 
             if( version_compare($version, '3.0') < 0 ) {
-                exit("progress\nStatus: 2");
+                if( 0 === strpos(FILENAME, 'offers') ) {
+                    exit("progress\nStatus: 2"); // retry for relationships
+                }
+                else {
+                    exit("success\nStatus: 2"); // skip to next file
+                }
             }
             else {
-                exit("success\nStatus: 2");
+                exit("success\nStatus: 2"); // skip to next file
             }
         }
 
@@ -259,7 +274,7 @@ add_action( '1c4wp_exchange', function() {
     /**
      * В новой версии сюда попадаем уже при деактивации (чтобы не ходить по всем файлам)
      */
-    elseif ('set_relationships' == get_mode()) {
+    elseif ('set_relationships' == get_mode($status, $version)) {
         $Parser = Parser::getInstance( $fillExists = true );
         $products = $Parser->getProducts();
 
@@ -271,7 +286,7 @@ add_action( '1c4wp_exchange', function() {
             $product->updateObjectTerms();
         }
 
-        $status = Utils::get_status(3);
+        $status = Utils::get_status(3); // deactivate
         Utils::set( 'status', $status );
 
         /**
@@ -279,12 +294,15 @@ add_action( '1c4wp_exchange', function() {
          * Но нам еще нужно деактивировать товары
          * @since CommerceML 3.0 insert deactivate, complete
          */
-        if (version_compare($version, '3.0') < 0 && false !== strpos(FILENAME, 'offers')) {
-            exit("progress\nВыгрузка данных из файла успешно завершена");
+        if (version_compare($version, '3.0') < 0 && 0 === strpos(FILENAME, 'offers')) {
+            exit("progress\nЗависимости данных обновлены");
         }
         else {
-            exit("progress\nВыгрузка данных из файла успешно завершена");
+            exit("progress\nЗависимости данных обновлены");
         }
+
+        // Мало вероятный исход
+        exit("success\nStatus: 3");
     }
 
     /**
@@ -293,7 +311,7 @@ add_action( '1c4wp_exchange', function() {
      * @since  3.0
      * @return progress|success|failure
      */
-    elseif ('deactivate' == get_mode()) {
+    elseif ('deactivate' == get_mode($status, $version)) {
         /**
          * Reset start date
          */
@@ -365,7 +383,7 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=complete
      * @since  3.0
      */
-    elseif ('complete' == get_mode()) {
+    elseif ('complete' == get_mode($status, $version)) {
 
         exit("success\nВыгрузка данных завершена");
     }
