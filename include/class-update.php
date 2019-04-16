@@ -388,10 +388,23 @@ class Update
     /***************************************************************************
      * Update relationships
      */
-    public static function relationships( Array $products, $args = array() )
+    public static function relationships( Array $posts, $args = array() )
     {
         /** @global wpdb $wpdb built in wordpress db object */
         global $wpdb;
+
+        foreach ($posts as $post)
+        {
+            if( !$post_id = $post->get_id() ) continue;
+
+            if( method_exists($post, 'updateAttributes') ) {
+                $post->updateAttributes();
+            }
+
+            if( method_exists($post, 'updateObjectTerms') ) {
+                $post->updateObjectTerms();
+            }
+        }
     }
 
     // public static function warehouses_ext()

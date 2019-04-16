@@ -30,6 +30,21 @@ class Utils
     {
         return $err;
     }
+
+    static function get_status( $num )
+    {
+        $statuses = array(
+            0 => 'Not initialized',
+            1 => 'Started',
+            2 => 'imported',
+            3 => 'Cached',
+            4 => 'Terms updated',
+            5 => 'Products updated',
+            6 => 'Relationships updated',
+        );
+
+        return isset($statuses[ $num ]) ? $statuses[ $num ] : false;
+    }
 }
 
 function check_zip()
@@ -60,20 +75,7 @@ function get_maxsizelimit()
     return $file_limit;
 }
 
-function get_status( $num )
-{
-    $statuses = array(
-        0 => 'Not initialized',
-        1 => 'Started',
-        2 => 'imported',
-        3 => 'Cached',
-        4 => 'Terms updated',
-        5 => 'Products updated',
-        6 => 'Relationships updated',
-    );
 
-    return isset($statuses[ $num ]) ? $statuses[ $num ] : false;
-}
 
 function parse_decimal($number)
 {
@@ -546,6 +548,8 @@ function ex_error($message, $type = "Error", $no_exit = false) {
         echo "\n";
         debug_print_backtrace();
 
+        $Plugin = Plugin::getInstance();
+
         $info = array(
             "Request URI" => ex_full_request_uri(),
             "Server API" => PHP_SAPI,
@@ -553,7 +557,7 @@ function ex_error($message, $type = "Error", $no_exit = false) {
             "Maximum POST size" => ini_get('post_max_size'),
             "PHP version" => PHP_VERSION,
             "WordPress version" => get_bloginfo('version'),
-            "Plugin version" => print_r(Plugin::$data['Version'], 1),
+            "Plugin version" => $Plugin::get_plugin_data('Version'),
         );
         echo "\n";
         foreach ($info as $info_name => $info_value) {
@@ -605,6 +609,7 @@ function valid_attribute_name( $attribute_name ) {
 
     return true;
 }
+
 // $string_custom_attr_values = 'S|M|L|XL';
 // $arr_custom_attr_values = explode("|", $string_custom_attr_values);
 // $total_variations = count($arr_custom_attr_values);
@@ -683,8 +688,8 @@ function strict_exception_handler($exception)
 
 function set_strict_mode()
 {
-    set_error_handler( array(__CLASS__, 'strict_error_handler') );
-    set_exception_handler( array(__CLASS__, 'strict_exception_handler') );
+    set_error_handler( __NAMESPACE__ . '\strict_error_handler' );
+    set_exception_handler( __NAMESPACE__ . '\strict_exception_handler' );
 }
 
 function output_callback($buffer)
@@ -700,4 +705,9 @@ function output_callback($buffer)
     $buffer = (XML_CHARSET == 'UTF-8') ? "\xEF\xBB\xBF$buffer" : mb_convert_encoding($buffer, XML_CHARSET, 'UTF-8');
 
     return $buffer;
+}
+
+function start_exchange_session() {
+    set_strict_mode();
+    ob_start( __NAMESPACE__ . '\output_callback' );
 }
