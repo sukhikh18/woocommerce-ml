@@ -72,7 +72,9 @@ class Plugin
         if( !is_dir(EX_DATA_DIR) ) mkdir(EX_DATA_DIR);
         // flush_rewrite_rules();
 
-        // global $wpdb;
+        global $wpdb;
+
+        $charset_collate = $wpdb->get_charset_collate();
 
         // $index_table_names = array(
         //     // $wpdb->postmeta,
@@ -90,10 +92,36 @@ class Plugin
         //     $wpdb->query("ALTER TABLE $index_table_name ADD INDEX $index_name (meta_key, meta_value(78))");
         // }
 
-        // $result = $wpdb->get_var("SHOW INDEX FROM $wpdb->posts WHERE Key_name = '$index_name';");
-        // if (!$result) {
-        //     $wpdb->query("ALTER TABLE $wpdb->posts ADD INDEX ex_id_post_mime_type (ID, post_mime_type(78))");
-        // }
+        /**
+         * Maybe insert posts mime_type INDEX if is not exists
+         */
+        $postmimeIndexName = 'id_post_mime_type';
+        $result = $wpdb->get_var("SHOW INDEX FROM $wpdb->posts WHERE Key_name = '$postmimeIndexName';");
+        if (!$result) {
+            $wpdb->query("ALTER TABLE $wpdb->posts ADD INDEX $postmimeIndexName (ID, post_mime_type(78))");
+        }
+
+        /**
+         * Maybe create taxonomymeta table
+         */
+        $taxonomymeta = $wpdb->get_blog_prefix() . 'woocommerce_attribute_taxonomymeta';
+
+        if( $wpdb->get_var("SHOW TABLES LIKE '$taxonomymeta'") != $taxonomymeta ) {
+            /** Required for dbDelta */
+            require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+
+            dbDelta( "CREATE TABLE {$taxonomymeta} (
+                `meta_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `tax_id` bigint(20) unsigned NOT NULL DEFAULT '0',
+                `meta_key` varchar(255) NULL,
+                `meta_value` longtext NULL
+            ) {$charset_collate};" );
+
+            $wpdb->query( "
+                ALTER TABLE {$taxonomymeta}
+                    ADD INDEX `tax_id` (`tax_id`),
+                    ADD INDEX `meta_key` (`meta_key`(191));" );
+        }
     }
 
     public static function get_plugin_data( $arg = '' )

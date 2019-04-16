@@ -125,9 +125,7 @@ function update_term_filter( $arTerm ) {
     return $res;
 }
 
-
-
-// register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
+register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
 // register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'uninstall' ) );
 // register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'deactivate' ) );
 

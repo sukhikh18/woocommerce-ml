@@ -5,21 +5,6 @@ namespace NikolayS93\Exchange\Model;
 use NikolayS93\Exchange\Utils;
 use NikolayS93\Exchange\ORM\Collection;
 
-
-/**
- * @todo @warning @required @note @sql
- */
-// CREATE TABLE `woocommerce_attribute_taxonomymeta` (
-//     `meta_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-//     `tax_id` bigint(20) unsigned NOT NULL DEFAULT '0',
-//     `meta_key` varchar(255) NULL,
-//     `meta_value` longtext NULL
-// );
-
-// ALTER TABLE `woocommerce_attribute_taxonomymeta`
-// ADD INDEX `tax_id` (`tax_id`),
-// ADD INDEX `meta_key` (`meta_key`(191));
-
 function getTaxonomyByExternal( $raw_ext_code )
 {
     global $wpdb;
