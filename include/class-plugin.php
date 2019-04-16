@@ -25,11 +25,11 @@ class Plugin
         $wp_upload_dir = wp_upload_dir();
 
         /**
+         * @todo defines need outside
          * Define required plugin data
          */
-        if(!defined(__NAMESPACE__ . '\DOMAIN')) define(__NAMESPACE__ . '\DOMAIN', static::get_plugin_data('TextDomain'));
+        if(!defined(__NAMESPACE__ . '\DOMAIN')) define(__NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data('TextDomain'));
         if(!defined(__NAMESPACE__ . '\EX_DATA_DIR')) define(__NAMESPACE__ . '\EX_DATA_DIR', $wp_upload_dir['basedir'] . "/1c-exchange/");
-        if(!defined(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT')) define(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT', null);
         if(!defined(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT')) define(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT', null);
         if(!defined(__NAMESPACE__ . '\XML_CHARSET') ) define(__NAMESPACE__ . '\XML_CHARSET', 'UTF-8');
         if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', '_ext_ID');
@@ -44,7 +44,7 @@ class Plugin
             ? sanitize_text_field($_REQUEST['type']) : '');
         if( !defined(__NAMESPACE__ . '\MODE') ) define(__NAMESPACE__ . '\MODE', !empty($_REQUEST['mode'])
             ? sanitize_text_field($_REQUEST['mode']) : '');
-        if( !defined(__NAMESPACE__ . 'FILENAME') )define(__NAMESPACE__ . '\FILENAME', !empty($_REQUEST['filename'])
+        if( !defined(__NAMESPACE__ . '\FILENAME') )define(__NAMESPACE__ . '\FILENAME', !empty($_REQUEST['filename'])
             ? sanitize_text_field($_REQUEST['filename']) : '');
 
         load_plugin_textdomain( DOMAIN, false, basename(PLUGIN_DIR) . '/languages/' );
@@ -68,6 +68,9 @@ class Plugin
     static function uninstall() { delete_option( static::get_option_name() ); }
     static function activate()
     {
+        // init (for defines)
+        Plugin::getInstance();
+
         add_option( static::get_option_name(), array() );
         if( !is_dir(EX_DATA_DIR) ) mkdir(EX_DATA_DIR);
         // flush_rewrite_rules();
