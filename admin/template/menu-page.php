@@ -29,26 +29,26 @@ foreach ($properties as $property)
     }
 }
 
-Update::terms( $categories );
-Update::termmeta( $categories );
+// Update::terms( $categories );
+// Update::termmeta( $categories );
 
-Update::terms( $developers );
-Update::termmeta( $developers );
+// Update::terms( $developers );
+// Update::termmeta( $developers );
 
-Update::terms( $warehouses );
-Update::termmeta( $warehouses );
+// Update::terms( $warehouses );
+// Update::termmeta( $warehouses );
 
-Update::properties( $properties );
-Update::terms( $attributeValues );
-Update::termmeta( $attributeValues );
+// Update::properties( $properties );
+// Update::terms( $attributeValues );
+// Update::termmeta( $attributeValues );
 
-Update::posts( $products );
-Update::postmeta( $products );
+// Update::posts( $products );
+// Update::postmeta( $products );
 
-Update::offers( $offers );
-Update::offerPostMetas( $offers );
+// Update::offers( $offers );
+// Update::offerPostMetas( $offers );
 
-Update::relationships( $products );
+// Update::relationships( $products );
 
 ?>
 <pre style='max-width: 1000px;margin: 0 auto;display: flex;'>
