@@ -140,10 +140,10 @@ add_action( '1c4wp_exchange', function() {
          * Принимает файл и распаковывает его
          */
         $filename = FILENAME;
-        $path_dir = PathFinder::get_dir( TYPE );
+        $path_dir = Parser::get_dir( TYPE );
 
         if ( !empty($filename) ) {
-            $path = $path_dir . ltrim($filename, "./\\");
+            $path = $path_dir . '/' . ltrim($filename, "./\\");
 
             $input_file = fopen("php://input", 'r');
             $temp_path = "$path~";
