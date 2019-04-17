@@ -92,7 +92,7 @@ class Update
             /**
              * @todo think how to get inserted meta
              */
-            if( (!$post_id = $product->get_id()) && !is_debug() ) continue;
+            if( (!$post_id = $product->get_id()) && !Utils::is_debug() ) continue;
 
             /**
              * Get list of all meta by product

@@ -13,12 +13,6 @@ use CommerceMLParser\Creational\Singleton;
 
 if ( !defined( 'ABSPATH' ) ) exit('You shall not pass');
 
-function own_strtolower($str) {
-    $str = function_exists('mb_strtolower') ? mb_strtolower($str) : strtolower($str);
-
-    return $str;
-}
-
 class Parser
 {
     use Singleton;
@@ -39,11 +33,12 @@ class Parser
      */
     private $arTaxonomies = array();
 
-    function __init( $fillExists = false )
+    function __init( $filename = '', $fillExists = false )
     {
-        $filename = static::get_file( FILENAME );
-
         if( $filename ) {
+
+            $file = Parser::get_file( $filename );
+
             $Parser = \CommerceMLParser\Parser::getInstance();
             $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
             $Parser->addListener("WarehouseEvent", array($this, 'parseWarehousesEvent'));
@@ -54,7 +49,7 @@ class Parser
             /** 1c no has develop section (values only)
             $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-            $Parser->parse( $filename );
+            $Parser->parse( $file );
 
             $this->prepare();
 
@@ -78,10 +73,11 @@ class Parser
 
     public static function get_dir( $namespace = '' )
     {
-        $dir = trailingslashit( EX_DATA_DIR . $namespace );
+        $dir = trailingslashit( Plugin::get_exchange_data_dir() . $namespace );
+
         if( !is_dir($dir) ) {
             /** Try create */
-            @mkdir($dir, 0777, true) or ex_error( printf(
+            @mkdir($dir, 0777, true) or Utils::error( printf(
                 __("<strong>%s</strong>: Sorry but <strong>%s</strong> not has write permissions", DOMAIN),
                 __("Fatal error", DOMAIN),
                 $dir
@@ -90,7 +86,7 @@ class Parser
 
         /** Check again */
         if( !is_dir($dir) ) {
-            ex_error( printf(
+            Utils::error( printf(
                 __("<strong>%s</strong>: Sorry but <strong>%s</strong> not readble", DOMAIN),
                 __("Fatal error", DOMAIN),
                 $dir
@@ -113,7 +109,7 @@ class Parser
         foreach($objects as $path => $object)
         {
             if( !$object->isFile() || !$object->isReadable() ) continue;
-            if( 'xml' != own_strtolower($object->getExtension()) ) continue;
+            if( 'xml' != strtolower($object->getExtension()) ) continue;
 
             if( 0 === strpos( $object->getBasename(), $filename ) ) {
                 return $path;

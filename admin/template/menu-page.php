@@ -7,7 +7,7 @@ namespace NikolayS93\Exchange;
 <div id='ajax_action' style='text-align: center;'></div>
 <?php
 
-$time = getTime();
+$time = Utils::getTime();
 
 $Parser = Parser::getInstance( $fillExists = true );
 
@@ -72,4 +72,4 @@ foreach ($properties as $property)
 <div style="clear: both;"></div>
 <?php
 
-echo "Потрачено времени: " . getTime($time) . " sec.";
+echo "Потрачено времени: " . Utils::getTime($time) . " sec.";

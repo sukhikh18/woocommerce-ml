@@ -5,47 +5,6 @@ namespace NikolayS93\Exchange\Model;
 use NikolayS93\Exchange\Utils;
 use NikolayS93\Exchange\ORM\Collection;
 
-function getTaxonomyByExternal( $raw_ext_code )
-{
-    global $wpdb;
-
-    $rsResult = $wpdb->get_results( $wpdb->prepare("
-        SELECT wat.*, watm.* FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
-        INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id
-        WHERE watm.meta_value = %d
-        LIMIT 1
-        ", $raw_ext_code) );
-
-    if( $res ) {
-        $res = current($rsResult);
-        $obResult = new ExchangeAttribute( $res, $res->meta_value );
-    }
-
-    return $obResult;
-}
-
-function getAttributesMap()
-{
-    global $wpdb;
-
-    $arResult = array();
-    $rsResult = $wpdb->get_results( "
-        SELECT wat.*, watm.*, watm.meta_value as ext FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
-        INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id" );
-
-    echo "<pre>";
-    var_dump( $rsResult );
-    echo "</pre>";
-    die();
-
-    foreach ($rsResult as $res)
-    {
-        $arResult[ $res->meta_value ] = new ExchangeAttribute( $res, $res->meta_value );
-    }
-
-    return $arResult;
-}
-
 /**
  * Works with woocommerce_attribute_taxonomies
  */

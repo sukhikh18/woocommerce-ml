@@ -14,7 +14,7 @@ function query_vars($query_vars) {
 add_action('init', __NAMESPACE__ . '\query_map', 1000);
 function query_map() {
     add_rewrite_rule("exchange", "index.php?ex1с=exchange", 'top');
-    add_rewrite_rule("clean", "index.php?ex1с=clean");
+    // add_rewrite_rule("clean", "index.php?ex1с=clean");
 
     flush_rewrite_rules();
 }
@@ -31,12 +31,14 @@ function template_redirect() {
     }
 
     if ($value == 'exchange') {
+        require_once PLUGIN_DIR . '/include/exchange.php';
+
         do_action( '1c4wp_exchange' );
     }
-    elseif ($value == 'clean') {
-        // require_once PLUGIN_DIR . "/include/clean.php";
-        exit;
-    }
+    // elseif ($value == 'clean') {
+    //     // require_once PLUGIN_DIR . "/include/clean.php";
+    //     exit;
+    // }
 }
 
 /**
@@ -162,4 +164,59 @@ function woo_custom_general_fields_save( $post_id ) {
     if( isset($_POST['_unit']) ) {
         update_post_meta( $post_id, '_unit', sanitize_text_field( $_POST['_unit'] ) );
     }
+}
+
+function strict_error_handler($errno, $errstr, $errfile, $errline, $errcontext)
+{
+    if (error_reporting() === 0) return false;
+
+    switch ($errno) {
+        case E_NOTICE:
+        case E_USER_NOTICE:
+        $type = "Notice";
+        break;
+        case E_WARNING:
+        case E_USER_WARNING:
+        $type = "Warning";
+        break;
+        case E_ERROR:
+        case E_USER_ERROR:
+        $type = "Fatal Error";
+        break;
+        default:
+        $type = "Unknown Error";
+        break;
+    }
+
+    $message = sprintf("%s in %s on line %d", $errstr, $errfile, $errline);
+    Utils::error($message, "PHP $type");
+}
+
+function strict_exception_handler($exception)
+{
+    $message = sprintf("%s in %s on line %d", $exception->getMessage(), $exception->getFile(), $exception->getLine());
+    Utils::error($message, "Exception");
+}
+
+function output_callback($buffer)
+{
+    global $ex_is_error;
+
+    if ( !headers_sent() ) {
+        $is_xml = @$_GET['mode'] == 'query';
+        $content_type = !$is_xml || $ex_is_error ? 'text/plain' : 'text/xml';
+        header("Content-Type: $content_type; charset=" . XML_CHARSET);
+    }
+
+    $buffer = (XML_CHARSET == 'UTF-8') ? "\xEF\xBB\xBF$buffer" : mb_convert_encoding($buffer, XML_CHARSET, 'UTF-8');
+
+    return $buffer;
+}
+
+function transaction_shutdown_function() {
+    $error = error_get_last();
+
+    $is_commit = !isset($error['type']) || $error['type'] > E_PARSE;
+
+    Utils::wpdb_stop($is_commit);
 }

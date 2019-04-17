@@ -2,50 +2,36 @@
 
 namespace NikolayS93\Exchange;
 
-function get_mode($status, $version)
-{
-    if( in_array(MODE, array('checkauth', 'init', 'file')) ) return MODE;
-
-    // if( version_compare($version, '3.0') < 0 ) {
-    //     if( Utils::get_status(4) == $status ) {
-    //         return 'deactivate';
-    //     }
-    // }
-
-    return MODE;
-}
-
 add_action( '1c4wp_exchange', function() {
-    start_exchange_session();
+    /**
+     * Start buffer in strict mode
+     */
+    Utils::start_exchange_session();
 
     /**
      * Check required arguments
      */
-    if (!defined(__NAMESPACE__ . '\TYPE') || empty(TYPE)) ex_error("No type");
-    if (!defined(__NAMESPACE__ . '\MODE') || empty(MODE)) ex_error("No mode");
+    if ( !$type = Utils::get_type() ) Utils::error("No type");
+    if ( !$mode = Utils::get_mode() ) Utils::error("No mode");
 
     /**
      * CGI fix
      */
-    if (!$_GET && isset($_SERVER['REQUEST_URI'])) {
+    if ( !$_GET && isset($_SERVER['REQUEST_URI']) ) {
         $query = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
         parse_str($query, $_GET);
     }
 
-    $Plugin = Plugin::getInstance();
-
     /**
      * Get status (from request for debug)
      */
-    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : $Plugin->get( 'status', false );
+    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Plugin::get( 'status', false );
 
     /**
      * CommerceML protocol version
      * @var string (float value)
      */
     $version = get_option( 'exchange_version', '' );
-
-    $mode = get_mode($status, $version);
 
     /**
      * @url http://v8.1c.ru/edi/edi_stnd/131/
@@ -58,9 +44,9 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
      * @return success\nCookie\nCookie_value
      */
-    if ('checkauth' == get_mode($status, $version)) {
+    if ( 'checkauth' == $mode ) {
         foreach (array('HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION') as $server_key) {
-            if (!isset($_SERVER[$server_key])) continue;
+            if ( !isset($_SERVER[ $server_key ]) ) continue;
 
             list(, $auth_value) = explode(' ', $_SERVER[$server_key], 2);
             $auth_value = base64_decode($auth_value);
@@ -69,20 +55,21 @@ add_action( '1c4wp_exchange', function() {
             break;
         }
 
-        if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']))
-            ex_error("No authentication credentials");
+        if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
+            Utils::error("No authentication credentials");
+        }
 
         $user = wp_authenticate($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
-        if ( is_wp_error($user) ) ex_wp_error($user);
-        check_user_permissions($user);
+        if ( is_wp_error($user) ) Utils::wp_error($user);
+        Utils::check_user_permissions($user);
 
-        $expiration = time() + apply_filters('auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false);
+        $expiration = TIMESTAMP + apply_filters('auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false);
         $auth_cookie = wp_generate_auth_cookie($user->ID, $expiration);
 
-        exit("success\nex-auth\n$auth_cookie");
+        exit("success\n". COOKIENAME ."\n$auth_cookie");
     }
 
-    check_wp_auth();
+    Utils::check_wp_auth();
 
     /**
      * B. Запрос параметров от сайта
@@ -94,9 +81,9 @@ add_action( '1c4wp_exchange', function() {
      * zip=yes|no - Сервер поддерживает Zip
      * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
      */
-    if ('init' == get_mode($status, $version)) {
-        /** Zip required (if not must die) */
-        check_zip();
+    if ( 'init' == $mode ) {
+        /** Zip required (if no - must die) */
+        Utils::check_zip();
 
         /**
          * Option is empty then exchange end
@@ -115,14 +102,14 @@ add_action( '1c4wp_exchange', function() {
             update_option( 'exchange_start-date', date('Y-m-d H:i:s') );
         }
 
-        exit("zip=yes\nfile_limit=" . get_maxsizelimit());
+        exit("zip=yes\nfile_limit=" . Utils::get_filesize_limit());
     }
 
     /**
      * C. Получение файла обмена с сайта
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
      */
-    elseif ('query' == $mode) {
+    elseif ( 'query' == $mode ) {
         // ex_mode__query($_REQUEST['type']);
     }
 
@@ -135,12 +122,12 @@ add_action( '1c4wp_exchange', function() {
      * Загрузка CommerceML2 файла или его части в виде POST.
      * @return success
      */
-    elseif ('file' == $mode) {
+    elseif ( 'file' == $mode ) {
         /**
          * Принимает файл и распаковывает его
          */
-        $filename = FILENAME;
-        $path_dir = Parser::get_dir( TYPE );
+        $filename = Utils::get_filename();
+        $path_dir = Parser::get_dir( Utils::get_type() );
 
         if ( !empty($filename) ) {
             $path = $path_dir . '/' . ltrim($filename, "./\\");
@@ -162,16 +149,16 @@ add_action( '1c4wp_exchange', function() {
             unlink($temp_path);
 
             if( 0 == filesize( $path ) ) {
-                ex_error( sprintf("File %s is empty", $path) );
+                Utils::error( sprintf("File %s is empty", $path) );
             }
         }
 
         $zip_paths = glob("$path_dir/*.zip");
 
-        $r = ex_unzip( $zip_paths, $path_dir, $remove = true );
-        if( true !== $r ) ex_error($r);
+        $r = Utils::unzip( $zip_paths, $path_dir, $remove = true );
+        if( true !== $r ) Utils::error($r);
 
-        if ('catalog' == $_REQUEST['type']) exit("success\nФайл принят.");
+        if ('catalog' == Utils::get_type()) exit("success\nФайл принят.");
     }
 
      /**
@@ -179,13 +166,23 @@ add_action( '1c4wp_exchange', function() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
      * @return progress|success|failure
      */
-    elseif ('import' == $mode) {
-        ex_set_transaction_mode();
+    elseif ( 'import' == $mode ) {
+
+        $filename = Utils::get_filename();
+
+        if( !$filename ) {
+            Utils::error( "Filename is empty" );
+        }
+
+        /**
+         * Answer: COMMIT || ROLLBACK on end
+         */
+        Utils::set_transaction_mode();
 
         /**
          * Parse
          */
-        $Parser = Parser::getInstance( $fillExists = true );
+        $Parser = Parser::getInstance( $filename, $fillExists = true );
 
         $categories = $Parser->getCategories();
         $properties = $Parser->getProperties();
@@ -223,45 +220,50 @@ add_action( '1c4wp_exchange', function() {
         Update::termmeta( $attributeValues );
 
         $pluginMode = '';
-        if( !empty($products) || !empty($offers) ) {
+        if( !empty($products) || (!empty($offers) && 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price')) ) {
 
-            if( 'relationships' != ($pluginMode = $Plugin->get('mode')) ) {
+            if( 'relationships' != ($pluginMode = Plugin::get('mode')) ) {
                 Update::posts( $products );
                 Update::postmeta( $products );
 
                 Update::offers( $offers );
                 Update::offerPostMetas( $offers );
 
-                $Plugin->set('mode', 'relationships');
+                Plugin::set('mode', 'relationships');
                 exit("progress\nNeed_relationships");
             }
             else {
                 Update::relationships( $products );
                 Update::relationships( $offers );
 
-                $Plugin->set('mode', '');
+                Plugin::set('mode', '');
             }
         }
 
-        exit("success\nStatus: $status\nMode: $mode\n$pluginMode");
+        exit("success\nStatus: $status\nMode: $mode\nPluginMode: $pluginMode");
     }
 
     /**
-     * E. Деактивация данных данных
+     * E. Деактивация данных
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=deactivate
      * @since  3.0
      * @return progress|success|failure
      */
-    elseif ('deactivate' == $mode) {
+    elseif ( 'deactivate' == $mode ) {
         /**
          * Reset start date
          */
         update_option( 'exchange_start-date', '' );
 
         /**
+         * Refresh version
+         */
+        update_option( 'exchange_version', '' );
+
+        /**
          * Чистим и пересчитываем количество записей в терминах
          * /
-        $filename = FILENAME;
+        $filename = Utils::get_filename();
 
         /**
          * Get valid namespace ('import', 'offers', 'orders')
@@ -271,7 +273,7 @@ add_action( '1c4wp_exchange', function() {
 
         // rest, prices (need debug in new sheme version)
         // if (!in_array($namespace, array('import', 'offers', 'orders'))) {
-        //     ex_error( sprintf("Unknown import file type: %s", $namespace) );
+        //     Utils::error( sprintf("Unknown import file type: %s", $namespace) );
         // }
 
         $dir = PathFinder::get_dir('catalog');
@@ -312,7 +314,7 @@ add_action( '1c4wp_exchange', function() {
          * /
         Update::update_term_counts();
         */
-        $Plugin->set( array(
+        Plugin::set( array(
             'status' => Utils::get_status(0),
             'last_update' => date('Y-m-d H:i:s'),
         ) );
@@ -333,12 +335,12 @@ add_action( '1c4wp_exchange', function() {
     /**
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=success
      */
-    elseif ('success' == MODE) {
+    elseif ('success' == $mode) {
         // ex_mode__success($_REQUEST['type']);
     }
 
     else {
-        ex_error("Unknown mode");
+        Utils::error("Unknown mode");
     }
 
     /** Need early end */

@@ -6,73 +6,28 @@ use NikolayS93\WPAdminPage as Admin;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // disable direct access
 
+
+/**
+ * abstract
+ */
 class Plugin
 {
-    use Creational\Singleton;
-
     /**
-     * @var array Commented data on this file top
+     * @var array Commented data about plugin in root file
      */
-    protected $data;
-
-    /**
-     * @var array Field on wo_option for this plugin
-     */
-    protected $options;
-
-    function __init()
-    {
-        $wp_upload_dir = wp_upload_dir();
-
-        /**
-         * @todo defines need outside
-         * Define required plugin data
-         */
-        if(!defined(__NAMESPACE__ . '\DOMAIN')) define(__NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data('TextDomain'));
-        if(!defined(__NAMESPACE__ . '\EX_DATA_DIR')) define(__NAMESPACE__ . '\EX_DATA_DIR', $wp_upload_dir['basedir'] . "/1c-exchange/");
-        if(!defined(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT')) define(__NAMESPACE__ . '\EXCHANGE_FILE_LIMIT', null);
-        if(!defined(__NAMESPACE__ . '\XML_CHARSET') ) define(__NAMESPACE__ . '\XML_CHARSET', 'UTF-8');
-        if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', '_ext_ID');
-
-        if (!defined('EX_SUPPRESS_NOTICES')) define('EX_SUPPRESS_NOTICES', false);
-        if (!defined('EX_DISABLE_VARIATIONS')) define('EX_DISABLE_VARIATIONS', false);
-        if (!defined('EX_TIMESTAMP')) define('EX_TIMESTAMP', time());
-        if (!defined('WC1C_CURRENCY')) define('WC1C_CURRENCY', null);
-        if (!defined('EX_EXT_METAFIELD')) define('EX_EXT_METAFIELD', 'EXT_ID');
-
-        if( !defined(__NAMESPACE__ . '\TYPE') ) define(__NAMESPACE__ . '\TYPE', !empty($_REQUEST['type'])
-            ? sanitize_text_field($_REQUEST['type']) : '');
-        if( !defined(__NAMESPACE__ . '\MODE') ) define(__NAMESPACE__ . '\MODE', !empty($_REQUEST['mode'])
-            ? sanitize_text_field($_REQUEST['mode']) : '');
-        if( !defined(__NAMESPACE__ . '\FILENAME') )define(__NAMESPACE__ . '\FILENAME', !empty($_REQUEST['filename'])
-            ? sanitize_text_field($_REQUEST['filename']) : '');
-
-        load_plugin_textdomain( DOMAIN, false, basename(PLUGIN_DIR) . '/languages/' );
-    }
-
-    function addMenuPage( $pagename = '', $args = array() )
-    {
-        $args = wp_parse_args( $args, array(
-            'parent'      => false,
-            'menu'        => __('New plugin', DOMAIN),
-            // 'validate'    => array($this, 'validate_options'),
-            'permissions' => 'manage_options',
-            'columns'     => 2,
-        ) );
-
-        $Page = new Admin\Page( static::get_option_name(), $pagename, $args );
-
-        return $Page;
-    }
+    protected static $data;
 
     static function uninstall() { delete_option( static::get_option_name() ); }
     static function activate()
     {
-        // init (for defines)
-        Plugin::getInstance();
-
         add_option( static::get_option_name(), array() );
-        if( !is_dir(EX_DATA_DIR) ) mkdir(EX_DATA_DIR);
+
+        /**
+         * Create empty folder for (temporary) exhange data
+         */
+        if( !is_dir(static::get_exchange_data_dir()) ) {
+            mkdir(static::get_exchange_data_dir());
+        }
         // flush_rewrite_rules();
 
         global $wpdb;
@@ -127,34 +82,51 @@ class Plugin
         }
     }
 
-    public static function get_plugin_data( $arg = '' )
+    static function get_exchange_data_dir()
     {
-        $Plugin = static::getInstance();
-        if( !$Plugin->data ) {
-            $Plugin->data = get_plugin_data(PLUGIN_FILE);
+        $wp_upload_dir = wp_upload_dir();
+
+        return apply_filters("get_exchange_data_dir", $wp_upload_dir['basedir'] . "/1c-exchange/");
+    }
+
+    /**
+     * Get data about this plugin
+     * @param  string|null $arg array key (null for all data)
+     * @return mixed
+     */
+    public static function get_plugin_data( $arg = null )
+    {
+        /** Fill if is empty */
+        if( empty(static::$data) ) {
+            static::$data = get_plugin_data(PLUGIN_FILE);
+            load_plugin_textdomain( static::$data['TextDomain'], false, basename(PLUGIN_DIR) . '/languages/' );
         }
 
+        /** Get by key */
         if( $arg ) {
-            return isset( $Plugin->data[ $arg ] ) ? $Plugin->data[ $arg ] : '';
+            return isset( static::$data[ $arg ] ) ? static::$data[ $arg ] : null;
         }
 
-        return $Plugin->data;
+        /** Get all */
+        return static::$data;
     }
 
     /**
      * Get option name for a options in the Wordpress database
      */
-    public static function get_option_name()
+    public static function get_option_name( $context = 'admin' )
     {
-        return apply_filters("get_{DOMAIN}_option_name", DOMAIN);
+        $option_name = DOMAIN;
+        if( 'admin' == $context ) $option_name.= '_adm';
+
+        return apply_filters("get_{DOMAIN}_option_name", $option_name, $context);
     }
 
-        /**
+    /**
      * Получает url (адресную строку) до плагина
      * @param  string $path путь должен начинаться с / (по аналогии с __DIR__)
      * @return string
      */
-
     public static function get_plugin_url( $path = '' )
     {
         $url = plugins_url( basename(PLUGIN_DIR) ) . $path;
@@ -213,20 +185,23 @@ class Plugin
      * Получает параметр из опции плагина
      * @todo Добавить фильтр
      *
-     * @param  string  $prop_name Ключ опции плагина или 'all' (вернуть опцию целиком)
+     * @param  string  $prop_name Ключ опции плагина или null (вернуть опцию целиком)
      * @param  mixed   $default   Что возвращать, если параметр не найден
      * @return mixed
      */
-    public function get( $prop_name, $default = false )
+    public static function get( $prop_name = null, $default = false, $context = 'admin' )
     {
-        $option = $this->get_option();
-        if( 'all' === $prop_name ) {
-            if( is_array($option) && count($option) ) {
-                return $option;
-            }
+        $option_name = static::get_option_name($context);
 
-            return $default;
-        }
+        /**
+         * Получает настройку из кэша или из базы данных
+         * @link https://codex.wordpress.org/Справочник_по_функциям/get_option
+         * @var mixed
+         */
+        $option = get_option( $option_name, $default );
+        $option = apply_filters( "get_{DOMAIN}_option", $option );
+
+        if( !$prop_name || 'all' == $prop_name ) return !empty( $option ) ? $option : $default;
 
         return isset( $option[ $prop_name ] ) ? $option[ $prop_name ] : $default;
     }
@@ -237,32 +212,30 @@ class Plugin
      *
      * @param mixed  $prop_name Ключ опции плагина || array(параметр => значение)
      * @param string $value     значение (если $prop_name не массив)
-     * @param string $autoload  Подгружать опцию автоматически @see update_option()
+     * @param string $context
      * @return bool             Совершились ли обновления @see update_option()
      */
-    public function set( $prop_name, $value = '', $autoload = null )
+    public static function set( $prop_name, $value = '', $context = 'admin' )
     {
-        $option = $this->get_option();
-        if( ! is_array($prop_name) ) $prop_name = array($prop_name => $value);
+        if( !$prop_name ) return;
+        if( $value && !(string) $prop_name ) return;
+        if( !is_array($prop_name) ) $prop_name = array((string)$prop_name => $value);
 
-        foreach ($prop_name as $prop_key => $prop_value) {
+        $option = static::get(null, false, $context);
+
+        foreach ($prop_name as $prop_key => $prop_value)
+        {
             $option[ $prop_key ] = $prop_value;
         }
 
-        return update_option( static::get_option_name(), $option, $autoload );
-    }
+        if( !empty($option) ) {
+            $option_name = static::get_option_name($context);
+            $autoload = null;
+            if( 'admin' == $context ) $autoload = 'no';
 
-    /**
-     * Получает настройку из parent::$options || из кэша || из базы данных
-     * @param  mixed  $default Что вернуть если опции не существует
-     * @return mixed
-     */
-    private function get_option( $default = array() )
-    {
-        if( ! $this->options ) {
-            $this->options = get_option( static::get_option_name(), $default );
+            return update_option( $option_name, $option, $autoload );
         }
 
-        return apply_filters( "get_{DOMAIN}_option", $this->options );
+        return false;
     }
 }
