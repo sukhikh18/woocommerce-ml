@@ -36,4 +36,17 @@ class ExchangeOffer extends ExchangePost
     //     $this->post = new WP_Post( (object) $args );
     //     $this->setMeta($meta);
     // }
+
+    function get_quantity() {
+        $stock    = (int) $this->getMeta('stock');
+        $quantity = (int) $this->getMeta('quantity');
+
+        $qty = max($stock, $quantity);
+
+        return $qty;
+    }
+
+    function get_stock() {
+        return $this->get_quantity();
+    }
 }

@@ -100,7 +100,7 @@ class Update
             $listOfMeta = $product->getMeta();
             foreach ($listOfMeta as $mkey => $mvalue)
             {
-                update_post_meta( $post_id, "_{$mkey}", $mvalue );
+                update_post_meta( $post_id, $mkey, trim($mvalue) );
             }
         }
     }
@@ -354,16 +354,18 @@ class Update
                 $properties['_price'] = $price;
             }
 
-            $stock = $obExchangeOffer->getMeta('stock');
-            $qty   = $obExchangeOffer->getMeta('quantity');
 
-            if( null !== $stock || null !== $qty ) {
-                $qty = max($stock, $qty);
+            /**
+             * @todo fixit (think about)
+             * We want manage all stock :)
+             */
+            $qty = $obExchangeOffer->get_quantity();
 
+            // if( null !== $qty ) {
                 $properties['_manage_stock'] = 'yes';
                 $properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
                 $properties['_stock']        = $qty;
-            }
+            // }
 
             if( $weight = $obExchangeOffer->getMeta('weight') ) {
                 $properties['_weight'] = $weight;

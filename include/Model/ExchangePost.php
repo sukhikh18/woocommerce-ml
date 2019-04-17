@@ -3,6 +3,7 @@
 namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\ORM\ExchangeItemMeta;
+use NikolayS93\Exchange\Utils;
 
 /**
  * Works with posts, term_relationships, postmeta
@@ -112,13 +113,15 @@ class ExchangePost
             'comment_status' => apply_filters('ExchangePost__comment_status', 'open'),
             'post_type'      => 'product',
             'post_mime_type' => '',
+            'post_date'      => date('Y-m-d H:i:s'),
+            'post_date_gmt'  => gmdate('Y-m-d H:i:s'),
         ) );
 
         if( $ext ) $args['post_mime_type'] = $ext;
         if( 0 !== strpos($args['post_mime_type'], 'XML') ) $args['post_mime_type'] = 'XML/' . $args['post_mime_type'];
 
         if( empty($args['post_name']) ) {
-            $args['post_name'] = function_exists('mb_strtolower') ? mb_strtolower($args['post_title']) : strtolower($args['post_title']);
+            $args['post_name'] = Utils::esc_cyr($args['post_title']);
         }
 
         /**
@@ -164,7 +167,7 @@ class ExchangePost
             array( 'post_status' => 'draft' ),
             // where
             array(
-                'post_mime_type' => $this->post->post_mime_type,
+                'post_mime_type' => $this->getExternal(),
                 'post_status'    => 'publish',
             )
         );

@@ -114,7 +114,7 @@ function __init() {
     ) );
 }
 
-add_filter( '1c4wp_update_term', __NAMESPACE__ . '\update_term_filter', $priority = 10, $accepted_args = 1 );
+// add_filter( '1c4wp_update_term', __NAMESPACE__ . '\update_term_filter', $priority = 10, $accepted_args = 1 );
 function update_term_filter( $arTerm ) {
     /**
      * @todo fixit
