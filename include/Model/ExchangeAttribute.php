@@ -16,6 +16,14 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return apply_filters('ExchangeTerm::getExtID', self::EXT_ID);
     }
 
+    /**
+     * @todo
+     */
+    static function valid_attribute_name()
+    {
+        return true;
+    }
+
     /** @var need? */
     private $id;
 

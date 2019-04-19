@@ -2,6 +2,8 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\WPAdminPage as Admin;
+
 /**
  * Register //example.com/exchange/ query
  */
@@ -31,8 +33,6 @@ function template_redirect() {
     }
 
     if ($value == 'exchange') {
-        require_once PLUGIN_DIR . '/include/exchange.php';
-
         do_action( '1c4wp_exchange' );
     }
     // elseif ($value == 'clean') {
@@ -93,6 +93,64 @@ add_action('init', function() {
         // 'show_tagcloud'         => true, // равен аргументу show_ui
     ) );
 });
+
+/**
+ * Add admin menu page
+ */
+add_action( 'plugins_loaded', __NAMESPACE__ . '\__init', 10 );
+function __init() {
+
+    /** @var Admin\Page */
+    $Page = new Admin\Page( Plugin::get_option_name(), __('1C Exchange', DOMAIN), array(
+        'parent'      => 'woocommerce',
+        'menu'        => __('1C Exchange', DOMAIN),
+        // 'validate'    => array($this, 'validate_options'),
+        'permissions' => 'manage_options',
+        'columns'     => 2,
+    ) );
+
+    $Page->set_assets( function() {
+        wp_enqueue_style( 'exchange-page', Plugin::get_plugin_url('/admin/assets/exchange-page.css') );
+        wp_enqueue_script( 'exchange-requests', Plugin::get_plugin_url('/admin/assets/exchange-requests.js') );
+        wp_localize_script('exchange-requests', DOMAIN, array(
+            'debug_only' => Utils::is_debug(),
+            'exchange_url' => site_url('/exchange/'),
+        ) );
+
+        /**
+         * Upload Script
+         */
+        wp_enqueue_script( 'exchange-upload-ui', Plugin::get_plugin_url('/admin/assets/exchange-upload-ui.js') );
+    } );
+
+    $Page->set_content( function() {
+        Plugin::get_admin_template('menu-page', false, $inc = true);
+    } );
+
+    $Page->add_section( new Admin\Section(
+        'reportbox',
+        __('Report', DOMAIN),
+        function() {
+            Plugin::get_admin_template('section', false, $inc = true);
+        }
+    ) );
+
+    $Page->add_metabox( new Admin\Metabox(
+        'statusbox',
+        __('Status', DOMAIN),
+        function() {
+            Plugin::get_admin_template('statusbox', false, $inc = true);
+        }
+    ) );
+
+    $Page->add_metabox( new Admin\Metabox(
+        'uploadbox',
+        __('Upload New Files', DOMAIN),
+        function() {
+            Plugin::get_admin_template('uploadbox', false, $inc = true);
+        }
+    ) );
+}
 
 /**
  * Add last modified to products table

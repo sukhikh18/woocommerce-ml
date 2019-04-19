@@ -9,7 +9,8 @@ namespace NikolayS93\Exchange;
 
 $time = Utils::getTime();
 
-$Parser = Parser::getInstance( $fillExists = true );
+$filename = $_GET['filename'] ? sanitize_text_field( $_GET['filename'] ) : false;
+$Parser = Parser::getInstance( $filename, $fillExists = true );
 
 $categories = $Parser->getCategories();
 $properties = $Parser->getProperties();
@@ -18,6 +19,10 @@ $warehouses = $Parser->getWarehouses();
 
 $products = $Parser->getProducts();
 $offers = $Parser->getOffers();
+
+echo "<pre>";
+var_dump( sizeof($products) );
+echo "</pre>";
 
 $attributeValues = array();
 foreach ($properties as $property)

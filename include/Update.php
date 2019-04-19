@@ -221,7 +221,7 @@ class Update
                     Utils::addLog( new \WP_Error( 'error', __( 'Please, provide an attribute name and slug.', 'woocommerce' ) ) );
                     continue;
                 }
-                elseif ( ( $valid_attribute_name = \NikolayS93\Exchange\valid_attribute_name( $attribute['attribute_name'] ) ) && is_wp_error( $valid_attribute_name ) ) {
+                elseif ( ( $valid_attribute_name = $property::valid_attribute_name( $attribute['attribute_name'] ) ) && is_wp_error( $valid_attribute_name ) ) {
                     Utils::addLog( $valid_attribute_name );
                     continue;
                 }
@@ -237,9 +237,6 @@ class Update
                 register_taxonomy( $slug, 'product' );
 
                 do_action( 'woocommerce_attribute_added', $wpdb->insert_id, $attribute );
-
-                // flush_rewrite_rules();
-                delete_transient( 'wc_attribute_taxonomies' );
 
                 if( is_wp_error($insert) ) {
                     Utils::addLog( $insert );

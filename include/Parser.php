@@ -35,9 +35,9 @@ class Parser
 
     function __init( $filename = '', $fillExists = false )
     {
-        if( $filename ) {
+        $file = Parser::get_file( $filename );
 
-            $file = Parser::get_file( $filename );
+        if( $file ) {
 
             $Parser = \CommerceMLParser\Parser::getInstance();
             $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
