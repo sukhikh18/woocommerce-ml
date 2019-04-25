@@ -299,7 +299,7 @@ function doExchange() {
         Update::termmeta( $attributeValues );
 
         $pluginMode = '';
-        if( !empty($products) || (!empty($offers) && 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price')) ) {
+        if( !empty($products) || !empty($offers) ) {
 
             if( 'relationships' != ($pluginMode = Plugin::get('mode')) ) {
                 Update::posts( $products );
@@ -308,8 +308,10 @@ function doExchange() {
                 Update::offers( $offers );
                 Update::offerPostMetas( $offers );
 
-                Plugin::set('mode', 'relationships');
-                exit("progress\nNeed_relationships");
+                if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
+                    Plugin::set('mode', 'relationships');
+                    exit("progress\nТребуется повторный запрос для создания связей.");
+                }
             }
             else {
                 Update::relationships( $products );
@@ -319,7 +321,7 @@ function doExchange() {
             }
         }
 
-        exit("success\nStatus: $status\nMode: $mode\nPluginMode: $pluginMode");
+        exit("success\nИнформация успешно загружена.");
     }
 
     /**

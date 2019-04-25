@@ -37,16 +37,52 @@ class ExchangeOffer extends ExchangePost
     //     $this->setMeta($meta);
     // }
 
-    function get_quantity() {
-        $stock    = (int) $this->getMeta('stock');
-        $quantity = (int) $this->getMeta('quantity');
+    function get_quantity()
+    {
+        $stock    = $this->getMeta('stock');
+        // $quantity = $this->getMeta('quantity');
 
-        $qty = max($stock, $quantity);
+        // if( is_numeric($stock) && is_numeric($quantity) ) {
+        //     $qty = max($stock, $quantity);
+        // }
+        // elseif( is_numeric($stock) ) {
+        //     $qty = $stock;
+        // }
+        // elseif( is_numeric($quantity) ) {
+        //     $qty = $quantity;
+        // }
 
-        return $qty;
+        return $stock;
     }
 
-    function get_stock() {
+    function get_stock()
+    {
         return $this->get_quantity();
+    }
+
+    function set_quantity( $qty )
+    {
+        $this->setMeta('_manage_stock', 'yes');
+        $this->setMeta('_stock_status', $qty ? 'instock' : 'outofstock');
+        $this->setMeta('_stock', $qty);
+    }
+
+    function set_stock( $qty ) {
+        $this->set_quantity();
+    }
+
+    function get_price()
+    {
+        return $this->getMeta('price');
+    }
+
+    function set_price( $price )
+    {
+        $this->setMeta('_price', $price);
+        $this->setMeta('_regular_price', $price);
+    }
+
+    function merge( $args, $product )
+    {
     }
 }

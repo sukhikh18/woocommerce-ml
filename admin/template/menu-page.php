@@ -9,8 +9,15 @@ namespace NikolayS93\Exchange;
 
 $time = Utils::getTime();
 
-$filename = $_GET['filename'] ? sanitize_text_field( $_GET['filename'] ) : false;
-$Parser = Parser::getInstance( $filename, $fillExists = true );
+$filename = null;
+$fillExists = false;
+
+if( !empty($_GET['filename']) ) {
+    $filename = sanitize_text_field( $_GET['filename'] );
+    $fillExists = true;
+}
+
+$Parser = Parser::getInstance( $filename, $fillExists );
 
 $categories = $Parser->getCategories();
 $properties = $Parser->getProperties();
@@ -19,10 +26,6 @@ $warehouses = $Parser->getWarehouses();
 
 $products = $Parser->getProducts();
 $offers = $Parser->getOffers();
-
-echo "<pre>";
-var_dump( sizeof($products) );
-echo "</pre>";
 
 $attributeValues = array();
 foreach ($properties as $property)
@@ -34,44 +37,43 @@ foreach ($properties as $property)
     }
 }
 
-// Update::terms( $categories );
-// Update::termmeta( $categories );
+$newProductsCount = 0;
+$orphanedProducts = 0;
+foreach ($products as $product)
+{
+    if( !$product->get_id() ) $newProductsCount++;
+    if( !isset($offers[ $product->getRawExternal() ]) ) {print_r($product); $orphanedProducts++;}
+}
 
-// Update::terms( $developers );
-// Update::termmeta( $developers );
-
-// Update::terms( $warehouses );
-// Update::termmeta( $warehouses );
-
-// Update::properties( $properties );
-// Update::terms( $attributeValues );
-// Update::termmeta( $attributeValues );
-
-// Update::posts( $products );
-// Update::postmeta( $products );
-
-// Update::offers( $offers );
-// Update::offerPostMetas( $offers );
-
-// Update::relationships( $products );
-
+$newOffersCount = 0;
+$negativeCount = 0;
+foreach ($offers as $offer)
+{
+    if( !$offer->get_id() ) $newOffersCount++;
+    if( $offer->get_quantity() < 0 ) $negativeCount++;
+}
+// <!-- Без ИД, Без предложений, Всего -->
+// <!-- Без ИД, С отриц. остатком, Всего -->
 ?>
-<pre style='max-width: 1000px;margin: 0 auto;display: flex;'>
-    <div style="width: 500px;overflow: auto;float: left;">
-        <h3>Товары</h3>
-        <?php print_r( $products ); ?>
-        <h3>Предложения</h3>
-        <?php print_r( $offers ); ?>
+<pre style='max-width: 1400px;margin: 0 auto;display: flex;flex-wrap: wrap;'>
+    <div style="flex: 2 1 100%;overflow: auto;">Кол-во товаров: <?= $newProductsCount ?>/<?= $orphanedProducts ?>/<?= sizeof($products) ;?>
+    Кол-во предложений: <?= $newOffersCount ?>/<?= $negativeCount ?>/<?= sizeof($offers) ;?>
+    Кол-во категорий: <?= sizeof($categories) ;?>
+    Кол-во свойств: <?= sizeof($properties) ;?> (<?= sizeof($attributeValues); ?>)<?php ?>
+    Кол-во производителей: <?= sizeof($developers) ;?>
+    Кол-во складов: <?= sizeof($warehouses) ?>
     </div>
-    <div style="width: 500px;overflow: auto;float: left;">
-        <h3>Категории</h3>
-        <?php print_r( $categories ); ?>
-        <h3>Свойства</h3>
-        <?php print_r( $properties ); ?>
-        <h3>Производители</h3>
-        <?php print_r( $developers ); ?>
-        <h3>Склады</h3>
-        <?php print_r( $warehouses ); ?>
+
+    <div style="flex: 1 1 50%;overflow: auto;">
+        <h3>Товары</h3><?php print_r( array_slice($products, 0, 20) ); ?>
+        <h3>Предложения</h3><?php print_r( array_slice($offers, 0, 20) ); ?>
+    </div>
+
+    <div style="flex: 1 1 50%;overflow: auto;">
+        <h3>Склады</h3><?php print_r( array_slice($warehouses, 0, 20) ); ?>
+        <h3>Категории</h3><?php print_r( array_slice($categories, 0, 20) ); ?>
+        <h3>Производители</h3><?php print_r( array_slice($developers, 0, 20) ); ?>
+        <h3>Свойства</h3><?php print_r( array_slice($properties, 0, 20) ); ?>
     </div>
 </pre>
 <div style="clear: both;"></div>

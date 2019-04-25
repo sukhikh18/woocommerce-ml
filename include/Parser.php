@@ -35,9 +35,11 @@ class Parser
 
     function __init( $filename = '', $fillExists = false )
     {
-        $file = Parser::get_file( $filename );
+        // if( !$filename ) $files = false;
+        // else
+        $files = Parser::getFiles( $filename );
 
-        if( $file ) {
+        if( !empty($files) ) {
 
             $Parser = \CommerceMLParser\Parser::getInstance();
             $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
@@ -49,7 +51,10 @@ class Parser
             /** 1c no has develop section (values only)
             $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-            $Parser->parse( $file );
+            foreach ($files as $file)
+            {
+                $Parser->parse( $file );
+            }
 
             $this->prepare();
 
@@ -71,7 +76,7 @@ class Parser
         }
     }
 
-    public static function get_dir( $namespace = '' )
+    public static function getDir( $namespace = '' )
     {
         $dir = trailingslashit( Plugin::get_exchange_data_dir() . $namespace );
 
@@ -96,27 +101,44 @@ class Parser
         return realpath($dir);
     }
 
-    public static function get_file( $filename = null, $namespace = 'catalog' )
+    public static function getFiles( $filename = null, $namespace = 'catalog' )
     {
-        if( !$filename ) return $filename;
+        $arResult = array();
 
-        $dir = static::get_dir( $namespace );
+        /**
+         * Get all folder objects
+         */
+        $dir = static::getDir( $namespace );
         $objects = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir),
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
+        /**
+         * Check objects name
+         */
         foreach($objects as $path => $object)
         {
             if( !$object->isFile() || !$object->isReadable() ) continue;
             if( 'xml' != strtolower($object->getExtension()) ) continue;
 
-            if( 0 === strpos( $object->getBasename(), $filename ) ) {
-                return $path;
+            if( !empty($filename) ) {
+                /**
+                 * Filename start with search string
+                 */
+                if( 0 === strpos( $object->getBasename(), $filename ) ) {
+                    $arResult[] = $path;
+                }
+            }
+            else {
+                /**
+                 * Get all xml files
+                 */
+                $arResult[] = $path;
             }
         }
 
-        return '';
+        return $arResult;
     }
 
     // public function parseOwner()
@@ -423,7 +445,7 @@ class Parser
         $id = $offer->getId();
 
         /** @var String */
-        @list($product_id, $offer_id) = explode('#', $id);
+        // @list($product_id, $offer_id) = explode('#', $id);
 
         $quantity = $offer->getQuantity();
 
@@ -432,6 +454,7 @@ class Parser
          */
         $price = 0;
         $prices = $offer->getPrices();
+
         if( !$prices->isEmpty() ) {
             $price = $offer->getPrices()->current()->getPrice();
         }
@@ -440,20 +463,31 @@ class Parser
          * @todo
          * Change product id to offer id for multiple offres
          */
-        $this->arOffers[ $id ] = new ExchangeOffer(array(
+        $offerArgs = array(
             'post_title'   => $offer->getName(),
             // 'post_excerpt' => $offer->getDescription(),
             'post_type'    => 'offer',
-        ), $product_id);
-
-        $meta = array(
-            '_price'         => $price,
-            '_regular_price' => $price,
-            '_manage_stock'  => 'yes',
-            '_stock_status'  => $quantity ? 'instock' : 'outofstock',
-            '_stock'         => $quantity,
-            // '_weight'        => $offer->getWeight(),
         );
+
+        if( isset($this->arOffers[ $id ]) ) {
+            // $this->arOffers[ $id ]->merge( $offerArgs, $id );
+        }
+        else {
+            $this->arOffers[ $id ] = new ExchangeOffer($offerArgs, $id);
+        }
+
+        $meta = array();
+
+        if( $price ) {
+            $meta['_price'] = $price;
+            $meta['_regular_price'] = $price;
+        }
+
+        if( null !== $quantity ) {
+            $this->arOffers[ $id ]->set_quantity($quantity);
+        }
+
+        // '_weight'        => $offer->getWeight(),
 
         /** @var collection [description] */
         $warehousesCollection = $offer->getWarehouses();
@@ -596,6 +630,59 @@ class Parser
                 // $product->fetchOffers();
 
             endforeach;
+        }
+
+        foreach ($this->arOffers as $i => $ExchangeOffer)
+        {
+            /**
+             * @var String for ex. b9006805-7dde-11e8-80cb-70106fc831cf
+             */
+            $ext = $ExchangeOffer->getRawExternal();
+
+            $offer_ext = '';
+
+            /**
+             * @var String for ex. b9006805-7dde-11e8-80cb-70106fc831cf#d3e195ce-746f-11e8-80cb-70106fc831cf
+             */
+            $product_ext = '';
+
+            if( false !== strpos($ext, '#') ) {
+                list($product_ext, $offer_ext) = explode('#', $ext);
+            }
+
+
+            /**
+             * if is have several offers, merge them to single
+             */
+            if( $offer_ext ) {
+                /**
+                 * If is no has a base (without #) offer
+                 */
+                if( !isset( $this->arOffers[ $product_ext ] ) ) {
+                    $this->arOffers[ $product_ext ] = $ExchangeOffer;
+                    $this->arOffers[ $product_ext ]->setExternal( $product_ext );
+                }
+
+                /**
+                 * Set simple price
+                 */
+                $currentPrice = $ExchangeOffer->get_price();
+                $basePrice = $this->arOffers[ $product_ext ]->get_price();
+
+                if( $basePrice < $currentPrice ) {
+                    $this->arOffers[ $product_ext ]->set_price( $currentPrice );
+                }
+
+                /**
+                 * Set simple qty
+                 */
+                $currentQty = $ExchangeOffer->get_quantity();
+                $baseQty = $this->arOffers[ $product_ext ]->get_quantity();
+
+                $this->arOffers[ $product_ext ]->set_quantity( $baseQty + $currentQty );
+
+                unset( $this->arOffers[$i] );
+            }
         }
     }
 }

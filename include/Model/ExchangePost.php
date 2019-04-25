@@ -117,12 +117,20 @@ class ExchangePost
             'post_date_gmt'  => gmdate('Y-m-d H:i:s'),
         ) );
 
-        if( $ext ) $args['post_mime_type'] = $ext;
-        if( 0 !== strpos($args['post_mime_type'], 'XML') ) $args['post_mime_type'] = 'XML/' . $args['post_mime_type'];
-
         if( empty($args['post_name']) ) {
             $args['post_name'] = Utils::esc_cyr($args['post_title']);
         }
+
+        /**
+         * For no offer defaults
+         */
+        $meta = wp_parse_args( $meta, array(
+            '_price' => 0,
+            '_regular_price' => 0,
+            '_manage_stock' => 'no',
+            '_stock_status' => 'outofstock',
+            '_stock' => 0,
+        ) );
 
         /**
          * @todo generate guid
@@ -130,6 +138,7 @@ class ExchangePost
 
         $this->post = new \WP_Post( (object) $args );
         $this->setMeta($meta);
+        $this->setExternal($ext ? $ext : $args['post_mime_type']);
     }
 
     function get_id()
@@ -153,8 +162,17 @@ class ExchangePost
 
     public function getRawExternal()
     {
-        $ext = $this->getExternal();
-        return substr($ext, strpos($ext, '/'));
+        @list(, $ext) = explode('/', $this->getExternal());
+        return $ext;
+    }
+
+    public function setExternal( $ext )
+    {
+        if( 0 !== strpos($ext, 'XML') ) {
+            $ext = 'XML/' . $ext;
+        }
+
+        $this->post->post_mime_type = (String) $ext;
     }
 
     public function deactivate()
@@ -196,10 +214,15 @@ class ExchangePost
 
         /** @var $product NikolayS93\Exchange\Model\ProductModel or */
         /** @var $product NikolayS93\Exchange\Model\OfferModel */
+        /**
+         * EXPLODE FOR SIMPLE ONLY
+         * @todo
+         */
         foreach ($products as $rawExternalCode => $product)
         {
             if( !$orphaned_only || ($orphaned_only && !$product->get_id()) ) {
-                $externals[] = "`post_mime_type` = '". $product->getExternal() ."'";
+                list($ext) = explode("#", $product->getExternal());
+                $externals[] = "`post_mime_type` = '". $ext ."'";
             }
         }
 
@@ -241,14 +264,15 @@ class ExchangePost
 
                 $intPostDate = strtotime($exist->post_date);
 
+                $_post->post_modified     = $date_now;
+                $_post->post_modified_gmt = $gmdate_now;
+
                 /**
                  * Early created (will be modified)
                  */
                 if( $intPostDate && $intPostDate < $intStartExchange ) {
                     $_post->post_date         = (string) $exist->post_date;
                     $_post->post_date_gmt     = (string) $exist->post_date_gmt;
-                    $_post->post_modified     = $date_now;
-                    $_post->post_modified_gmt = $gmdate_now;
                 }
 
                 /**
@@ -257,8 +281,6 @@ class ExchangePost
                 else {
                     $_post->post_date         = $date_now;
                     $_post->post_date_gmt     = $gmdate_now;
-                    $_post->post_modified     = $date_now;
-                    $_post->post_modified_gmt = $gmdate_now;
                 }
 
                 /**
