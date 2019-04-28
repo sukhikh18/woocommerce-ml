@@ -207,8 +207,6 @@ class ExchangePost
         global $wpdb, $site_url;
 
         $site_url = get_site_url();
-        $date_now = date('Y-m-d H:i:s');
-        $gmdate_now = gmdate('Y-m-d H:i:s');
 
         /** @var List of external code items list in database attribute context (%s='%s') */
         $externals = array();
@@ -267,12 +265,6 @@ class ExchangePost
                         $post->$vKey = $vVal;
                     }
                 }
-
-                /**
-                 * ..without modified date
-                 */
-                $post->post_modified     = $date_now;
-                $post->post_modified_gmt = $gmdate_now;
 
                 /**
                  * @todo What do you want to keep the same?

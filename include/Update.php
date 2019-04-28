@@ -54,7 +54,7 @@ class Update
 
     public static function posts( &$products )
     {
-        global $wpdb, $date_now, $gmdate_now, $user_id;
+        global $wpdb, $user_id;
 
         if( empty($products) || !is_array($products) ) return;
 
@@ -67,12 +67,38 @@ class Update
         $duplicate = static::get_sql_duplicate( $posts_structure );
         $sql_placeholder = static::get_sql_placeholder( $posts_structure );
 
+        $date_now = date('Y-m-d H:i:s');
+        $gmdate_now = gmdate('Y-m-d H:i:s');
+
         foreach ($products as &$product)
         {
             $product->prepare();
             $p = $product->getObject();
 
-            array_push($insert, $p->ID, $p->post_author, $p->post_date, $p->post_date_gmt, $p->post_content, $p->post_title, $p->post_excerpt, $p->post_status, $p->comment_status, $p->ping_status, $p->post_password, $p->post_name, $p->to_ping, $p->pinged, $p->post_modified, $p->post_modified_gmt, $p->post_content_filtered, $p->post_parent, $p->guid, $p->menu_order, $p->post_type, $p->post_mime_type, $p->comment_count);
+            array_push($insert,
+                $p->ID,
+                $p->post_author,
+                $p->post_date,
+                $p->post_date_gmt,
+                $p->post_content,
+                $p->post_title,
+                $p->post_excerpt,
+                $p->post_status,
+                $p->comment_status,
+                $p->ping_status,
+                $p->post_password,
+                $p->post_name,
+                $p->to_ping,
+                $p->pinged,
+                $p->post_modified = $date_now,
+                $p->post_modified_gmt = $gmdate_now,
+                $p->post_content_filtered,
+                $p->post_parent,
+                $p->guid,
+                $p->menu_order,
+                $p->post_type,
+                $p->post_mime_type,
+                $p->comment_count);
 
             array_push($phs, $sql_placeholder);
         }
