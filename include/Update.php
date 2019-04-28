@@ -71,6 +71,7 @@ class Update
         {
             $product->prepare();
             $p = $product->getObject();
+
             array_push($insert, $p->ID, $p->post_author, $p->post_date, $p->post_date_gmt, $p->post_content, $p->post_title, $p->post_excerpt, $p->post_status, $p->comment_status, $p->ping_status, $p->post_password, $p->post_name, $p->to_ping, $p->pinged, $p->post_modified, $p->post_modified_gmt, $p->post_content_filtered, $p->post_parent, $p->guid, $p->menu_order, $p->post_type, $p->post_mime_type, $p->comment_count);
 
             array_push($phs, $sql_placeholder);
@@ -98,6 +99,7 @@ class Update
              * Get list of all meta by product
              */
             $listOfMeta = $product->getMeta();
+
             foreach ($listOfMeta as $mkey => $mvalue)
             {
                 update_post_meta( $post_id, $mkey, trim($mvalue) );
@@ -134,6 +136,11 @@ class Update
              * @todo need double iteration for parents
              */
             if( $term_id ) {
+                /**
+                 * Do not update parent term
+                 */
+                unset( $arTerm['parent'] );
+
                 $result = wp_update_term( $term_id, $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_update_term', $arTerm )) );
             }
             else {
@@ -392,18 +399,31 @@ class Update
         /** @global wpdb $wpdb built in wordpress db object */
         global $wpdb;
 
+        $updated = 0;
+
         foreach ($posts as $post)
         {
             if( !$post_id = $post->get_id() ) continue;
 
+            $wp_post = $post->getObject();
+
+            /**
+             * for new products only
+             */
+            if( $wp_post->post_date != $wp_post->post_modified ) continue;
+
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();
+                $updated++;
             }
 
             if( method_exists($post, 'updateObjectTerms') ) {
                 $post->updateObjectTerms();
+                $updated++;
             }
         }
+
+        return $updated;
     }
 
     // public static function warehouses_ext()

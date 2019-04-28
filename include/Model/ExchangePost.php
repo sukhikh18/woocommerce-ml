@@ -12,6 +12,8 @@ class ExchangePost
 {
     use ExchangeItemMeta;
 
+    public $warehouse = array();
+
     /**
      * @var WP_Post
      * @sql FROM $wpdb->posts
@@ -99,22 +101,24 @@ class ExchangePost
     function setRelationship( $context = '', ExchangeTerm $term ) // , ExchangeAttribute $tax = null
     {
         $target = $this->getTarget( $context );
-        $this->$target[] = new Relationship( array(
+        array_push($this->$target, new Relationship( array(
             'external' => $term->getExternal(),
             'id'       => $term->get_id(),
-        ) );
+        ) ));
     }
 
     function __construct( Array $post, $ext = '', $meta = array() )
     {
         $args = wp_parse_args( $post, array(
-            'post_author'    => get_current_user_id(),
-            'post_status'    => apply_filters('ExchangePost__post_status', 'publish'),
-            'comment_status' => apply_filters('ExchangePost__comment_status', 'open'),
-            'post_type'      => 'product',
-            'post_mime_type' => '',
-            'post_date'      => date('Y-m-d H:i:s'),
-            'post_date_gmt'  => gmdate('Y-m-d H:i:s'),
+            'post_author'       => get_current_user_id(),
+            'post_status'       => apply_filters('ExchangePost__post_status', 'publish'),
+            'comment_status'    => apply_filters('ExchangePost__comment_status', 'closed'),
+            'post_type'         => 'product',
+            'post_mime_type'    => '',
+            'post_date'         => date  ('Y-m-d H:i:s'),
+            'post_modified'     => date  ('Y-m-d H:i:s'),
+            'post_date_gmt'     => gmdate('Y-m-d H:i:s'),
+            'post_modified_gmt' => gmdate('Y-m-d H:i:s'),
         ) );
 
         if( empty($args['post_name']) ) {
@@ -239,8 +243,8 @@ class ExchangePost
             unset($externals);
         }
 
-        $startExchange = get_option( 'exchange_start-date', '' );
-        $intStartExchange = strtotime($startExchange);
+        // $startExchange = get_option( 'exchange_start-date', '' );
+        // $intStartExchange = strtotime($startExchange);
 
         foreach ($exists as $exist)
         {
@@ -248,45 +252,32 @@ class ExchangePost
             $mime = substr($exist->post_mime_type, 4);
 
             if( $mime && isset($products[ $mime ]->post) ) {
+
+                $originalPost = $products[ $mime ]->post;
+
                 /** @var stdObject (similar WP_Post) */
                 $post = &$products[ $mime ]->post;
-                $_post = $products[ $mime ]->post;
-
-                $_post->ID = (int) $exist->ID;
 
                 /**
-                 * If is already exists
+                 * Set exists data
                  */
-                if( !empty($exist->post_name) )    $_post->post_name = (string) $exist->post_name;
-                if( !empty($exist->post_title) )   $_post->post_title = (string) $exist->post_title;
-                if( !empty($exist->post_content) ) $_post->post_content = (string) $exist->post_content;
-                if( !empty($exist->post_excerpt) ) $_post->post_excerpt = (string) $exist->post_excerpt;
-
-                $intPostDate = strtotime($exist->post_date);
-
-                $_post->post_modified     = $date_now;
-                $_post->post_modified_gmt = $gmdate_now;
-
-                /**
-                 * Early created (will be modified)
-                 */
-                if( $intPostDate && $intPostDate < $intStartExchange ) {
-                    $_post->post_date         = (string) $exist->post_date;
-                    $_post->post_date_gmt     = (string) $exist->post_date_gmt;
+                foreach (get_object_vars( $exist ) as $vKey => $vVal)
+                {
+                    if( !empty($vVal) ) {
+                        $post->$vKey = $vVal;
+                    }
                 }
 
                 /**
-                 * New post
+                 * ..without modified date
                  */
-                else {
-                    $_post->post_date         = $date_now;
-                    $_post->post_date_gmt     = $gmdate_now;
-                }
+                $post->post_modified     = $date_now;
+                $post->post_modified_gmt = $gmdate_now;
 
                 /**
-                 * What do you want to keep the same?
+                 * @todo What do you want to keep the same?
                  */
-                $post = apply_filters( 'exchange-keep-product', $_post, $post, $exist );
+                $post = apply_filters( 'exchange-keep-product', $post, $originalPost, $exist );
             }
         }
     }

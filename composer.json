@@ -1,8 +1,8 @@
 {
     "require": {
-        "NikolayS93/wp-admin-form": "dev-master",
-        "NikolayS93/wp-admin-page": "dev-master",
-        "NikolayS93/wp-admin-table": "dev-master",
+        "nikolays93/wp-admin-form": "dev-master",
+        "nikolays93/wp-admin-page": "dev-master",
+        "nikolays93/wp-admin-table": "dev-master",
         "karakum/commerceml": "dev-master"
     },
     "autoload": {

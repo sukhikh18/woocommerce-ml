@@ -19,8 +19,6 @@ class ExchangeProduct extends ExchangePost
      */
     public $properties = array();
 
-    public $warehouse = array();
-
     /**
      * Single term. Link to developer (prev. created)
      * @var String

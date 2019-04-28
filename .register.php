@@ -135,6 +135,22 @@ function __init() {
         }
     ) );
 
+    $Page->add_section( new Admin\Section(
+        'postsinfo',
+        __('Posts', DOMAIN),
+        function() {
+            Plugin::get_admin_template('posts', false, $inc = true);
+        }
+    ) );
+
+    $Page->add_section( new Admin\Section(
+        'termsinfo',
+        __('Terms', DOMAIN),
+        function() {
+            Plugin::get_admin_template('terms', false, $inc = true);
+        }
+    ) );
+
     $Page->add_metabox( new Admin\Metabox(
         'statusbox',
         __('Status', DOMAIN),

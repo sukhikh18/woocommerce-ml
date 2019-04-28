@@ -83,6 +83,11 @@ require_once PLUGIN_DIR . '/.register.php';
 add_action( '1c4wp_exchange', __NAMESPACE__ . '\doExchange', 10 );
 function doExchange() {
     /**
+     * @global $wpdb
+     */
+    global $wpdb;
+
+    /**
      * Start buffer in strict mode
      */
     Utils::start_exchange_session();
@@ -261,7 +266,10 @@ function doExchange() {
         /**
          * Parse
          */
-        $Parser = Parser::getInstance( $filename, $fillExists = true );
+        $files  = Parser::getFiles( $filename );
+        $Parser = Parser::getInstance();
+        $Parser->__parse($files);
+        $Parser->__fillExists();
 
         $categories = $Parser->getCategories();
         $properties = $Parser->getProperties();
@@ -303,9 +311,12 @@ function doExchange() {
 
             if( 'relationships' != ($pluginMode = Plugin::get('mode')) ) {
                 Update::posts( $products );
-                Update::postmeta( $products );
-
                 Update::offers( $offers );
+
+                /**
+                 * @todo Need move after relationships
+                 */
+                Update::postmeta( $products );
                 Update::offerPostMetas( $offers );
 
                 if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
@@ -314,10 +325,12 @@ function doExchange() {
                 }
             }
             else {
-                Update::relationships( $products );
-                Update::relationships( $offers );
+                $relationships = Update::relationships( $products );
+                $relationships+= Update::relationships( $offers );
 
                 Plugin::set('mode', '');
+
+                exit("success\n$relationships зависимостей обновлено.");
             }
         }
 
@@ -331,6 +344,7 @@ function doExchange() {
      * @return 'progress|success|failure'
      */
     elseif ( 'deactivate' == $mode ) {
+
         /**
          * Reset start date
          */
@@ -399,6 +413,35 @@ function doExchange() {
 
         delete_transient( 'wc_attribute_taxonomies' );
 
+        // $orphaned = $wpdb->get_results( "
+        //     SELECT p.ID, p.post_type, p.post_status
+        //     FROM $wpdb->posts p
+        //     WHERE
+        //         p.post_type = 'product'
+        //         AND p.post_status = 'publish'
+        //         AND NOT EXISTS (
+        //             SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
+        //             WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
+        //         )
+        // " );
+
+        $orphaned = $wpdb->get_results( "
+            SELECT pm.post_id, pm.meta_key, pm.meta_value
+            FROM $wpdb->postmeta pm
+            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+            WHERE   pm.meta_key = '_price'
+                AND pm.meta_value = 0
+                AND p.post_date = p.post_modified
+            " );
+
+        $arOrphaned = array_map('intval', wp_list_pluck( $orphaned, 'post_id' ));
+        if( sizeof($arOrphaned) ) {
+            $wpdb->query(
+                "UPDATE $wpdb->posts SET post_status = 'pending'
+                WHERE ID IN (". implode(',', $arOrphaned) .")"
+            );
+        }
+
         Plugin::set( array(
             'status' => Utils::get_status(0),
             'last_update' => date('Y-m-d H:i:s'),
@@ -439,7 +482,7 @@ function update_term_filter( $arTerm ) {
      * #crunch
      * Update only parents (Need for second query)
      */
-    $res['panret'] = $arTerm['parent'];
+    $res['parent'] = $arTerm['parent'];
 
     return $res;
 }
@@ -476,9 +519,6 @@ function getAttributesMap()
         SELECT wat.*, watm.*, watm.meta_value as ext FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
         INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id" );
 
-    echo "<pre>";
-    var_dump( $rsResult );
-    echo "</pre>";
     die();
 
     foreach ($rsResult as $res)

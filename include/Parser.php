@@ -33,46 +33,66 @@ class Parser
      */
     private $arTaxonomies = array();
 
-    function __init( $filename = '', $fillExists = false )
+    function __init()
     {
-        // if( !$filename ) $files = false;
-        // else
-        $files = Parser::getFiles( $filename );
+    }
 
-        if( !empty($files) ) {
+    function __parse($files = array())
+    {
+        if( empty($files) ) return;
 
-            $Parser = \CommerceMLParser\Parser::getInstance();
-            $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
-            $Parser->addListener("WarehouseEvent", array($this, 'parseWarehousesEvent'));
-            $Parser->addListener("PropertyEvent",  array($this, 'parsePropertiesEvent'));
-            $Parser->addListener("ProductEvent",   array($this, 'parseProductsEvent'));
-            $Parser->addListener("OfferEvent",     array($this, 'parseOffersEvent'));
+        $Parser = \CommerceMLParser\Parser::getInstance();
+        $Parser->addListener("CategoryEvent",  array($this, 'parseCategoriesEvent'));
+        $Parser->addListener("WarehouseEvent", array($this, 'parseWarehousesEvent'));
+        $Parser->addListener("PropertyEvent",  array($this, 'parsePropertiesEvent'));
+        $Parser->addListener("ProductEvent",   array($this, 'parseProductsEvent'));
+        $Parser->addListener("OfferEvent",     array($this, 'parseOffersEvent'));
+        /** 1c no has develop section (values only)
+        $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-            /** 1c no has develop section (values only)
-            $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
-
+        if( is_array($files) ) {
             foreach ($files as $file)
             {
+                /**
+                 * @todo set handler
+                 */
+                if(!is_readable($file)) die();
+
                 $Parser->parse( $file );
             }
+        }
 
-            $this->prepare();
+        $this->prepare();
+    }
 
-            if( $fillExists ) {
-                ExchangeTerm::fillExistsFromDB( $this->arCategories );
-                ExchangeTerm::fillExistsFromDB( $this->arDevelopers );
-                ExchangeTerm::fillExistsFromDB( $this->arWarehouses );
+    function __fillExists()
+    {
+        if( !empty($this->arCategories) ) {
+            ExchangeTerm::fillExistsFromDB( $this->arCategories );
+        }
 
-                ExchangeAttribute::fillExistsFromDB( $this->arProperties );
+        if( !empty($this->arDevelopers) ) {
+            ExchangeTerm::fillExistsFromDB( $this->arDevelopers );
+        }
 
-                ExchangeProduct::fillExistsFromDB( $this->arProducts );
-                ExchangeProduct::fillExistsFromDB( $this->arOffers );
+        if( !empty($this->arWarehouses) ) {
+            ExchangeTerm::fillExistsFromDB( $this->arWarehouses );
+        }
 
-                foreach ($this->arProducts as &$product)
-                {
-                    $product->fillRelatives();
-                }
+        if( !empty($this->arProperties) ) {
+            ExchangeAttribute::fillExistsFromDB( $this->arProperties );
+        }
+
+        if( !empty($this->arProducts) ) {
+            ExchangeProduct::fillExistsFromDB( $this->arProducts );
+            foreach ($this->arProducts as &$product)
+            {
+                $product->fillRelatives();
             }
+        }
+
+        if( !empty($this->arOffers) ) {
+            ExchangeProduct::fillExistsFromDB( $this->arOffers );
         }
     }
 
@@ -581,7 +601,11 @@ class Parser
                             }
                             else {
                                 $term = new ExchangeTerm( array('name' => $meta, 'taxonomy' => $externalCode) );
-                                $this->$_tax[] = $term;
+                                /**
+                                 * error on php < 5.5
+                                 * $this->$_tax[] = $term;
+                                 */
+                                array_push($this->$_tax, $term);
                             }
 
                             $product->setRelationship($tax, $term); // , $taxonomy
