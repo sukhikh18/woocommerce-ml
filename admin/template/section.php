@@ -9,13 +9,14 @@ $Parser->__parse($files);
 $Parser->__fillExists();
 
 $categories = $Parser->getCategories();
+
+$newCatsCount = 0;
+foreach ($categories as $cat)
+{
+    if( !$cat->get_id() ) $newCatsCount++;
+}
+
 $properties = $Parser->getProperties();
-$developers = $Parser->getDevelopers();
-$warehouses = $Parser->getWarehouses();
-
-$products = $Parser->getProducts();
-$offers = $Parser->getOffers();
-
 $attributeValues = array();
 foreach ($properties as $property)
 {
@@ -26,6 +27,21 @@ foreach ($properties as $property)
     }
 }
 
+$developers = $Parser->getDevelopers();
+$newDevsCount = 0;
+foreach ($developers as $dev)
+{
+    if( !$dev->get_id() ) $newDevsCount++;
+}
+
+
+$warehouses = $Parser->getWarehouses();
+
+$products = $Parser->getProducts();
+$offers = $Parser->getOffers();
+
+
+
 $newProductsCount = 0;
 $orphanedProducts = 0;
 foreach ($products as $product)
@@ -33,6 +49,8 @@ foreach ($products as $product)
     if( !$product->get_id() ) $newProductsCount++;
     if( !isset($offers[ $product->getRawExternal() ]) ) $orphanedProducts++; // print_r($product);
 }
+
+
 
 $newOffersCount = 0;
 $negativeCount = 0;
@@ -52,23 +70,15 @@ foreach ($offers as $offer)
     </tr>
     <tr>
         <td>Кол-во товаров</td>
-        <td><?= sizeof($products) ;?></td>
+        <td><?= sizeof($products) ;?> (<?= $newProductsCount ?>)</td>
     </tr>
     <tr>
-        <td>Новых товаров</td>
-        <td><?= $newProductsCount ?></td>
+        <td>Кол-во предложений</td>
+        <td><?= sizeof($offers) ;?> (<?= $newOffersCount ?>)</td>
     </tr>
     <tr>
         <td>Товаров без предложений</td>
         <td><?= $orphanedProducts ?></td>
-    </tr>
-    <tr>
-        <td>Кол-во предложений</td>
-        <td><?= sizeof($offers) ;?></td>
-    </tr>
-    <tr>
-        <td>Новых предложений</td>
-        <td><?= $newOffersCount ?></td>
     </tr>
     <tr>
         <td>Отрицательные остатки</td>
@@ -76,7 +86,7 @@ foreach ($offers as $offer)
     </tr>
     <tr>
         <td>Кол-во категорий</td>
-        <td><?= sizeof($categories) ;?></td>
+        <td><?= sizeof($categories) ;?> (<?= $newCatsCount ?>)</td>
     </tr>
     <tr>
         <td>Кол-во свойств</td>
@@ -88,11 +98,14 @@ foreach ($offers as $offer)
     </tr>
     <tr>
         <td>Кол-во производителей</td>
-        <td><?= sizeof($developers) ;?></td>
+        <td><?= sizeof($developers) ;?> (<?= $newDevsCount ?>)</td>
     </tr>
     <tr>
         <td>Кол-во складов</td>
         <td><?= sizeof($warehouses) ?></td>
+    </tr>
+    <tr>
+        <td colspan="2" align="center">В скобках указано количество не зарегистрированных объектов</td>
     </tr>
 </table>
 

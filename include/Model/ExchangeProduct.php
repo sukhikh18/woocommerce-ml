@@ -86,7 +86,8 @@ class ExchangeProduct extends ExchangePost
         $arAttributes = array();
         foreach ($this->properties as $property)
         {
-            list($taxonomy) = explode('/', $property->getExternal());
+            $taxonomy = $property->getTaxonomy();
+            // list($taxonomy) = explode('/', $property->getExternal());
             $arAttributes[ $taxonomy ] = array(
                 'name'         => $taxonomy,
                 'value'        => '',
@@ -108,14 +109,14 @@ class ExchangeProduct extends ExchangePost
         $arRelationshipIds = array();
         foreach (array_merge($this->product_cat, $this->warehouse, $this->developer, $this->properties) as $obRelationship)
         {
-            if( $obRelationship->get_id() ) {
-                list($taxonomy) = explode('/', $obRelationship->getExternal());
+            if( $relID = $obRelationship->get_id() ) {
+                $taxonomy = $obRelationship->getTaxonomy();
 
                 if( empty($arRelationshipIds[ $taxonomy ]) ) {
                     $arRelationshipIds[ $taxonomy ] = array();
                 }
 
-                $arRelationshipIds[ $taxonomy ][] = $obRelationship->get_id();
+                $arRelationshipIds[ $taxonomy ][] = $relID;
             }
         }
 

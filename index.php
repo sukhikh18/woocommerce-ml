@@ -27,19 +27,25 @@ if (version_compare(PHP_VERSION, '5.4') < 0) {
     throw new \Exception('Plugin requires PHP 5.4 or above');
 }
 
+if( defined(__NAMESPACE__ . '\PLUGIN_DIR') || defined(__NAMESPACE__ . '\PLUGIN_FILE') ) return;
+
 if( !defined(__NAMESPACE__ . '\PLUGIN_DIR') ) define(__NAMESPACE__ . '\PLUGIN_DIR', __DIR__);
 if( !defined(__NAMESPACE__ . '\PLUGIN_FILE') ) define(__NAMESPACE__ . '\PLUGIN_FILE', __FILE__);
 
 require_once ABSPATH . "wp-admin/includes/plugin.php";
 require_once PLUGIN_DIR . '/vendor/autoload.php';
 
+define(__NAMESPACE__ . '\DEFAULT_DEVELOPER_TAX_SLUG', 'brand');
+define(__NAMESPACE__ . '\DEFAULT_WAREHOUSE_TAX_SLUG', 'warehouse');
+
 /**
  * Uniq prefix
  */
-if(!defined(__NAMESPACE__ . '\DOMAIN')) define(__NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data('TextDomain'));
+define(__NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data('TextDomain'));
 
 /**
  * Server can get max size
+ * @todo set to filter
  */
 if(!defined(__NAMESPACE__ . '\FILE_LIMIT')) define(__NAMESPACE__ . '\FILE_LIMIT', null);
 
@@ -75,7 +81,7 @@ if (!defined(__NAMESPACE__ . '\COOKIENAME')) define(__NAMESPACE__ . '\COOKIENAME
  * @todo move to function
  */
 if (!defined(__NAMESPACE__ . '\CURRENCY')) define(__NAMESPACE__ . '\CURRENCY', null);
-if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', '_ext_ID');
+if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', 'EXT_ID');
 if (!defined('EX_EXT_METAFIELD')) define('EX_EXT_METAFIELD', 'EXT_ID');
 
 require_once PLUGIN_DIR . '/.register.php';
@@ -428,10 +434,10 @@ function doExchange() {
         $orphaned = $wpdb->get_results( "
             SELECT pm.post_id, pm.meta_key, pm.meta_value
             FROM $wpdb->postmeta pm
-            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+            -- INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
             WHERE   pm.meta_key = '_price'
                 AND pm.meta_value = 0
-                AND p.post_date = p.post_modified
+                -- AND p.post_date = p.post_modified
             " );
 
         $arOrphaned = array_map('intval', wp_list_pluck( $orphaned, 'post_id' ));

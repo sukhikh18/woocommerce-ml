@@ -4,6 +4,7 @@ namespace NikolayS93\Exchange\Model;
 
 class Relationship
 {
+    public $taxonomy;
     public $external;
     public $id = 0;
 
@@ -28,5 +29,10 @@ class Relationship
     function set_id($id)
     {
         $this->id = (int) $id;
+    }
+
+    function getTaxonomy()
+    {
+        return $this->taxonomy;
     }
 }

@@ -104,6 +104,7 @@ class ExchangePost
         array_push($this->$target, new Relationship( array(
             'external' => $term->getExternal(),
             'id'       => $term->get_id(),
+            'taxonomy' => $term->getTaxonomy(),
         ) ));
     }
 

@@ -10,8 +10,6 @@ use NikolayS93\Exchange\ORM\ExchangeItemMeta;
  */
 class ExchangeTerm implements Interfaces\ExternalCode
 {
-    const EXT_ID = '_ext_ID';
-
     use ExchangeItemMeta;
 
     /**
@@ -63,7 +61,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     static function getExtID()
     {
-        return apply_filters('ExchangeTerm::getExtID', self::EXT_ID);
+        return apply_filters('ExchangeTerm::getExtID', EXT_ID);
     }
 
     function __construct( Array $term, $ext_id = '', $meta = array() )
@@ -90,21 +88,21 @@ class ExchangeTerm implements Interfaces\ExternalCode
         }
 
         if( isset( $term['parent_ext'] ) ) {
-            $this->parent_ext = $this->term_taxonomy['taxonomy'] . '/' . (string) $term['parent_ext'];
+            $this->parent_ext = (string) $term['parent_ext'];
         }
 
         if( !$this->term['slug'] ) {
             $this->term['slug'] = Utils::esc_cyr($this->term['name']);
         }
 
-        /**
-         * That is the govnocode?
-         */
-        if( !$ext_id ) $ext_id = isset($meta[EXT_ID]) ? $meta[EXT_ID] : Utils::esc_cyr($this->term['slug']);
-        $meta[EXT_ID] = $this->term_taxonomy['taxonomy'] . '/' . $ext_id;
-
-        // $this->setExternal( $this->term_taxonomy, $ext_id );
         $this->setMeta($meta);
+
+        if( !$ext_id ) {
+            if( !$ext_id = $this->getExternal() ) {
+                $ext_id = Utils::esc_cyr($this->term['slug']);
+            }
+        }
+        $this->setExternal( $ext_id ); // early: $tax .'/'. $ext_id
     }
 
     function getTerm()
@@ -114,7 +112,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     function getExternal()
     {
-        return $this->getMeta( $this->getExtID() );
+        return $this->getMeta( static::getExtID() );
     }
 
     function getParentExternal()
@@ -124,7 +122,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     function setExternal( $ext )
     {
-        $this->setMeta( $this->getExtID(), $ext );
+        $this->setMeta( static::getExtID(), $ext );
     }
 
     public function get_id()
@@ -184,12 +182,17 @@ class ExchangeTerm implements Interfaces\ExternalCode
         return isset($this->term_taxonomy['count']) ? (string) $this->term_taxonomy['count'] : '';
     }
 
+    public function getTaxonomy()
+    {
+        return $this->term_taxonomy['taxonomy'];
+    }
+
     public function setTaxonomy( $tax )
     {
-        $ext = $this->getExternal();
-        if( false !== ($pos = strpos($ext, '/')) ) {
-            $this->setExternal($tax . substr($ext, $pos));
-        }
+        // $ext = $this->getExternal();
+        // if( false !== ($pos = strpos($ext, '/')) ) {
+        //     $this->setExternal($tax . substr($ext, $pos));
+        // }
 
         $this->term_taxonomy['taxonomy'] = $tax;
     }
@@ -217,7 +220,8 @@ class ExchangeTerm implements Interfaces\ExternalCode
         $_exists = array();
         $exists = array();
 
-        foreach ($terms as $rawExternalCode => $term) {
+        foreach ($terms as $rawExternalCode => $term)
+        {
             $_external = $term->getExternal();
             $_p_external = $term->getParentExternal();
 
@@ -230,7 +234,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
             }
         }
 
-        $externals = array_unique($externals);
+        $externals = array_unique(array_filter( $externals ));
 
         /**
          * Get from database
