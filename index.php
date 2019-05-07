@@ -105,6 +105,8 @@ function doExchange() {
     if ( !$type = Utils::get_type() ) Utils::error("No type");
     if ( !$mode = Utils::get_mode() ) Utils::error("No mode");
 
+    if( 'catalog' != $type ) Utils::error("Type no support");
+
     /**
      * CGI fix
      */
@@ -469,7 +471,7 @@ function doExchange() {
             }
         }
 
-        exit("success\n$mode\n$msg");
+        exit("success\n$mode\n$version\n$msg");
     }
 
     /**
@@ -562,12 +564,13 @@ function doExchange() {
             );
         }
 
-        $path_dir = Parser::getDir( Utils::get_type() );
+        $path_dir = Parser::getDir();
         $files = Parser::getFiles();
+
         foreach ($files as $file)
         {
             // @unlink($file);
-            @rename( $file, $path_dir . '/' . ltrim(basename($file), "./\\") );
+            @rename( $file, $path_dir . '/_debug/' . ltrim(basename($file), "./\\") );
         }
 
         $msg = 'деактивация товаров завершена';

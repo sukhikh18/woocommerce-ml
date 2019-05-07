@@ -38,7 +38,6 @@ class Utils
 
         if( $ownMode = Plugin::get('mode') ) {
             $mode = $ownMode;
-            Plugin::set('mode', '');
         }
 
         return $mode;
