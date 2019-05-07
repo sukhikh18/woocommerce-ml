@@ -17,8 +17,8 @@
 namespace NikolayS93\Exchange;
 
 // for debug
-$_SERVER['PHP_AUTH_USER'] = 'root';
-$_SERVER['PHP_AUTH_PW'] = 'q1w2';
+// $_SERVER['PHP_AUTH_USER'] = 'root';
+// $_SERVER['PHP_AUTH_PW'] = 'q1w2';
 
 // define('EX_DEBUG_ONLY', TRUE);
 
@@ -81,6 +81,7 @@ if (!defined(__NAMESPACE__ . '\COOKIENAME')) define(__NAMESPACE__ . '\COOKIENAME
  * @todo move to function
  */
 if (!defined(__NAMESPACE__ . '\CURRENCY')) define(__NAMESPACE__ . '\CURRENCY', null);
+
 if(!defined('NikolayS93\Exchange\Model\EXT_ID')) define('NikolayS93\Exchange\Model\EXT_ID', 'EXT_ID');
 if (!defined('EX_EXT_METAFIELD')) define('EX_EXT_METAFIELD', 'EXT_ID');
 
@@ -190,6 +191,12 @@ function doExchange() {
              * Set start wp date sql format
              */
             update_option( 'exchange_start-date', date('Y-m-d H:i:s') );
+
+            Plugin::set(array(
+                'mode' => '',
+                'productsUpdated' => 0,
+                'offersUpdated' => 0,
+            ));
         }
 
         exit("zip=yes\nfile_limit=" . Utils::get_filesize_limit());
@@ -217,7 +224,7 @@ function doExchange() {
          * Принимает файл и распаковывает его
          */
         $filename = Utils::get_filename();
-        $path_dir = Parser::get_dir( Utils::get_type() );
+        $path_dir = Parser::getDir( Utils::get_type() );
 
         if ( !empty($filename) ) {
             $path = $path_dir . '/' . ltrim($filename, "./\\");
@@ -256,7 +263,7 @@ function doExchange() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
      * @return 'progress|success|failure'
      */
-    elseif ( 'import' == $mode ) {
+    elseif ( 'import' == $mode || 'relationships' == $mode ) {
 
         $filename = Utils::get_filename();
 
@@ -312,35 +319,114 @@ function doExchange() {
         Update::terms( $attributeValues );
         Update::termmeta( $attributeValues );
 
-        $pluginMode = '';
         if( !empty($products) || !empty($offers) ) {
 
-            if( 'relationships' != ($pluginMode = Plugin::get('mode')) ) {
-                Update::posts( $products );
-                Update::offers( $offers );
+            $productsCount = sizeof( $products );
+            $productsUpdated = intval( Plugin::get('productsUpdated', 0) );
 
-                /**
-                 * @todo Need move after relationships
-                 */
-                Update::postmeta( $products );
-                Update::offerPostMetas( $offers );
+            $offset = 1000;
 
-                if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
-                    Plugin::set('mode', 'relationships');
-                    exit("progress\nТребуется повторный запрос для создания связей.");
+            /**
+             * Need update products
+             */
+            if( $productsCount > $offset && $productsCount > $productsUpdated ) {
+
+                $products = array_slice($products, $productsUpdated, $offset);
+
+                /** Count products will be updated */
+                $productsUpdated += sizeof( $products );
+
+                if( 'relationships' != $mode ) {
+                    Update::posts( $products );
+                    Update::postmeta( $products );
+
+                    $msg = "$productsUpdated из $productsCount товаров обновлено.";
+                    Plugin::set('productsUpdated', (int) $productsUpdated);
+
+                    if( $productsUpdated >= $productsCount ) {
+                        if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
+                            Plugin::set(array(
+                                'mode' => 'relationships',
+                                'productsUpdated' => 0,
+                            ));
+                        }
+                    }
                 }
+                else {
+                    $relationships = Update::relationships( $products );
+                    $msg = "$relationships зависимостей $productsUpdated товаров (из $productsCount) обновлено.";
+
+                    if( $productsUpdated >= $productsCount ) {
+                        Plugin::set(array( 'productsUpdated' => 0, ));
+
+                        exit("success\n$mode\n$msg");
+                    }
+                    else {
+                        Plugin::set(array(
+                            'mode' => 'relationships',
+                            'productsUpdated' => (int) $productsUpdated
+                        ) );
+                    }
+                }
+
+                exit("progress\n$mode\n1: $msg");
             }
-            else {
-                $relationships = Update::relationships( $products );
-                $relationships+= Update::relationships( $offers );
 
-                Plugin::set('mode', '');
+            $offersCount = sizeof( $offers );
+            $offersUpdated = intval( Plugin::get('offersUpdated', 0) );
 
-                exit("success\n$relationships зависимостей обновлено.");
+            if( $offersCount > $offset && $offersCount > $offersUpdated ) {
+                $offers = array_slice($offers, $offersUpdated, $offset);
+                /** Count products will be updated */
+                $offersUpdated += sizeof($offers);
+
+                if( 'relationships' != $mode ) {
+                    Update::offers( $offers );
+                    Update::offerPostMetas( $offers );
+
+                    $msg = "$offersUpdated из $offersCount предложений обновлено.";
+                    Plugin::set('offersUpdated', (int) $offersUpdated);
+
+                    if( $offersUpdated >= $offersCount ) {
+                        if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
+                            Plugin::set(array(
+                                'mode' => 'relationships',
+                                'offersUpdated' => 0,
+                            ));
+                        }
+                    }
+                }
+                else {
+                    $relationships = Update::relationships( $offers );
+                    $msg = "$relationships зависимостей $offersUpdated товаров (из $offersCount) обновлено.";
+
+                    /** All exchanged */
+                    if( $offersUpdated >= $offersCount ) {
+                        Plugin::set(array(
+                            'mode' => '',
+                            'offersUpdated' => 0,
+                        ));
+
+                        if( floatval($version) < 3 ) {
+                            Plugin::set(array( 'mode' => 'deactivate', ) );
+                            exit("progress\n$mode\n$msg");
+                        }
+
+                        exit("success\n$mode\n$msg");
+                    }
+                    else {
+                        Plugin::set(array(
+                            'mode' => 'relationships',
+                            'offersUpdated' => (int) $offersUpdated,
+                        ));
+                    }
+                }
+
+                exit("progress\n$mode\n2: $msg");
             }
         }
 
-        exit("success\nИнформация успешно загружена.");
+        exit("failure\nОшибка $mode");
     }
 
     /**
@@ -448,6 +534,11 @@ function doExchange() {
             );
         }
 
+        $files  = Parser::getFiles();
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+
         Plugin::set( array(
             'status' => Utils::get_status(0),
             'last_update' => date('Y-m-d H:i:s'),
@@ -471,6 +562,8 @@ function doExchange() {
      */
     elseif ('success' == $mode) {
         // ex_mode__success($_REQUEST['type']);
+
+        exit("success\n");
     }
 
     else {

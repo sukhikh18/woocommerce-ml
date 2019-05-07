@@ -34,7 +34,14 @@ class Utils
 
     static function get_mode()
     {
-        return static::save_get_request('mode');
+        $mode = static::save_get_request('mode');
+
+        if( $ownMode = Plugin::get('mode') ) {
+            $mode = $ownMode;
+            Plugin::set('mode', '');
+        }
+
+        return $mode;
     }
 
     static function is_debug_show() {
