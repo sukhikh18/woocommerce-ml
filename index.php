@@ -114,11 +114,6 @@ function doExchange() {
     }
 
     /**
-     * Get status (from request for debug)
-     */
-    $status = ( !empty($_GET['status']) ) ? Utils::get_status(intval($_GET['status'])) : Plugin::get( 'status', false );
-
-    /**
      * CommerceML protocol version
      * @var string (float value)
      */
@@ -192,11 +187,7 @@ function doExchange() {
              */
             update_option( 'exchange_start-date', date('Y-m-d H:i:s') );
 
-            Plugin::set(array(
-                'mode' => '',
-                'productsUpdated' => 0,
-                'offersUpdated' => 0,
-            ));
+            Utils::setMode('');
         }
 
         exit("zip=yes\nfile_limit=" . Utils::get_filesize_limit());
@@ -263,7 +254,7 @@ function doExchange() {
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
      * @return 'progress|success|failure'
      */
-    elseif ( 'import' == $mode || 'relationships' == $mode ) {
+    elseif ( 'import' == $mode ) {
 
         $filename = Utils::get_filename();
 
@@ -319,114 +310,166 @@ function doExchange() {
         Update::terms( $attributeValues );
         Update::termmeta( $attributeValues );
 
-        if( !empty($products) || !empty($offers) ) {
+        $offset = 1000;
+        $progress = intval( Plugin::get('progress', 0) );
 
-            $productsCount = sizeof( $products );
-            $productsUpdated = intval( Plugin::get('productsUpdated', 0) );
+        $productsCount = sizeof( $products );
+        $offersCount = sizeof( $offers );
 
-            $offset = 1000;
-
-            /**
-             * Need update products
-             */
-            if( $productsCount > $offset && $productsCount > $productsUpdated ) {
-
-                $products = array_slice($products, $productsUpdated, $offset);
+        if( $productsCount > $progress ) {
+            /** @recursive update */
+            if( $productsCount > $offset ) {
+                $products = array_slice($products, $progress, $offset);
 
                 /** Count products will be updated */
-                $productsUpdated += sizeof( $products );
+                $progress += sizeof( $products );
+                $msg = "$progress из $productsCount товаров обновлено.";
 
-                if( 'relationships' != $mode ) {
-                    Update::posts( $products );
-                    Update::postmeta( $products );
-
-                    $msg = "$productsUpdated из $productsCount товаров обновлено.";
-                    Plugin::set('productsUpdated', (int) $productsUpdated);
-
-                    if( $productsUpdated >= $productsCount ) {
-                        if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
-                            Plugin::set(array(
-                                'mode' => 'relationships',
-                                'productsUpdated' => 0,
-                            ));
-                        }
-                    }
+                /** Require retry */
+                if( $progress < $productsCount ) {
+                    Utils::setMode('', array('progress' => (int) $progress));
                 }
+                /** Go away */
                 else {
-                    $relationships = Update::relationships( $products );
-                    $msg = "$relationships зависимостей $productsUpdated товаров (из $productsCount) обновлено.";
-
-                    if( $productsUpdated >= $productsCount ) {
-                        Plugin::set(array( 'productsUpdated' => 0, ));
-
-                        exit("success\n$mode\n$msg");
-                    }
-                    else {
-                        Plugin::set(array(
-                            'mode' => 'relationships',
-                            'productsUpdated' => (int) $productsUpdated
-                        ) );
+                    if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
+                        Utils::setMode('relationships');
                     }
                 }
-
-                exit("progress\n$mode\n1: $msg");
+            }
+            else {
+                $msg = "$productsCount товаров обновлено.";
+                Utils::setMode('relationships');
             }
 
-            $offersCount = sizeof( $offers );
-            $offersUpdated = intval( Plugin::get('offersUpdated', 0) );
+            Update::posts( $products );
+            Update::postmeta( $products );
 
-            if( $offersCount > $offset && $offersCount > $offersUpdated ) {
-                $offers = array_slice($offers, $offersUpdated, $offset);
-                /** Count products will be updated */
-                $offersUpdated += sizeof($offers);
+            exit("progress\n$mode\n1: $msg");
+        }
 
-                if( 'relationships' != $mode ) {
-                    Update::offers( $offers );
-                    Update::offerPostMetas( $offers );
+        if( $offersCount > $progress ) {
+            /** @recursive update */
+            if( $offersCount > $offset ) {
+                $offers = array_slice($offers, $progress, $offset);
+                /** Count offers who will be updated */
+                $progress += sizeof($offers);
+                $msg = "$progress из $offersCount предложений обновлено.";
 
-                    $msg = "$offersUpdated из $offersCount предложений обновлено.";
-                    Plugin::set('offersUpdated', (int) $offersUpdated);
-
-                    if( $offersUpdated >= $offersCount ) {
-                        if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
-                            Plugin::set(array(
-                                'mode' => 'relationships',
-                                'offersUpdated' => 0,
-                            ));
-                        }
-                    }
+                /** Require retry */
+                if( $progress < $offersCount ) {
+                    Utils::setMode('', array('progress' => (int) $progress));
                 }
+                /** Go away */
                 else {
-                    $relationships = Update::relationships( $offers );
-                    $msg = "$relationships зависимостей $offersUpdated товаров (из $offersCount) обновлено.";
-
-                    /** All exchanged */
-                    if( $offersUpdated >= $offersCount ) {
-                        Plugin::set(array(
-                            'mode' => '',
-                            'offersUpdated' => 0,
-                        ));
-
-                        if( floatval($version) < 3 ) {
-                            Plugin::set(array( 'mode' => 'deactivate', ) );
-                            exit("progress\n$mode\n$msg");
-                        }
-
-                        exit("success\n$mode\n$msg");
-                    }
-                    else {
-                        Plugin::set(array(
-                            'mode' => 'relationships',
-                            'offersUpdated' => (int) $offersUpdated,
-                        ));
+                    if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
+                        Utils::setMode('relationships');
                     }
                 }
+            }
+            else {
+                $msg = "$offersCount предложений обновлено.";
+                Utils::setMode('relationships');
+            }
 
-                exit("progress\n$mode\n2: $msg");
+            Update::offers( $offers );
+            Update::offerPostMetas( $offers );
+
+            exit("progress\n$mode\n2: $msg");
+        }
+
+        exit("success\nИмпорт успешно завершен.");
+    }
+
+    elseif ( 'relationships' == $mode ) {
+        $filename = Utils::get_filename();
+
+        if( !$filename ) {
+            Utils::error( "Filename is empty" );
+        }
+
+        /**
+         * Answer: COMMIT || ROLLBACK on end
+         */
+        Utils::set_transaction_mode();
+
+        /**
+         * Parse
+         */
+        $files  = Parser::getFiles( $filename );
+        $Parser = Parser::getInstance();
+        $Parser->__parse($files);
+        $Parser->__fillExists();
+
+        $products = $Parser->getProducts();
+        $offers = $Parser->getOffers();
+
+        $offset = 1000;
+
+        $progress = intval( Plugin::get('progress', 0) );
+
+        $productsCount = sizeof( $products );
+        $offersCount = sizeof( $offers );
+
+        $msg = 'Обновление зависимостей завершено.';
+
+        if( $productsCount > $progress ) {
+            /** @recursive update */
+            if( $productsCount > $offset ) {
+                $products = array_slice($products, $progress, $offset);
+
+                $relationships = Update::relationships( $products );
+                $progress += sizeof( $products );
+                $msg = "$relationships зависимостей $progress товаров (из $productsCount) обновлено.";
+
+                /** Require retry */
+                if( $progress < $productsCount ) {
+                    Utils::setMode('relationships', array('progress' => (int) $progress));
+                    exit("progress\n$mode\n$msg");
+                }
+                /** Succes */
+                else {
+                    Utils::setMode('');
+                }
+            }
+            else {
+                $relationships = Update::relationships( $products );
+                $msg = "$relationships зависимостей товаров обновлено.";
+                /** Succes */
             }
         }
 
-        exit("failure\nОшибка $mode");
+        if( $offersCount > $progress ) {
+            /** @recursive update */
+            if( $offersCount > $offset ) {
+                $offers = array_slice($offers, $progress, $offset);
+
+                $relationships = Update::relationships( $offers );
+                $progress += sizeof( $offers );
+                $msg = "$relationships зависимостей $progress предложений (из $offersCount) обновлено.";
+
+                /** Require retry */
+                if( $progress < $offersCount ) {
+                    Utils::setMode('relationships', array('progress' => (int) $progress));
+                    exit("progress\n$mode\n$msg");
+                }
+                /** Succes */
+                else {
+                    Utils::setMode('');
+                }
+            }
+            else {
+                $relationships = Update::relationships( $offers );
+                $msg = "$relationships зависимостей предложений обновлено.";
+                /** Succes */
+            }
+
+            if( floatval($version) < 3 ) {
+                Utils::setMode('deactivate');
+                exit("progress\n$mode\n$msg");
+            }
+        }
+
+        exit("success\n$mode\n$msg");
     }
 
     /**
@@ -436,17 +479,6 @@ function doExchange() {
      * @return 'progress|success|failure'
      */
     elseif ( 'deactivate' == $mode ) {
-
-        /**
-         * Reset start date
-         */
-        update_option( 'exchange_start-date', '' );
-
-        /**
-         * Refresh version
-         */
-        update_option( 'exchange_version', '' );
-
         /**
          * Чистим и пересчитываем количество записей в терминах
          * /
@@ -478,73 +510,74 @@ function doExchange() {
         }
 
         list($is_full, $is_moysklad) = ex_check_head_meta($path);
-
-
-        $catalogFiles = PathFinder::get_files();
-        $bkpDir = PathFinder::get_dir( '_backup' );
-
-        foreach ($catalogFiles as $i => $file) {
-            // remove
-            // @unlink($file); or move:
-            rename( $file, $bkpDir . basename($file));
-        }
-
-        /**
-         * Need products to archive
-         * /
-        // if( $is_full ) {
-        //     Archive::posts( $products );
-        // }
-
-        /**
-         * Insert count the number of records in a category
-         * /
-        Update::update_term_counts();
         */
-        // flush_rewrite_rules();
 
-        delete_transient( 'wc_attribute_taxonomies' );
-
-        // $orphaned = $wpdb->get_results( "
-        //     SELECT p.ID, p.post_type, p.post_status
-        //     FROM $wpdb->posts p
-        //     WHERE
-        //         p.post_type = 'product'
+        // $noprice = $wpdb->get_results( "
+        //     SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+        //     FROM $wpdb->postmeta pm
+        //     INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+        //     WHERE   p.post_type   = 'product'
         //         AND p.post_status = 'publish'
-        //         AND NOT EXISTS (
-        //             SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
-        //             WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
-        //         )
-        // " );
+        //         AND
+        //             (pm.meta_key = '_price' AND pm.meta_value = 0)
+        //             OR NOT EXISTS (
+        //                 SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
+        //                 WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
+        //             )
 
-        $orphaned = $wpdb->get_results( "
-            SELECT pm.post_id, pm.meta_key, pm.meta_value
+        //         -- AND p.post_date = p.post_modified
+        //     " );
+        $notExistsPrice = $wpdb->get_results( "
+            SELECT p.ID, p.post_type, p.post_status
+            FROM $wpdb->posts p
+            WHERE
+                p.post_type = 'product'
+                AND p.post_status = 'publish'
+                AND NOT EXISTS (
+                    SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
+                    WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
+                )
+        " );
+
+        $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
+
+        $nullPrice = $wpdb->get_results( "
+            SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
             FROM $wpdb->postmeta pm
-            -- INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-            WHERE   pm.meta_key = '_price'
+            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+            WHERE   p.post_type   = 'product'
+                AND p.post_status = 'publish'
+                AND pm.meta_key = '_price'
                 AND pm.meta_value = 0
-                -- AND p.post_date = p.post_modified
-            " );
+        " );
 
-        $arOrphaned = array_map('intval', wp_list_pluck( $orphaned, 'post_id' ));
-        if( sizeof($arOrphaned) ) {
+        $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
+
+        $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
+
+        if( sizeof($deactivateIDs) ) {
             $wpdb->query(
                 "UPDATE $wpdb->posts SET post_status = 'pending'
-                WHERE ID IN (". implode(',', $arOrphaned) .")"
+                WHERE ID IN (". implode(',', $deactivateIDs) .")"
             );
         }
 
-        $files  = Parser::getFiles();
-        foreach ($files as $file) {
-            @unlink($file);
+        $path_dir = Parser::getDir( Utils::get_type() );
+        $files = Parser::getFiles();
+        foreach ($files as $file)
+        {
+            // @unlink($file);
+            @rename( $file, $path_dir . '/' . ltrim(basename($file), "./\\") );
         }
 
-        Plugin::set( array(
-            'status' => Utils::get_status(0),
-            'last_update' => date('Y-m-d H:i:s'),
-        ) );
+        $msg = 'деактивация товаров завершена';
 
-        exit("success\nдеактивация товаров завершена");
+        if( floatval($version) < 3 ) {
+            Utils::setMode('complete');
+            exit("progress\n$mode\n$msg");
+        }
+
+        exit("success\n$msg");
     }
 
     /**
@@ -553,6 +586,28 @@ function doExchange() {
      * @since  3.0
      */
     elseif ('complete' == $mode) {
+        /**
+         * Insert count the number of records in a category
+         * /
+        Update::update_term_counts();
+        */
+        // flush_rewrite_rules();
+
+        /**
+         * Reset start date
+         * @todo @fixit (check between)
+         */
+        update_option( 'exchange_start-date', '' );
+
+        /**
+         * Refresh version
+         */
+        update_option( 'exchange_version', '' );
+
+        delete_transient( 'wc_attribute_taxonomies' );
+
+        Utils::setMode('');
+        update_option( 'exchange_last-update', date('Y-m-d H:i:s') );
 
         exit("success\nВыгрузка данных завершена");
     }
@@ -571,7 +626,7 @@ function doExchange() {
     }
 
     /** Need early end */
-    exit("failure\n". 'with status: ' . $status);
+    exit("failure\n");
 }
 
 // add_filter( '1c4wp_update_term', __NAMESPACE__ . '\update_term_filter', $priority = 10, $accepted_args = 1 );

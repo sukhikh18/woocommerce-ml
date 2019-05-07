@@ -375,6 +375,16 @@ class Utils
     {
         return $time === false? microtime(true) : microtime(true) - $time;
     }
+
+    static function setMode( $mode, $args = array() )
+    {
+        $args = wp_parse_args( $args, array(
+            'mode' => $mode,
+            'progress' => 0,
+        ) );
+
+        Plugin::set( $args );
+    }
 }
 
 // add_action('delete_term', 'wc1c_delete_term', 10, 4);
