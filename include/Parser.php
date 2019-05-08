@@ -93,6 +93,10 @@ class Parser
 
         if( !empty($this->arOffers) ) {
             ExchangeProduct::fillExistsFromDB( $this->arOffers );
+            foreach ($this->arOffers as &$offer)
+            {
+                $offer->fillRelatives();
+            }
         }
     }
 

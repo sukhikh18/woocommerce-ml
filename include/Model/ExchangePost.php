@@ -98,6 +98,96 @@ class ExchangePost
         return $target;
     }
 
+    function getAllRelativeExternals( $orphaned_only = false )
+    {
+        $arExternals = array();
+        $arRelationships = array();
+
+        if( !empty( $this->product_cat ) ) {
+            $arRelationships = array_merge($arRelationships, $this->product_cat);
+        }
+
+        if( !empty( $this->warehouse ) ) {
+            $arRelationships = array_merge($arRelationships, $this->warehouse);
+        }
+
+        if( !empty( $this->developer ) ) {
+            $arRelationships = array_merge($arRelationships, $this->developer);
+        }
+
+        if( !empty( $this->properties ) ) {
+            $arRelationships = array_merge($arRelationships, $this->properties);
+        }
+
+        foreach ($arRelationships as $arRelationship)
+        {
+            if( $orphaned_only && $arRelationship->get_id() ) {
+                continue;
+            }
+
+            $arExternals[] = $arRelationship->getExternal();
+        }
+
+        return $arExternals;
+    }
+
+    function fillRelatives()
+    {
+        /** @global wpdb $wpdb built in wordpress db object */
+        global $wpdb;
+
+        $arExternals = $this->getAllRelativeExternals();
+        foreach ($arExternals as $strExternal)
+        {
+            $arSqlExternals[] = "`meta_value` = '{$strExternal}'";
+        }
+
+        $ardbTerms = array();
+        if( !empty($arSqlExternals) ) {
+            $exsists_terms_query = "
+                SELECT term_id, meta_key, meta_value
+                FROM $wpdb->termmeta
+                WHERE meta_key = '". ExchangeTerm::getExtID() ."'
+                    AND (". implode(" \t\n OR ", array_unique($arSqlExternals)) . ")";
+
+            $ardbTerms = $wpdb->get_results( $exsists_terms_query );
+
+            $arTerms = array();
+            foreach ($ardbTerms as $ardbTerm) {
+                $arTerms[ $ardbTerm->meta_value ] = $ardbTerm->term_id;
+            }
+        }
+
+        if( !empty($this->product_cat) ) {
+            foreach ($this->product_cat as &$product_cat)
+            {
+                $ext = $product_cat->getExternal();
+                if( !empty( $arTerms[ $ext ] ) ) $product_cat->set_id( $arTerms[ $ext ] );
+            }
+        }
+        if( !empty($this->warehouse) ) {
+            foreach ($this->warehouse as &$warehouse)
+            {
+                $ext = $warehouse->getExternal();
+                if( !empty( $arTerms[ $ext ] ) ) $warehouse->set_id( $arTerms[ $ext ] );
+            }
+        }
+        if( !empty($this->developer) ) {
+            foreach ($this->developer as &$developer)
+            {
+                $ext = $developer->getExternal();
+                if( !empty( $arTerms[ $ext ] ) ) $developer->set_id( $arTerms[ $ext ] );
+            }
+        }
+        if( !empty($this->properties) ) {
+            foreach ($this->properties as &$property)
+            {
+                $ext = $property->getExternal();
+                if( !empty( $arTerms[ $ext ] ) ) $property->set_id( $arTerms[ $ext ] );
+            }
+        }
+    }
+
     function setRelationship( $context = '', ExchangeTerm $term ) // , ExchangeAttribute $tax = null
     {
         $target = $this->getTarget( $context );

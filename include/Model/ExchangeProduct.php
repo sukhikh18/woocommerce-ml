@@ -25,59 +25,6 @@ class ExchangeProduct extends ExchangePost
      */
     public $developer = array();
 
-    function getAllRelativeExternals( $orphaned_only = false )
-    {
-        $arExternals = array();
-        $arRelationships = array_merge($this->product_cat, $this->warehouse, $this->developer, $this->properties);
-
-        foreach ($arRelationships as $arRelationship)
-        {
-            if( $orphaned_only && $arRelationship->get_id() ) {
-                continue;
-            }
-
-            $arExternals[] = $arRelationship->getExternal();
-        }
-
-        return $arExternals;
-    }
-
-    function fillRelatives()
-    {
-        /** @global wpdb $wpdb built in wordpress db object */
-        global $wpdb;
-
-        $arExternals = $this->getAllRelativeExternals();
-        foreach ($arExternals as $strExternal)
-        {
-            $arSqlExternals[] = "`meta_value` = '{$strExternal}'";
-        }
-
-        $ardbTerms = array();
-        if( !empty($arSqlExternals) ) {
-            $exsists_terms_query = "
-                SELECT term_id, meta_key, meta_value
-                FROM $wpdb->termmeta
-                WHERE meta_key = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", array_unique($arSqlExternals)) . ")";
-
-            $ardbTerms = $wpdb->get_results( $exsists_terms_query );
-
-            $arTerms = array();
-            foreach ($ardbTerms as $ardbTerm) {
-                $arTerms[ $ardbTerm->meta_value ] = $ardbTerm->term_id;
-            }
-        }
-
-        foreach (array( $this->product_cat, $this->warehouse, $this->developer, $this->properties ) as &$arVariable)
-        {
-            foreach ($arVariable as &$variable)
-            {
-                if( !empty( $arTerms[ $variable->getExternal() ] ) ) $variable->set_id( $arTerms[ $variable->getExternal() ] );
-            }
-        }
-    }
-
     function updateAttributes()
     {
         /**
