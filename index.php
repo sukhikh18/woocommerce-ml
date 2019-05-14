@@ -319,28 +319,23 @@ function doExchange() {
 
         $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
 
+        /** @recursive update if is $productsCount > $offset */
         if( $productsCount > $progress ) {
-            /** @recursive update */
-            if( $productsCount > $offset ) {
-                $products = array_slice($products, $progress, $offset);
+            /**
+             * Slice products who offset better
+             */
+            $products = array_slice($products, $progress, $offset);
 
-                /** Count products will be updated */
-                $progress += sizeof( $products );
-                $msg = "$progress из $productsCount товаров обновлено.";
+            /** Count products will be updated */
+            $progress += sizeof( $products );
+            $msg = "$progress из $productsCount товаров обновлено.";
 
-                /** Require retry */
-                if( $progress < $productsCount ) {
-                    Utils::setMode('', array('progress' => (int) $progress));
-                }
-                /** Go away */
-                else {
-                    if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
-                        Utils::setMode('relationships');
-                    }
-                }
+            /** Require retry */
+            if( $progress < $productsCount ) {
+                Utils::setMode('', array('progress' => (int) $progress));
             }
+            /** Go away */
             else {
-                $msg = "$productsCount товаров обновлено.";
                 Utils::setMode('relationships');
             }
 
@@ -350,34 +345,37 @@ function doExchange() {
             exit("progress\n$mode\n1: $msg");
         }
 
+        /** @recursive update if is $offersCount > $offset */
         if( $offersCount > $progress ) {
-            /** @recursive update */
-            if( $offersCount > $offset ) {
-                $offers = array_slice($offers, $progress, $offset);
-                /** Count offers who will be updated */
-                $progress += sizeof($offers);
-                $msg = "$progress из $offersCount предложений обновлено.";
+            /**
+             * Slice offers who offset better
+             */
+            $offers = array_slice($offers, $progress, $offset);
 
-                /** Require retry */
-                if( $progress < $offersCount ) {
-                    Utils::setMode('', array('progress' => (int) $progress));
-                }
-                /** Go away */
-                else {
-                    if( 0 !== strpos($filename, 'rest') && 0 !== strpos($filename, 'price') ) {
-                        Utils::setMode('relationships');
-                    }
-                }
+            /** Count offers who will be updated */
+            $progress += sizeof($offers);
+            $msg = "$progress из $offersCount предложений обновлено.";
+
+            $answer = 'progress';
+
+            /** Require retry */
+            if( $progress < $offersCount ) {
+                Utils::setMode('', array('progress' => (int) $progress));
             }
+            /** Go away */
             else {
-                $msg = "$offersCount предложений обновлено.";
-                Utils::setMode('relationships');
+                if( 0 === strpos($filename, 'offers') ) {
+                    Utils::setMode('relationships');
+                }
+                else {
+                    $answer = 'success';
+                }
             }
 
             Update::offers( $offers );
             Update::offerPostMetas( $offers );
 
-            exit("progress\n$mode\n2: $msg");
+            exit("$answer\n$mode\n2: $msg");
         }
 
         exit("success\nИмпорт успешно завершен.");
@@ -416,54 +414,30 @@ function doExchange() {
         $msg = 'Обновление зависимостей завершено.';
 
         if( $productsCount > $progress ) {
-            /** @recursive update */
-            if( $productsCount > $offset ) {
-                $products = array_slice($products, $progress, $offset);
+            $products = array_slice($products, $progress, $offset);
 
-                $relationships = Update::relationships( $products );
-                $progress += sizeof( $products );
-                $msg = "$relationships зависимостей $progress товаров (из $productsCount) обновлено.";
+            $relationships = Update::relationships( $products );
+            $progress += sizeof( $products );
+            $msg = "$relationships зависимостей $progress товаров (из $productsCount) обновлено.";
 
-                /** Require retry */
-                if( $progress < $productsCount ) {
-                    Utils::setMode('relationships', array('progress' => (int) $progress));
-                    exit("progress\n$mode\n$msg");
-                }
-                /** Succes */
-                else {
-                    Utils::setMode('');
-                }
-            }
-            else {
-                $relationships = Update::relationships( $products );
-                $msg = "$relationships зависимостей товаров обновлено.";
-                /** Succes */
+            /** Require retry */
+            if( $progress < $productsCount ) {
+                Utils::setMode('relationships', array('progress' => (int) $progress));
+                exit("progress\n$mode\n$msg");
             }
         }
 
         if( $offersCount > $progress ) {
-            /** @recursive update */
-            if( $offersCount > $offset ) {
-                $offers = array_slice($offers, $progress, $offset);
+            $offers = array_slice($offers, $progress, $offset);
 
-                $relationships = Update::relationships( $offers );
-                $progress += sizeof( $offers );
-                $msg = "$relationships зависимостей $progress предложений (из $offersCount) обновлено.";
+            $relationships = Update::relationships( $offers );
+            $progress += sizeof( $offers );
+            $msg = "$relationships зависимостей $progress предложений (из $offersCount) обновлено.";
 
-                /** Require retry */
-                if( $progress < $offersCount ) {
-                    Utils::setMode('relationships', array('progress' => (int) $progress));
-                    exit("progress\n$mode\n$msg");
-                }
-                /** Succes */
-                else {
-                    Utils::setMode('');
-                }
-            }
-            else {
-                $relationships = Update::relationships( $offers );
-                $msg = "$relationships зависимостей предложений обновлено.";
-                /** Succes */
+            /** Require retry */
+            if( $progress < $offersCount ) {
+                Utils::setMode('relationships', array('progress' => (int) $progress));
+                exit("progress\n$mode\n$msg");
             }
 
             if( floatval($version) < 3 ) {
@@ -472,6 +446,7 @@ function doExchange() {
             }
         }
 
+        Utils::setMode('');
         exit("success\n$mode\n$version\n$msg");
     }
 
