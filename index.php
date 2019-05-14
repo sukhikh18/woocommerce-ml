@@ -312,11 +312,12 @@ function doExchange() {
         Update::terms( $attributeValues );
         Update::termmeta( $attributeValues );
 
-        $offset = 1000;
         $progress = intval( Plugin::get('progress', 0) );
 
         $productsCount = sizeof( $products );
         $offersCount = sizeof( $offers );
+
+        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
 
         if( $productsCount > $progress ) {
             /** @recursive update */
@@ -529,39 +530,44 @@ function doExchange() {
 
         //         -- AND p.post_date = p.post_modified
         //     " );
-        $notExistsPrice = $wpdb->get_results( "
-            SELECT p.ID, p.post_type, p.post_status
-            FROM $wpdb->posts p
-            WHERE
-                p.post_type = 'product'
-                AND p.post_status = 'publish'
-                AND NOT EXISTS (
-                    SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
-                    WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
-                )
-        " );
+        $start_date = get_option( 'exchange_start-date', '' );
+        if( $start_date ) {
+            $notExistsPrice = $wpdb->get_results( "
+                SELECT p.ID, p.post_type, p.post_status
+                FROM $wpdb->posts p
+                WHERE
+                    p.post_type = 'product'
+                    AND p.post_status = 'publish'
+                    AND p.post_modified > $start_date
+                    AND NOT EXISTS (
+                        SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
+                        WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
+                    )
+            " );
 
-        $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
+            $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
 
-        $nullPrice = $wpdb->get_results( "
-            SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-            FROM $wpdb->postmeta pm
-            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-            WHERE   p.post_type   = 'product'
-                AND p.post_status = 'publish'
-                AND pm.meta_key = '_price'
-                AND pm.meta_value = 0
-        " );
+            $nullPrice = $wpdb->get_results( "
+                SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+                FROM $wpdb->postmeta pm
+                INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+                WHERE   p.post_type   = 'product'
+                    AND p.post_status = 'publish'
+                    AND p.post_modified > $start_date
+                    AND pm.meta_key = '_price'
+                    AND pm.meta_value = 0
+            " );
 
-        $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
+            $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
 
-        $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
+            $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
 
-        if( sizeof($deactivateIDs) ) {
-            $wpdb->query(
-                "UPDATE $wpdb->posts SET post_status = 'pending'
-                WHERE ID IN (". implode(',', $deactivateIDs) .")"
-            );
+            if( sizeof($deactivateIDs) ) {
+                $wpdb->query(
+                    "UPDATE $wpdb->posts SET post_status = 'pending'
+                    WHERE ID IN (". implode(',', $deactivateIDs) .")"
+                );
+            }
         }
 
         $path_dir = Parser::getDir();
@@ -569,8 +575,10 @@ function doExchange() {
 
         foreach ($files as $file)
         {
-            // @unlink($file);
-            @rename( $file, $path_dir . '/_debug/' . ltrim(basename($file), "./\\") );
+            @unlink($file);
+            // $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
+            // @mkdir( $pathname );
+            // @rename( $file, $pathname . ltrim(basename($file), "./\\") );
         }
 
         $msg = 'деактивация товаров завершена';
