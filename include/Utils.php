@@ -36,7 +36,8 @@ class Utils
     {
         $mode = static::save_get_request('mode');
 
-        if( $ownMode = Plugin::get('mode') ) {
+
+        if( !in_array($mode, array('checkauth', 'init')) && $ownMode = Plugin::get('mode') ) {
             $mode = $ownMode;
         }
 

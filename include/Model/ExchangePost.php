@@ -206,10 +206,6 @@ class ExchangePost
             'comment_status'    => apply_filters('ExchangePost__comment_status', 'closed'),
             'post_type'         => 'product',
             'post_mime_type'    => '',
-            'post_date'         => date  ('Y-m-d H:i:s'),
-            'post_modified'     => date  ('Y-m-d H:i:s'),
-            'post_date_gmt'     => gmdate('Y-m-d H:i:s'),
-            'post_modified_gmt' => gmdate('Y-m-d H:i:s'),
         ) );
 
         if( empty($args['post_name']) ) {

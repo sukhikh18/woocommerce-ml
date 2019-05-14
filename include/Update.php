@@ -75,6 +75,9 @@ class Update
             $product->prepare();
             $p = $product->getObject();
 
+            if( '0000-00-00 00:00:00' === $p->post_date )     $p->post_date = $date_now;
+            if( '0000-00-00 00:00:00' === $p->post_date_gmt ) $p->post_date_gmt = $gmdate_now;
+
             array_push($insert,
                 $p->ID,
                 $p->post_author,
