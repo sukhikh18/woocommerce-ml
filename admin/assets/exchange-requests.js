@@ -1,24 +1,23 @@
 jQuery(document).ready(function($) {
-
     /**
-     * @global ml2e
+     * @var @global ml2e {
+     *      exchange_url: server/exchange/
+     *      files: exists filenames array
+     *      productsCount: counts for calculate full path
+     *      OffersCount:   counts for calculate full path
+     *      debug_only: bool
+     * }
      */
 
     var error_msg = 'Случилась непредвиденая ошибка, попробуйте повторить позже';
 
-    const $progress = $('.progress .progress-fill');
-    const $report = $('#ex-report-textarea');
-    const $status = $('#ajax_action');
-    const allProgress = 5;
+    var $progress = $('.progress .progress-fill'),
+    var $report = $('#ex-report-textarea');
+    var $status = $('#ajax_action');
+    /** @var int */
+    var fullSteps;
 
-    var progress = 0;
-
-    const addReport = function(msg) {
-        if(!msg) return;
-
-        $report.append(msg + '\n');
-        $report.scrollTop($report[0].scrollHeight);
-    }
+    var step = 0;
 
     const timer = {
         d : new Date(0, 0, 0, 0, 0, 0, 0, 0),
@@ -56,89 +55,164 @@ jQuery(document).ready(function($) {
         },
     }
 
+    function addReport(msg) {
+        if(!msg) return;
+
+        $report.append(msg + '\n');
+        $report.scrollTop($report[0].scrollHeight);
+    }
+
     const ajax_request = {
         request: null,
 
-        __setProgress: function( int ) {
-            int = parseFloat(int);
-            if( int ) $progress.css('width', 100 * int / allProgress + '%' );
+        getFilename: function() {
+            return ml2e.files.shift();
+        },
 
+        stop: function() {
+            if( this.request ) this.request.abort();
+            timer.stop();
+        },
+
+        setProgress: function( int ) {
+            /**
+             * Fill success color
+             */
             if( 100 == int ) {
                 $progress.css('background', '#14B278');
+                $progress.css('width', '100%');
+                return;
             }
+
+            /**
+             * Fill the progress bar
+             */
+            int = parseFloat(int);
+            if( int ) $progress.css('width', 100 * int / fullSteps + '%' );
         },
 
         error: function( response ) {
-            this.end();
+            /**
+             * Stop procedure
+             */
+            this.stop();
+
+            /**
+             * Do not repeat, we have a error!
+             */
+            $( '#stop-exchange' ).attr('disabled', 'true');
+            $( '#exchangeit' ).attr('disabled', 'true');
+
+            /**
+             * Fill error colors
+             */
             $status.html( '<span style="color: red;">' + error_msg + '</span>' );
             $progress.css('background', '#ED3752');
+
+            /**
+             * Stay error message to textarea
+             */
             addReport( response );
 
             return false;
         },
 
-        start: function() {
+        onStart: function() {
+            var self = this;
+
+            /**
+             * Initialaze exhcange, clear data, check allows..
+             */
+            this.request = $.ajax({
+                error: self.error,
+                type: 'GET',
+                url: ml2e.exchange_url,
+
+                data: {
+                    'type': 'catalog',
+                    'mode': 'init',
+                },
+
+                success: function( response ) {
+                    addReport('Успешный старт выгрузки информации');
+                    self.import( self.getFilename() );
+                }
+            });
+        },
+
+        import: function( filename ) {
             var self = this;
 
             this.request = $.ajax({
-                type: 'POST',
+                // beforeSend: function(jqXHR, settings) {
+                //     if( 0 == progress ) {
+                //         // write a progress status (files prepared)
+                //         this.data = this.data.replace('mode=import', 'mode=file');
+                //     }
+
+                //     return true;
+                // },
+                error: self.error,
+                type: 'GET',
                 url: ml2e.exchange_url,
 
                 data: {
                     'type': 'catalog',
                     'mode': 'import',
-                },
-
-                error: function() { self.error(); },
-
-                beforeSend: function(jqXHR, settings) {
-                    if( 0 == progress ) {
-                        // write a progress status (files prepared)
-                        this.data = this.data.replace('mode=import', 'mode=file');
-                    }
-
-                    return true;
+                    'filename': filename
                 },
 
                 success: function( response ) {
-                    // First query
-                    if( 0 == progress ) {
-                        addReport('Успешный старт выгрузки информации');
-                        progress = 1;
-                        self.__setProgress(progress);
+                    /** Most important information in second string */
+                    var answerMessage = response.split('\n', 2)[1];
+
+                    if( 0 <= response.indexOf('error') || 0 === response.indexOf('failure') ) {
+                        /** send response to report too */
+                        this.error( response );
+                        addReport( answerMessage );
+                        // Frontend protection ;D
+                        return false;
+                    }
+
+                    else if( 0 === response.indexOf('progress') ) {
+                        addReport( answerMessage );
+                        self.setProgress( step++ );
                         self.start();
                     }
 
                     else if( 0 === response.indexOf('success') ) {
-                        addReport('Выгрузка успешно завершена');
-                        self.__setProgress(100);
-                        self.end();
-                    }
+                        addReport( answerMessage );
 
-                    else if( 0 === response.indexOf('progress') || ml2e.debug_only ) {
-                        addReport( response.split('\n', 2)[1] );
-                        self.__setProgress( progress++ );
-                        self.start();
-                    }
+                        var nextFilename = self.getFilename();
 
-                    if( 0 <= response.indexOf('error') || 0 === response.indexOf('failure') ) {
-                        this.error( response );
-                        return false;
+                        if( nextFilename ) {
+                            
+                        }
+
+                        /** Filenames is over */
+                        else {
+                        }
                     }
                 }
             });
         },
 
-        stop: function() {
-            if( this.request ) this.request.abort();
+        onEnd: function() {
+            addReport('Выгрузка успешно завершена.');
         },
 
-        end: function() {
-            $( '#stop-exchange' ).attr('disabled', 'true');
-            $( '#exchangeit' ).attr('disabled', 'true');
+        start: function() {
 
-            self.stop();
-            timer.stop();
+            this.request = $.ajax({
+
+                success: function( response ) {
+                    else if( 0 === response.indexOf('success') ) {
+                        addReport('Получен успешный ответ.');
+                        self.setProgress(100);
+                        self.end();
+                    }
+                }
+            });
         }
     }
 
