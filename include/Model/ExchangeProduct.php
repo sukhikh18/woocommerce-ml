@@ -86,6 +86,13 @@ class ExchangeProduct extends ExchangePost
                 if( is_array( $result ) ) {
                     $count += sizeof( $result );
                 }
+
+                // if( is_wp_error($result) ) {
+                //     echo "<pre>";
+                //     var_dump( $result, $product_id, $values, $taxonomy );
+                //     echo "</pre>";
+                //     die();
+                // }
             }
         }
 

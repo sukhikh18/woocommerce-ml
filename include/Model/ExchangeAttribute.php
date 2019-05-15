@@ -92,6 +92,14 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return $this->terms;
     }
 
+    /**
+     * For demonstration
+     */
+    public function sliceTerms($start = 0, $count = 2)
+    {
+        $this->terms = array_slice($this->terms->fetch(), $start, $count);
+    }
+
     public function get_id()
     {
         return (int) $this->id;
@@ -99,7 +107,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode
 
     public function set_id( $id )
     {
-        $this->id = $id;
+        $this->id = (int) $id;
     }
 
     function getExternal()
@@ -121,18 +129,23 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         // $orphaned_only = true;
 
         /** @var List of external code items list in database attribute context (%s='%s') */
-        // $externals = array();
+        $taxExternals = array();
         $termExternals = array();
+
 
         foreach ($obAttributeTaxonomies as $obAttributeTaxonomy)
         {
             /**
              * Get taxonomy (attribute)
-             * var_dump( $obAttributeTaxonomy );
              */
+            if( !$obAttributeTaxonomy->get_id() ) {
+                $taxExternals[] = "`meta_value` = '". $obAttributeTaxonomy->getExternal() ."'";
+            }
+
             /**
              * Get terms (attribute values)
              * @var ExchangeTerm $term
+             * @todo maybe add parents?
              */
             foreach ($obAttributeTaxonomy->getTerms() as $obExchangeTerm)
             {
@@ -140,25 +153,30 @@ class ExchangeAttribute implements Interfaces\ExternalCode
             }
         }
 
-        // foreach ($terms as $rawExternalCode => $term) {
-        //     $_external = $term->getExternal();
-        //     $_p_external = $term->getParentExternal();
+        $results = array();
 
-        //     if( !$term->get_id() ) {
-        //         $externals[] = "`meta_value` = '". $_external ."'";
-        //     }
+        $taxExists = array();
+        if( !empty( $taxExternals ) ) {
+            $exists_query = "
+                SELECT meta_id, tax_id, meta_key, meta_value
+                FROM {$wpdb->prefix}woocommerce_attribute_taxonomymeta
+                WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
+                    AND (". implode(" \t\n OR ", array_unique($taxExternals)) . ")";
 
-        //     if( $_p_external && $_external != $_p_external && !$term->get_parent_id() ) {
-        //         $externals[] = "`meta_value` = '". $_p_external ."'";
-        //     }
-        // }
+            $results = $wpdb->get_results( $exists_query );
+        }
+
+        foreach ($results as $exist)
+        {
+            $taxExists[ $exist->meta_value ] = $exist;
+        }
+        $results = array();
 
         /**
          * Get from database
          * @var array list of objects exists from posts db
          */
         $exists  = array();
-        $_exists = array();
         if( !empty($termExternals) ) {
             $exists_query = "
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
@@ -167,24 +185,27 @@ class ExchangeAttribute implements Interfaces\ExternalCode
                 WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
                     AND (". implode(" \t\n OR ", array_unique($termExternals)) . ")";
 
-            $_exists = $wpdb->get_results( $exists_query );
+            $results = $wpdb->get_results( $exists_query );
         }
 
         /**
          * Resort for convenience
          */
-        foreach($_exists as $exist)
+        foreach($results as $exist)
         {
             $exists[ $exist->meta_value ] = $exist;
         }
-        unset($_exists);
-
+        $results = array();
 
         foreach ($obAttributeTaxonomies as &$obAttributeTaxonomy)
         {
             /**
              * Get taxonomy (attribute)
              */
+            if( !empty($taxExists[ $obAttributeTaxonomy->getExternal() ]) ) {
+                $obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->getExternal() ]->tax_id );
+            }
+
             /**
              * Get terms (attribute values)
              * @var ExchangeTerm $term

@@ -307,6 +307,11 @@ function doExchange() {
         Update::terms( $warehouses );
         Update::termmeta( $warehouses );
 
+        echo "<pre>";
+        var_dump( $attributeValues );
+        echo "</pre>";
+        die();
+
         Update::properties( $properties );
 
         Update::terms( $attributeValues );
@@ -405,12 +410,12 @@ function doExchange() {
         $products = $Parser->getProducts();
         $offers = $Parser->getOffers();
 
-        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
-
         $progress = intval( Plugin::get('progress', 0) );
 
         $productsCount = sizeof( $products );
         $offersCount = sizeof( $offers );
+
+        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
 
         $msg = 'Обновление зависимостей завершено.';
 

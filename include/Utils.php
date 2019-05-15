@@ -116,6 +116,10 @@ class Utils
      */
     static function addLog( \WP_Error $err )
     {
+        echo "<pre>";
+        var_dump( $err, debug_backtrace() );
+        echo "</pre>";
+        die();
         return $err;
     }
 

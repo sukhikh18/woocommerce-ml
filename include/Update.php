@@ -266,7 +266,13 @@ class Update
                     continue;
                 }
 
+                // echo "<pre>";
+                // var_dump( $attribute );
+                // echo "</pre>";
+                // die();
+
                 $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
+
                 /**
                  * For exists imitation
                  */
@@ -439,7 +445,7 @@ class Update
             /**
              * for new products only
              */
-            if( $wp_post->post_date != $wp_post->post_modified ) continue;
+            // if( $wp_post->post_date != $wp_post->post_modified ) continue;
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();

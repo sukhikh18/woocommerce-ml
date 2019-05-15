@@ -602,6 +602,7 @@ class Parser
 
                                 $term = new ExchangeTerm( array('name' => $meta) );
                                 $term->setExternal( $taxonomy->getSlug() . '/' . $term->get_slug() );
+                                $term->set_slug( $taxonomy->getExternal() . '-' . $term->get_slug() );
 
                                 $taxonomy->addTerm( $term );
                             }

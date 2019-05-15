@@ -91,9 +91,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
             $this->parent_ext = (string) $term['parent_ext'];
         }
 
-        if( !$this->term['slug'] ) {
-            $this->term['slug'] = Utils::esc_cyr($this->term['name']);
-        }
+        if( !$this->term['slug'] ) $this->set_slug($this->term['name']);
 
         $this->setMeta($meta);
 
@@ -170,6 +168,11 @@ class ExchangeTerm implements Interfaces\ExternalCode
     public function get_slug()
     {
         return isset($this->term['slug']) ? (string) $this->term['slug'] : '';
+    }
+
+    public function set_slug( $slug )
+    {
+        $this->term['slug'] = Utils::esc_cyr( (string) $slug );
     }
 
     public function get_description()
