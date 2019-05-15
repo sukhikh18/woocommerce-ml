@@ -35,7 +35,7 @@ if( !defined(__NAMESPACE__ . '\PLUGIN_FILE') ) define(__NAMESPACE__ . '\PLUGIN_F
 require_once ABSPATH . "wp-admin/includes/plugin.php";
 require_once PLUGIN_DIR . '/vendor/autoload.php';
 
-define(__NAMESPACE__ . '\DEFAULT_DEVELOPER_TAX_SLUG', 'brand');
+define(__NAMESPACE__ . '\DEFAULT_DEVELOPER_TAX_SLUG', 'developer');
 define(__NAMESPACE__ . '\DEFAULT_WAREHOUSE_TAX_SLUG', 'warehouse');
 
 /**

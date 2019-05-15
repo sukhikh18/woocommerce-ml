@@ -439,16 +439,14 @@ class Update
             /**
              * for new products only
              */
-            if( $wp_post->post_date != $wp_post->post_modified ) continue;
+            // if( $wp_post->post_date != $wp_post->post_modified ) continue;
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();
-                $updated++;
             }
 
             if( method_exists($post, 'updateObjectTerms') ) {
-                $post->updateObjectTerms();
-                $updated++;
+                $updated += $post->updateObjectTerms();
             }
         }
 

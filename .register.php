@@ -124,11 +124,11 @@ function __init() {
 
     $Page->set_assets( function() {
         wp_enqueue_style( 'exchange-page', Plugin::get_plugin_url('/admin/assets/exchange-page.css') );
-        wp_enqueue_script( 'exchange-requests', Plugin::get_plugin_url('/admin/assets/exchange-requests.js') );
-        wp_localize_script('exchange-requests', DOMAIN, array(
-            'debug_only' => Utils::is_debug(),
-            'exchange_url' => site_url('/exchange/'),
-        ) );
+        // wp_enqueue_script( 'exchange-requests', Plugin::get_plugin_url('/admin/assets/exchange-requests.js') );
+        // wp_localize_script('exchange-requests', DOMAIN, array(
+        //     'debug_only' => Utils::is_debug(),
+        //     'exchange_url' => site_url('/exchange/'),
+        // ) );
 
         /**
          * Upload Script

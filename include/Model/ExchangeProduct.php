@@ -51,8 +51,14 @@ class ExchangeProduct extends ExchangePost
     function updateObjectTerms()
     {
         $product_id = $this->get_id();
-        if( empty($product_id) ) return;
+        if( empty($product_id) ) return 0;
 
+        $count = 0;
+
+        /**
+         * Collect all in one
+         * @var array
+         */
         $arRelationshipIds = array();
         foreach (array_merge($this->product_cat, $this->warehouse, $this->developer, $this->properties) as $obRelationship)
         {
@@ -75,8 +81,14 @@ class ExchangeProduct extends ExchangePost
                  * $append = true - иначе, рискуем удалить связи с акциями,
                  * новинками и т.д. как правило не созданные в 1с
                  */
-                wp_set_object_terms( $product_id, $values, $taxonomy, $append = true );
+                $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append = true );
+
+                if( is_array( $result ) ) {
+                    $count += sizeof( $result );
+                }
             }
         }
+
+        return $count;
     }
 }

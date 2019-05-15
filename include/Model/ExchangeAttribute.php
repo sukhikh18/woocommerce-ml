@@ -165,7 +165,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
                 WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", $termExternals) . ")";
+                    AND (". implode(" \t\n OR ", array_unique($termExternals)) . ")";
 
             $_exists = $wpdb->get_results( $exists_query );
         }
@@ -179,11 +179,11 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         }
         unset($_exists);
 
+
         foreach ($obAttributeTaxonomies as &$obAttributeTaxonomy)
         {
             /**
              * Get taxonomy (attribute)
-             * var_dump( $obAttributeTaxonomy );
              */
             /**
              * Get terms (attribute values)
