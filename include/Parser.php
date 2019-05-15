@@ -598,9 +598,11 @@ class Parser
                                     ), $externalCode );
                                 }
 
-                                $term = new ExchangeTerm( array('name' => $meta) );
-
                                 $taxonomy = $this->arProperties[ $externalCode ];
+
+                                $term = new ExchangeTerm( array('name' => $meta) );
+                                $term->setExternal( $taxonomy->getSlug() . '/' . $term->get_slug() );
+
                                 $taxonomy->addTerm( $term );
                             }
                             else {

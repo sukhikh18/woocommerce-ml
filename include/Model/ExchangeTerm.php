@@ -199,7 +199,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     function prepare()
     {
-        $this->term['name'] = preg_replace("/(^[0-9\/|\-_.*]+. )/", "", (string) $this->term['name']);
+        $this->term['name'] = preg_replace("/(^[0-9\/|\_.*]+\. )/", "", (string) $this->term['name']);
     }
 
     static public function fillExistsFromDB( &$terms ) // , $taxonomy = ''

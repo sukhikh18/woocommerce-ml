@@ -369,6 +369,7 @@ function doExchange() {
                 }
                 else {
                     $answer = 'success';
+                    Utils::setMode('');
                 }
             }
 
@@ -404,7 +405,7 @@ function doExchange() {
         $products = $Parser->getProducts();
         $offers = $Parser->getOffers();
 
-        $offset = 1000;
+        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
 
         $progress = intval( Plugin::get('progress', 0) );
 
@@ -513,7 +514,7 @@ function doExchange() {
                 WHERE
                     p.post_type = 'product'
                     AND p.post_status = 'publish'
-                    AND p.post_modified > $start_date
+                    AND p.post_modified > '$start_date'
                     AND NOT EXISTS (
                         SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
                         WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
@@ -528,7 +529,7 @@ function doExchange() {
                 INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
                 WHERE   p.post_type   = 'product'
                     AND p.post_status = 'publish'
-                    AND p.post_modified > $start_date
+                    AND p.post_modified > '$start_date'
                     AND pm.meta_key = '_price'
                     AND pm.meta_value = 0
             " );
