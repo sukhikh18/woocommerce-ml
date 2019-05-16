@@ -89,7 +89,10 @@ class ExchangeProduct extends ExchangePost
                 }
 
                 if( is_wp_error($result) ) {
-                    Utils::addLog( print_r($result, 1) );
+                    Utils::addLog( $result, array(
+                        'taxonomy' => $taxonomy,
+                        'values' => $values,
+                    ) );
                     die();
                 }
             }

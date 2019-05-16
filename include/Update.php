@@ -165,30 +165,29 @@ class Update
             $arTerm = (array) $obTerm;
 
             /**
-             * @todo need double iteration for parents
+             * @todo Check why need double iteration for parents
+             * @note do not update exists terms
+             * @todo add filter for update oldest
+             * @note So, i think, i can write author's user_id and do not touch if is edited by not automaticly
              */
             if( $term_id ) {
-                /**
-                 * Do not update parent term
-                 */
-                unset( $arTerm['parent'] );
-
-                $result = wp_update_term( $term_id, $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_update_term', $arTerm )) );
+                $result = array('term_id' => $term_id);
+                // unset( $arTerm['parent'] );
+                // $result = wp_update_term( $term_id, $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_update_term', $arTerm )) );
             }
             else {
                 $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_insert_term', $arTerm )) );
             }
 
             if( !is_wp_error($result) ) {
-                $term_id = $result['term_id'];
-                $term->set_id( $term_id );
+                $term->set_id( $result['term_id'] );
                 $updated[ $result['term_id'] ] = $term;
             }
             else {
                 /**
                  * if is term exists
                  * Некоторые аттрибуты могут иметь одинаковый слаг, попробуем залить аттрибуты разных категорий в один слаг
-                 * @todo check this
+                 * @todo @fix check this
                  * @warning Crunch!
                  */
                 if( 'term_exists' == $result->get_error_code() ) {
@@ -196,7 +195,7 @@ class Update
                     $term->set_id( $term_id );
                 }
                 else {
-                    Utils::addLog( $result );
+                    Utils::addLog( $result, $arTerm );
                 }
             }
         }
@@ -249,7 +248,7 @@ class Update
             /**
              * Register Property's Taxonomies;
              */
-            if( !taxonomy_exists($slug) ) {
+            if( !$property->get_id() && !taxonomy_exists($slug) ) {
                 /**
                  * @var Array
                  */
@@ -264,20 +263,21 @@ class Update
                 if( 0 < $attribute_id ) {
                     if( $external ) {
                         $property->set_id( $attribute_id );
-                        $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomymeta', array(
-                            'tax_id' => $attribute_id,
-                            'meta_key' => ExchangeTerm::getExtID(),
-                            'meta_value' => $external,
-                        ) );
+
+                        $insert = $wpdb->insert(
+                            $wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
+                            array(
+                                'meta_id'    => null,
+                                'tax_id'     => $attribute_id,
+                                'meta_key'   => ExchangeTerm::getExtID(),
+                                'meta_value' => $external,
+                            ),
+                            array( '%s', '%d', '%s', '%s' )
+                        );
                     }
                     else {
                         Utils::addLog(new \WP_Error( 'error', __('Empty attr insert or attr external by ' . $attribute['attribute_label'])));
                     }
-
-                    /**
-                     * For exists imitation
-                     */
-                    register_taxonomy( $slug, 'product' );
 
                     $retry = true;
                 }
@@ -288,6 +288,13 @@ class Update
                  * Нужно будет пройтись еще раз и вставить термины.
                  */
                 $retry = true;
+            }
+
+            if( !taxonomy_exists($slug) ) {
+                /**
+                 * For exists imitation
+                 */
+                register_taxonomy( $slug, 'product' );
             }
         }
 
@@ -424,8 +431,9 @@ class Update
 
             /**
              * for new products only
+             * @todo add filter
              */
-            if( $wp_post->post_date != $wp_post->post_modified ) continue;
+            // if( $wp_post->post_date != $wp_post->post_modified ) continue;
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();

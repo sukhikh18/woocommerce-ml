@@ -48,12 +48,14 @@ class ExchangeAttribute implements Interfaces\ExternalCode
             if( property_exists($this, $k) ) $this->$k = $arg;
         }
 
-        if( !$this->attribute_name ) {
+        if( $this->attribute_name ) {
+            if( 0 !== strpos($this->attribute_name, 'pa_') ) {
+                $this->attribute_name = 'pa_' . wc_sanitize_taxonomy_name( $this->attribute_name );
+            }
+        }
+        else {
             $this->attribute_name = wc_attribute_taxonomy_name(Utils::esc_cyr($this->attribute_label));
         }
-        // if( strlen($this->attribute_name) >= 28 ) {
-        //     $this->attribute_name = wc_attribute_taxonomy_name(Utils::esc_cyr($this->attribute_label));
-        // }
 
         if( $ext ) $this->ext = $ext;
 
