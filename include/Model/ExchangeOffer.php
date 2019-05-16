@@ -2,6 +2,8 @@
 
 namespace NikolayS93\Exchange\Model;
 
+use NikolayS93\Exchange\Utils;
+
 /**
  * Works with posts, postmeta
  */

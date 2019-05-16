@@ -2,6 +2,7 @@
 
 namespace NikolayS93\Exchange\Model;
 
+use NikolayS93\Exchange\Utils;
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeTaxonomy;
 
