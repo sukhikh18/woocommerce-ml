@@ -513,6 +513,11 @@ function doExchange() {
         //     " );
         $start_date = get_option( 'exchange_start-date', '' );
         if( $start_date ) {
+            /**
+             * Set pending status when post no has price meta
+             * Most probably no has offer (or code error in last versions)
+             * @var array $notExistsPrice  List of objects
+             */
             $notExistsPrice = $wpdb->get_results( "
                 SELECT p.ID, p.post_type, p.post_status
                 FROM $wpdb->posts p
@@ -526,8 +531,13 @@ function doExchange() {
                     )
             " );
 
+            // Collect Ids
             $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
 
+            /**
+             * Set pending status when post has a less price meta (null value)
+             * @var array $nullPrice  List of objects
+             */
             $nullPrice = $wpdb->get_results( "
                 SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
                 FROM $wpdb->postmeta pm
@@ -539,16 +549,46 @@ function doExchange() {
                     AND pm.meta_value = 0
             " );
 
+            // Collect Ids
             $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
 
+            // Merge Ids
             $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
 
+            /**
+             * Execute query (change post status to pending)
+             */
             if( sizeof($deactivateIDs) ) {
                 $wpdb->query(
                     "UPDATE $wpdb->posts SET post_status = 'pending'
                     WHERE ID IN (". implode(',', $deactivateIDs) .")"
                 );
             }
+        }
+
+        /**
+         * @todo how define time rengу one exhange (if exchange mode complete clean date before new part of offers)
+         * Return post status if product has a better price (only new)
+         */
+        $betterPrice = $wpdb->get_results( "
+            SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+            FROM $wpdb->postmeta pm
+            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+            WHERE   p.post_type   = 'product'
+                AND p.post_status = 'pending'
+                AND p.post_modified = p.post_date
+                AND pm.meta_key = '_price'
+                AND pm.meta_value > 0
+        " );
+
+        // Collect Ids
+        $betterPriceIDs = array_map('intval', wp_list_pluck( $betterPrice, 'ID' ));
+
+        if( sizeof($betterPriceIDs) ) {
+            $wpdb->query(
+                "UPDATE $wpdb->posts SET post_status = 'publish'
+                WHERE ID IN (". implode(',', $betterPriceIDs) .")"
+            );
         }
 
         $path_dir = Parser::getDir();

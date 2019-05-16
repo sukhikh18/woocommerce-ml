@@ -62,7 +62,10 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     {
         $term->setTaxonomy( $this->attribute_name );
 
-        $this->terms->add($term);
+        /**
+         * external for unique terms
+         */
+        $this->terms[ $term->getExternal() ] = $term;
     }
 
     /**

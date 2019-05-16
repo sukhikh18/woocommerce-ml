@@ -543,126 +543,246 @@ class Parser
     }
 
     // ====================================================================== //
-    private function prepare()
+    /**
+     * Collect and correct the requisites to the properties data
+     */
+    private function parseRequisites()
     {
+        /**
+         * @var array $ParseRequisitesAsCategories as $termSlug => $termLabel
+         * @todo think about: maybe need custom taxonomies instead cats
+         */
         $ParseRequisitesAsCategories = (array) apply_filters('ParseRequisitesAsCategories', array('new' => 'Новинка'));
-        $ParseRequisitesAsProperties = (array) apply_filters('ParseRequisitesAsProperties', array('size' => 'Размер'));
-        $ParseRequisitesAsDevelopers = (array) apply_filters('ParseRequisitesAsDevelopers', array('developer' => 'мшПроизводитель'));
-        $ParseRequisitesAsWarehouses = (array) apply_filters('ParseRequisitesAsWarehouses', array('warehouse' => 'Склад'));
-
-        $RequisitesAsProperties = array(
-            'arCategories' => $ParseRequisitesAsCategories,
-            'arProperties' => $ParseRequisitesAsProperties,
-            'arDevelopers' => $ParseRequisitesAsDevelopers,
-            'arWarehouses' => $ParseRequisitesAsWarehouses,
-        );
 
         /**
-         * Collect and correct the requisites to the properties data
+         * @var array $ParseRequisitesAsDevelopers,
+         * @var array $ParseRequisitesAsWarehouses as $termLabel
          */
-        if( !empty($ParseRequisitesAsCategories) || !empty($ParseRequisitesAsProperties) || !empty($ParseRequisitesAsManufacturer) || !empty($ParseRequisitesAsWarehouses) ) {
-            foreach ($this->arProducts as $i => $product) :
+        $ParseRequisitesAsDevelopers = (array) apply_filters('ParseRequisitesAsDevelopers', array('Производитель', 'мшПроизводитель'));
+        $ParseRequisitesAsWarehouses = (array) apply_filters('ParseRequisitesAsWarehouses', array('Склад'));
 
-                foreach ($RequisitesAsProperties as $_tax => $map)
+        /**
+         * @var array $ParseRequisitesAsProperties as $taxonomySlug => $taxonomyLabel
+         */
+        $ParseRequisitesAsProperties = (array) apply_filters('ParseRequisitesAsProperties', array('size' => 'Размер'));
+
+        /**
+         * @note Do not merge for KISS
+         */
+        if( empty($ParseRequisitesAsCategories) &&
+            empty($ParseRequisitesAsProperties) &&
+            empty($ParseRequisitesAsManufacturer) &&
+            empty($ParseRequisitesAsWarehouses)
+        ) {
+            return;
+        }
+
+        foreach ($this->arProducts as $i => $product)
+        {
+            /**
+             * Parse categories from products
+             */
+            if( !empty($ParseRequisitesAsCategories) ) {
+                /**
+                 * @var string  Default taxonomy name by woocommerce
+                 */
+                $taxonomyName = 'product_cat';
+
+                foreach ($ParseRequisitesAsCategories as $termSlug => $termName)
                 {
-                    switch ($_tax) {
-                        case 'arProperties':
-                            $tax = 'properties';
-                            break;
-                        case 'arCategories':
-                            $tax = 'product_cat';
-                            break;
+                    /**
+                     * Get term from product by term name
+                     */
+                    if( $meta = $product->getMeta($termName) ) {
+                        /**
+                         * @var ExchangeTerm
+                         * @param array  ex.: [ name => Новинка, slug => new, taxonomy => product_cat ]
+                         */
+                        $term = new ExchangeTerm( array(
+                            'name'     => $termName,
+                            'slug'     => $termSlug,
+                            'taxonomy' => $taxonomyName,
+                        ) );
 
-                        case 'arDevelopers':
-                            $tax = 'developer';
-                            break;
+                        /**
+                         * Add term. Sort (unique) by external code
+                         */
+                        $this->arCategories[ $term->getExternal() ] = $term;
 
-                        case 'arWarehouses':
-                            $tax = 'warehouse';
-                            break;
+                        /**
+                         * Set product relative
+                         * @param Object property name with list of terms
+                         */
+                        $product->setRelationship('product_cat', $term);
                     }
 
                     /**
-                     * Write to taxonomy: Cats, Props, Devs, Warh-es..
+                     * Delete replaced or empty
                      */
-                    foreach ($map as $externalCode => $propertyName)
-                    {
-                        if( $meta = $product->getMeta($propertyName) ) {
-                            // $taxonomy = $tax;
+                    $product->delMeta($termName);
+                }
+            }
 
-                            if( 'arProperties' == $_tax ) {
-                                if( empty($this->arProperties[ $externalCode ]) ) {
-                                    $this->arProperties[ $externalCode ] = new ExchangeAttribute( (object) array(
-                                        'attribute_label' => $propertyName,
-                                        'attribute_name' => $externalCode,
-                                    ), $externalCode );
-                                }
+            /**
+             * Parse developers from products
+             */
+            if( !empty($ParseRequisitesAsDevelopers) ) {
+                /**
+                 * @var string  Default taxonomy name by woocommerce
+                 */
+                $taxonomyName = 'developer';
 
-                                $taxonomy = $this->arProperties[ $externalCode ];
+                foreach ($ParseRequisitesAsDevelopers as $termName)
+                {
+                    /**
+                     * Get term from product by term name
+                     */
+                    if( $meta = $product->getMeta($termName) ) {
+                        /**
+                         * @var ExchangeTerm
+                         * @param array  ex.: [ name => НазваниеПроизводителя, taxonomy => developer ]
+                         */
+                        $term = new ExchangeTerm( array(
+                            'name'     => $meta,
+                            'taxonomy' => $taxonomyName,
+                        ) );
 
-                                $term = new ExchangeTerm( array('name' => $meta) );
-                                $term->setExternal( $taxonomy->getSlug() . '/' . $term->get_slug() );
-                                $term->set_slug( $taxonomy->getExternal() . '-' . $term->get_slug() );
+                        /**
+                         * Add term. Sort (unique) by external code
+                         */
+                        $this->arDevelopers[ $term->getExternal() ] = $term;
 
-                                $taxonomy->addTerm( $term );
-                            }
-                            else {
-                                $term = new ExchangeTerm( array('name' => $meta, 'taxonomy' => $externalCode) );
-                                /**
-                                 * error on php < 5.5
-                                 * $this->$_tax[] = $term;
-                                 */
-                                array_push($this->$_tax, $term);
-                            }
+                        /**
+                         * Set product relative
+                         * @param Object property name with list of terms
+                         */
+                        $product->setRelationship('developer', $term);
+                    }
 
-                            $product->setRelationship($tax, $term); // , $taxonomy
+                    /**
+                     * Delete replaced or empty
+                     */
+                    $product->delMeta($termName);
+                }
+            }
+
+            /**
+             * Parse warehouses from products
+             */
+            if( !empty($ParseRequisitesAsWarehouses) ) {
+                /**
+                 * @var string  Default taxonomy name by woocommerce
+                 */
+                $taxonomyName = 'warehouse';
+
+                foreach ($ParseRequisitesAsWarehouses as $termName)
+                {
+                    /**
+                     * Get term from product by term name
+                     */
+                    if( $meta = $product->getMeta($termName) ) {
+                        /**
+                         * @var ExchangeTerm
+                         * @param array  ex.: [ name => НазваниеСклада, taxonomy => warehouse ]
+                         */
+                        $term = new ExchangeTerm( array(
+                            'name'     => $meta,
+                            'taxonomy' => $taxonomyName,
+                        ) );
+
+                        /**
+                         * Add term. Sort (unique) by external code
+                         */
+                        $this->arDevelopers[ $term->getExternal() ] = $term;
+
+                        /**
+                         * Set product relative
+                         * @param Object property name with list of terms
+                         */
+                        $product->setRelationship('warehouse', $term);
+                    }
+
+                    /**
+                     * Delete replaced or empty
+                     */
+                    $product->delMeta($termName);
+                }
+            }
+
+            /**
+             * Parse properties from products
+             */
+            if( !empty($ParseRequisitesAsProperties) ) {
+
+                foreach ($ParseRequisitesAsProperties as $taxonomySlug => $taxonomyName)
+                {
+                    if( $meta = $product->getMeta($taxonomyName) ) {
+                        /**
+                         * If taxonomy not exists
+                         */
+                        if( empty($this->arProperties[ $taxonomySlug ]) ) {
+                            /**
+                             * Need create for collect terms
+                             */
+                            $this->arProperties[ $taxonomySlug ] = new ExchangeAttribute( (object) array(
+                                'attribute_label' => $propertyName,
+                                'attribute_name' => $taxonomySlug,
+                            ), $taxonomySlug );
                         }
 
                         /**
-                         * Delete empty
+                         * Next work with created/exists taxonomy
+                         * @var ExchangeAttribute
                          */
-                        $product->delMeta($propertyName);
+                        $taxonomy = $this->arProperties[ $taxonomySlug ];
+
+                        /**
+                         * @var ExchangeTerm
+                         * @param array  ex.: [ name => НазваниеСвойства, taxonomy => pa_size ]
+                         */
+                        $term = new ExchangeTerm( array(
+                            'name' => $meta
+                        ) );
+
+                        /**
+                         * Unique external
+                         */
+                        $term->setExternal( $taxonomy->getSlug() . '/' . $term->get_slug() );
+
+                        /**
+                         * Unique slug (may be equal slugs on other taxonomy)
+                         */
+                        $term->set_slug( $taxonomy->getExternal() . '-' . $term->get_slug() );
+
+                        /**
+                         * Collect in taxonomy
+                         * @note correct taxonomy in term by attribute
+                         */
+                        $taxonomy->addTerm( $term );
+
+                        /**
+                         * Set product relative
+                         * @param Object property name with list of terms
+                         */
+                        $product->setRelationship('properties', $term);
                     }
+
+                    /**
+                     * Delete replaced or empty
+                     */
+                    $product->delMeta($termName);
                 }
-
-                /**
-                 * Set manufacturer terms
-                 */
-                // if( is_array($product->developer) ) {
-                //     foreach ($product->developer as $ext => $manufacturer_name)
-                //     {
-                //         $this->arManufacturers[ $ext ] = new TermModel( $ext, (object) array(
-                //             'name' => $manufacturer_name,
-                //             'slug' => strtolower(Utils::esc_cyr($manufacturer_name)),
-                //         ) );
-                //     }
-                // }
-
-                // if( is_array($product->properties) ) {
-                //     foreach ($product->properties as $ext => $property_name)
-                //     {
-                //         if( !isset($this->arProperties[ $ext ]['values'][ $property_name ]) ) {
-
-                //             $external = strtolower(Utils::esc_cyr($property_name));
-                //             $TermModel = new TermModel( $ext, (object) array(
-                //                 'name' => $property_name,
-                //                 'slug' => strtolower(Utils::esc_cyr($property_name)),
-                //             ), 'xml/' . $this->arProperties[ $ext ]['slug'] . '/' . $external );
-
-                //             $this->arProperties[ $ext ]['values'][ $external ] = $TermModel;
-                //             $product->properties[ $ext ] = $TermModel->get_external();
-                //         }
-                //     }
-                // }
-
-                /**
-                 * Do fetch normalize product catalog
-                 */
-                // $product->fetchOffers();
-
-            endforeach;
+            }
         }
+    }
 
+    private function prepare()
+    {
+        $this->parseRequisites();
+
+        /**
+         * Magic ;D
+         */
         foreach ($this->arOffers as $i => $ExchangeOffer)
         {
             /**

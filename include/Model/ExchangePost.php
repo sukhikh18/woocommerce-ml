@@ -84,7 +84,7 @@ class ExchangePost
             case 'developer':
             case 'developers':
             case 'arDevelopers':
-                $target = 'properties';
+                $target = 'developer';
                 break;
 
             case 'product_cat':
