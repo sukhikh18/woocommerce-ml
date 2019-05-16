@@ -75,7 +75,7 @@ class ExchangeProduct extends ExchangePost
 
         foreach ($arRelationshipIds as $taxonomy => $values)
         {
-            if( !empty($taxonomy) && !empty($values) ) {
+            if( !empty($values) ) {
                 /**
                  * Добавляем терминов товару
                  * $append = true - иначе, рискуем удалить связи с акциями,
@@ -87,12 +87,10 @@ class ExchangeProduct extends ExchangePost
                     $count += sizeof( $result );
                 }
 
-                // if( is_wp_error($result) ) {
-                //     echo "<pre>";
-                //     var_dump( $result, $product_id, $values, $taxonomy );
-                //     echo "</pre>";
-                //     die();
-                // }
+                if( is_wp_error($result) ) {
+                    Utils::addLog( print_r($result, 1) );
+                    die();
+                }
             }
         }
 

@@ -725,7 +725,7 @@ class Parser
                              * Need create for collect terms
                              */
                             $this->arProperties[ $taxonomySlug ] = new ExchangeAttribute( (object) array(
-                                'attribute_label' => $propertyName,
+                                'attribute_label' => $taxonomyName,
                                 'attribute_name' => $taxonomySlug,
                             ), $taxonomySlug );
                         }
@@ -770,7 +770,7 @@ class Parser
                     /**
                      * Delete replaced or empty
                      */
-                    $product->delMeta($termName);
+                    $product->delMeta($taxonomyName);
                 }
             }
         }

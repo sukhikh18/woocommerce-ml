@@ -307,11 +307,6 @@ function doExchange() {
         Update::terms( $warehouses );
         Update::termmeta( $warehouses );
 
-        echo "<pre>";
-        var_dump( $attributeValues );
-        echo "</pre>";
-        die();
-
         Update::properties( $properties );
 
         Update::terms( $attributeValues );
@@ -453,7 +448,7 @@ function doExchange() {
         }
 
         Utils::setMode('');
-        exit("success\n$mode\n$version\n$msg");
+        exit("success\n$mode\n$msg");
     }
 
     /**
@@ -570,36 +565,36 @@ function doExchange() {
          * @todo how define time rengу one exhange (if exchange mode complete clean date before new part of offers)
          * Return post status if product has a better price (only new)
          */
-        $betterPrice = $wpdb->get_results( "
-            SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-            FROM $wpdb->postmeta pm
-            INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-            WHERE   p.post_type   = 'product'
-                AND p.post_status = 'pending'
-                AND p.post_modified = p.post_date
-                AND pm.meta_key = '_price'
-                AND pm.meta_value > 0
-        " );
+        // $betterPrice = $wpdb->get_results( "
+        //     SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+        //     FROM $wpdb->postmeta pm
+        //     INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+        //     WHERE   p.post_type   = 'product'
+        //         AND p.post_status = 'pending'
+        //         AND p.post_modified = p.post_date
+        //         AND pm.meta_key = '_price'
+        //         AND pm.meta_value > 0
+        // " );
 
-        // Collect Ids
-        $betterPriceIDs = array_map('intval', wp_list_pluck( $betterPrice, 'ID' ));
+        // // Collect Ids
+        // $betterPriceIDs = array_map('intval', wp_list_pluck( $betterPrice, 'ID' ));
 
-        if( sizeof($betterPriceIDs) ) {
-            $wpdb->query(
-                "UPDATE $wpdb->posts SET post_status = 'publish'
-                WHERE ID IN (". implode(',', $betterPriceIDs) .")"
-            );
-        }
+        // if( sizeof($betterPriceIDs) ) {
+        //     $wpdb->query(
+        //         "UPDATE $wpdb->posts SET post_status = 'publish'
+        //         WHERE ID IN (". implode(',', $betterPriceIDs) .")"
+        //     );
+        // }
 
         $path_dir = Parser::getDir();
         $files = Parser::getFiles();
 
         foreach ($files as $file)
         {
-            @unlink($file);
-            // $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
-            // @mkdir( $pathname );
-            // @rename( $file, $pathname . ltrim(basename($file), "./\\") );
+            // @unlink($file);
+            $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
+            @mkdir( $pathname );
+            @rename( $file, $pathname . ltrim(basename($file), "./\\") );
         }
 
         $msg = 'деактивация товаров завершена';

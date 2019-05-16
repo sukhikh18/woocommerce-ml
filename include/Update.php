@@ -122,7 +122,10 @@ class Update
             /**
              * @todo think how to get inserted meta
              */
-            if( (!$post_id = $product->get_id()) && !Utils::is_debug() ) continue;
+            if( !$post_id = $product->get_id() ) {
+                Utils::addLog( 'Нет ID товара для его наполнения пользовательскими поялми' .
+                    "\r\n" . print_r($product, 1) );
+            }
 
             /**
              * Get list of all meta by product
@@ -265,11 +268,6 @@ class Update
                     Utils::addLog(new \WP_Error( 'error', sprintf( __( 'Slug "%s" is already in use. Change it, please.', 'woocommerce' ), sanitize_title( $attribute['attribute_name'] ) ) ));
                     continue;
                 }
-
-                // echo "<pre>";
-                // var_dump( $attribute );
-                // echo "</pre>";
-                // die();
 
                 $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
 
@@ -445,7 +443,7 @@ class Update
             /**
              * for new products only
              */
-            // if( $wp_post->post_date != $wp_post->post_modified ) continue;
+            if( $wp_post->post_date != $wp_post->post_modified ) continue;
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();
