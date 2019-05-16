@@ -114,13 +114,18 @@ class Utils
     /**
      * @todo
      */
-    static function addLog( \WP_Error $err )
+    static function addLog( $err, $thing = false )
     {
-        echo "<pre>";
-        var_dump( $err, debug_backtrace() );
-        echo "</pre>";
-        die();
-        return $err;
+        if( is_wp_error( $err ) ) {
+            $err = $err->get_error_code() . ': ' . $err->get_error_message();
+        }
+
+        if( $thing ) {
+            var_dump( $thing );
+            echo "<br><br>";
+        }
+
+        static::error($err);
     }
 
     static function get_status( $num )
