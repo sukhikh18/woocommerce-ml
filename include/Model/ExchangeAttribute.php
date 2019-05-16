@@ -48,10 +48,12 @@ class ExchangeAttribute implements Interfaces\ExternalCode
             if( property_exists($this, $k) ) $this->$k = $arg;
         }
 
-        $this->attribute_name = wc_attribute_taxonomy_name($this->attribute_name);
-        if( strlen($this->attribute_name) >= 28 ) {
+        if( !$this->attribute_name ) {
             $this->attribute_name = wc_attribute_taxonomy_name(Utils::esc_cyr($this->attribute_label));
         }
+        // if( strlen($this->attribute_name) >= 28 ) {
+        //     $this->attribute_name = wc_attribute_taxonomy_name(Utils::esc_cyr($this->attribute_label));
+        // }
 
         if( $ext ) $this->ext = $ext;
 
@@ -75,11 +77,11 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     public function fetch()
     {
         $attribute =  array(
-            'attribute_name'    => str_replace('pa_', '', $this->attribute_name),
-            'attribute_label'   => $this->attribute_label,
-            'attribute_type'    => $this->attribute_type,
-            'attribute_orderby' => $this->attribute_orderby,
-            'attribute_public'  => $this->attribute_public,
+            'slug'          => str_replace('pa_', '', $this->attribute_name),
+            'name'          => $this->attribute_label,
+            'type'          => $this->attribute_type,
+            'order_by'      => $this->attribute_orderby,
+            'has_archives'  => $this->attribute_public,
         );
 
         return $attribute;

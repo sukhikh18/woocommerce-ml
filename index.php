@@ -419,7 +419,7 @@ function doExchange() {
 
             $relationships = Update::relationships( $products );
             $progress += sizeof( $products );
-            $msg = "$relationships зависимостей $progress товаров (из $productsCount) обновлено.";
+            $msg = "$relationships зависимостей $offset/$progress товаров (из $productsCount) обновлено.";
 
             /** Require retry */
             if( $progress < $productsCount ) {
@@ -433,7 +433,7 @@ function doExchange() {
 
             $relationships = Update::relationships( $offers );
             $progress += sizeof( $offers );
-            $msg = "$relationships зависимостей $progress предложений (из $offersCount) обновлено.";
+            $msg = "$relationships зависимостей $offset/$progress предложений (из $offersCount) обновлено.";
 
             /** Require retry */
             if( $progress < $offersCount ) {

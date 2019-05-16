@@ -287,7 +287,7 @@ class Parser
         $id = $warehouse->getId();
         $term = array(
             'name'        => $warehouse->getName(),
-            'taxonomy'    => 'warehouse',
+            'taxonomy'    => apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG ),
         );
 
         $this->arWarehouses[ $id ] = new ExchangeTerm( $term, $id );
@@ -402,7 +402,7 @@ class Parser
                 $developer_args = array(
                     'name'        => $developer->getName(),
                     'description' => $developer->getComment(),
-                    'taxonomy'    => 'manufacturer',
+                    'taxonomy'    => apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ),
                 );
 
                 $developer_term = new ExchangeTerm( $developer_args, $developer_id );
@@ -524,7 +524,7 @@ class Parser
                 $warehouse_id = $warehouse->getId();
                 $qty = $warehouse->getQuantity();
 
-                $warehouse = new ExchangeTerm( array('taxonomy' => 'warehouse'), $warehouse_id );
+                $warehouse = new ExchangeTerm( array('taxonomy' => apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG )), $warehouse_id );
 
                 if( 0 < $qty ) {
                     $this->arOffers[ $id ]->setRelationship( 'warehouse', $warehouse );
@@ -630,7 +630,7 @@ class Parser
                 /**
                  * @var string  Default taxonomy name by woocommerce
                  */
-                $taxonomyName = 'developer';
+                $taxonomyName = apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG );
 
                 foreach ($ParseRequisitesAsDevelopers as $termName)
                 {
@@ -673,7 +673,7 @@ class Parser
                 /**
                  * @var string  Default taxonomy name by woocommerce
                  */
-                $taxonomyName = 'warehouse';
+                $taxonomyName = apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG );
 
                 foreach ($ParseRequisitesAsWarehouses as $termName)
                 {

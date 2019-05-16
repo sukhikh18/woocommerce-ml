@@ -256,48 +256,30 @@ class Update
                 $external = $property->getExternal();
                 $attribute = $property->fetch();
 
-                if ( empty( $attribute['attribute_name'] ) || empty( $attribute['attribute_label'] ) ) {
-                    Utils::addLog( new \WP_Error( 'error', __( 'Please, provide an attribute name and slug.', 'woocommerce' ) ) );
-                    continue;
-                }
-                elseif ( ( $valid_attribute_name = $property::valid_attribute_name( $attribute['attribute_name'] ) ) && is_wp_error( $valid_attribute_name ) ) {
-                    Utils::addLog( $valid_attribute_name );
-                    continue;
-                }
-                elseif ( taxonomy_exists( wc_attribute_taxonomy_name( $attribute['attribute_name'] ) ) ) {
-                    Utils::addLog(new \WP_Error( 'error', sprintf( __( 'Slug "%s" is already in use. Change it, please.', 'woocommerce' ), sanitize_title( $attribute['attribute_name'] ) ) ));
-                    continue;
-                }
+                $result = wc_create_attribute( $attribute );
 
-                $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
+                if( is_wp_error( $result ) ) Utils::addLog( $result, $attribute );
 
-                /**
-                 * For exists imitation
-                 */
-                register_taxonomy( $slug, 'product' );
+                $attribute_id = intval( $result );
+                if( 0 < $attribute_id ) {
+                    if( $external ) {
+                        $property->set_id( $attribute_id );
+                        $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomymeta', array(
+                            'tax_id' => $attribute_id,
+                            'meta_key' => ExchangeTerm::getExtID(),
+                            'meta_value' => $external,
+                        ) );
+                    }
+                    else {
+                        Utils::addLog(new \WP_Error( 'error', __('Empty attr insert or attr external by ' . $attribute['attribute_label'])));
+                    }
 
-                do_action( 'woocommerce_attribute_added', $wpdb->insert_id, $attribute );
-
-                if( is_wp_error($insert) ) {
-                    Utils::addLog( $insert );
-                    continue;
-                }
-                elseif( $wpdb->insert_id && $external ) {
-                    $property->set_id( $wpdb->insert_id );
-                    $insert = $wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomymeta', array(
-                        'tax_id' => $wpdb->insert_id,
-                        'meta_key' => ExchangeTerm::getExtID(),
-                        'meta_value' => $property->getExternal(),
-                    ) );
+                    /**
+                     * For exists imitation
+                     */
+                    register_taxonomy( $slug, 'product' );
 
                     $retry = true;
-                    if( is_wp_error($insert) ) {
-                        Utils::addLog( $insert );
-                        continue;
-                    }
-                }
-                else {
-                    Utils::addLog(new \WP_Error( 'error', __('Empty attr insert or attr external by ' . $attribute['attribute_label'])));
                 }
 
                 /**
