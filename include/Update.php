@@ -123,8 +123,7 @@ class Update
              * @todo think how to get inserted meta
              */
             if( !$post_id = $product->get_id() ) {
-                Utils::addLog( 'Нет ID товара для его наполнения пользовательскими поялми' .
-                    "\r\n" . print_r($product, 1) );
+                Utils::addLog( 'Нет ID товара для его наполнения пользовательскими поялми', $product );
             }
 
             /**
@@ -139,6 +138,9 @@ class Update
         }
     }
 
+    /**
+     * @param  array  &$terms  as $rawExt => ExchangeTerm
+     */
     public static function terms( &$terms )
     {
         global $wpdb, $user_id;
@@ -168,7 +170,7 @@ class Update
              * @todo Check why need double iteration for parents
              * @note do not update exists terms
              * @todo add filter for update oldest
-             * @note So, i think, i can write author's user_id and do not touch if is edited by not automaticly
+             * @note So, i think, we can write author's user_id and do not touch if is edited by not automaticly
              */
             if( $term_id ) {
                 $result = array('term_id' => $term_id);
@@ -182,21 +184,16 @@ class Update
             if( !is_wp_error($result) ) {
                 $term->set_id( $result['term_id'] );
                 $updated[ $result['term_id'] ] = $term;
+
+                foreach ($terms as &$oTerm)
+                {
+                    if( $term->getExternal() === $oTerm->getParentExternal() ) {
+                        $oTerm->set_parent_id( $term->get_id() );
+                    }
+                }
             }
             else {
-                /**
-                 * if is term exists
-                 * Некоторые аттрибуты могут иметь одинаковый слаг, попробуем залить аттрибуты разных категорий в один слаг
-                 * @todo @fix check this
-                 * @warning Crunch!
-                 */
-                if( 'term_exists' == $result->get_error_code() ) {
-                    $term_id = $result->get_error_data();
-                    $term->set_id( $term_id );
-                }
-                else {
-                    Utils::addLog( $result, $arTerm );
-                }
+                Utils::addLog( $result, $arTerm );
             }
         }
 
@@ -248,7 +245,7 @@ class Update
             /**
              * Register Property's Taxonomies;
              */
-            if( !$property->get_id() && !taxonomy_exists($slug) ) {
+            if( 'select' == $property->getType() && !$property->get_id() && !taxonomy_exists($slug) ) {
                 /**
                  * @var Array
                  */

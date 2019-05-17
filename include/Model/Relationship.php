@@ -6,7 +6,7 @@ class Relationship
 {
     public $taxonomy;
     public $external;
-    public $id = 0;
+    public $value = 0;
 
     function __construct( $arArgs )
     {
@@ -21,14 +21,14 @@ class Relationship
         return $this->external;
     }
 
-    function get_id()
+    function getValue()
     {
-        return $this->id;
+        return $this->value;
     }
 
-    function set_id($id)
+    function setValue($value)
     {
-        $this->id = (int) $id;
+        $this->value = (int) $value;
     }
 
     function getTaxonomy()

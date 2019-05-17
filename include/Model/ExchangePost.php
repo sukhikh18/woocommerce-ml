@@ -162,40 +162,46 @@ class ExchangePost
             foreach ($this->product_cat as &$product_cat)
             {
                 $ext = $product_cat->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $product_cat->set_id( $arTerms[ $ext ] );
+                if( !empty( $arTerms[ $ext ] ) ) $product_cat->setValue( $arTerms[ $ext ] );
             }
         }
         if( !empty($this->warehouse) ) {
             foreach ($this->warehouse as &$warehouse)
             {
                 $ext = $warehouse->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $warehouse->set_id( $arTerms[ $ext ] );
+                if( !empty( $arTerms[ $ext ] ) ) $warehouse->setValue( $arTerms[ $ext ] );
             }
         }
         if( !empty($this->developer) ) {
             foreach ($this->developer as &$developer)
             {
                 $ext = $developer->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $developer->set_id( $arTerms[ $ext ] );
+                if( !empty( $arTerms[ $ext ] ) ) $developer->setValue( $arTerms[ $ext ] );
             }
         }
         if( !empty($this->properties) ) {
             foreach ($this->properties as &$property)
             {
                 $ext = $property->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $property->set_id( $arTerms[ $ext ] );
+                if( !empty( $arTerms[ $ext ] ) ) $property->setValue( $arTerms[ $ext ] );
             }
         }
     }
 
-    function setRelationship( $context = '', ExchangeTerm $term ) // , ExchangeAttribute $tax = null
+    function setRelationship( $context = '', $term )
     {
         $target = $this->getTarget( $context );
-        array_push($this->$target, new Relationship( array(
-            'external' => $term->getExternal(),
-            'id'       => $term->get_id(),
-            'taxonomy' => $term->getTaxonomy(),
-        ) ));
+
+        if( $term instanceOf ExchangeTerm ) {
+            array_push($this->$target, new Relationship( array(
+                'external' => $term->getExternal(),
+                'value'    => $term->get_id(),
+                'taxonomy' => $term->getTaxonomy(),
+            ) ));
+        }
+        elseif( is_array($term) ) {
+            array_push($this->$target, new Relationship( $term ));
+        }
     }
 
     function __construct( Array $post, $ext = '', $meta = array() )

@@ -32,70 +32,115 @@ class ExchangeProduct extends ExchangePost
          * Set attribute properties
          */
         $arAttributes = array();
+
+        /**
+         * @var Relationship $property
+         */
         foreach ($this->properties as $property)
         {
+
             $taxonomy = $property->getTaxonomy();
-            // list($taxonomy) = explode('/', $property->getExternal());
-            $arAttributes[ $taxonomy ] = array(
-                'name'         => $taxonomy,
-                'value'        => '',
-                'position'     => 1,
-                'is_visible'   => 1,
-                'is_variation' => 0,
-                'is_taxonomy'  => 1
-            );
+
+            if( $external = $property->getExternal() ) {
+                $arAttributes[ $taxonomy ] = array(
+                    'name'         => $taxonomy,
+                    'value'        => '', // $property->getValue()
+                    'position'     => 1,
+                    'is_visible'   => 1,
+                    'is_variation' => 0,
+                    'is_taxonomy'  => 1,
+                );
+            }
+            else {
+                $arAttributes[ $taxonomy ] = array(
+                    'name'         => $taxonomy,
+                    'value'        => $property->getValue(),
+                    'position'     => 1,
+                    'is_visible'   => 1,
+                    'is_variation' => 0,
+                    'is_taxonomy'  => 0,
+                );
+            }
         }
 
         update_post_meta($this->get_id(), '_product_attributes', $arAttributes);
     }
 
+    private function updateObjectTerm($product_id, $values, $taxonomy)
+    {
+        $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append = true );
+
+        if( is_wp_error($result) ) {
+            Utils::addLog( $result, array(
+                'product_id' => $product_id,
+                'taxonomy'   => $taxonomy,
+                'values'     => $values,
+            ) );
+        }
+        else {
+            return sizeof( $result );
+        }
+
+        return 0;
+    }
+
+    /**
+     * @note Do not merge data for KISS
+     */
     function updateObjectTerms()
     {
-        $product_id = $this->get_id();
-        if( empty($product_id) ) return 0;
-
         $count = 0;
+        $product_id = $this->get_id();
+        if( empty($product_id) ) return $count;
 
         /**
-         * Collect all in one
-         * @var array
+         * Update product's cats
          */
-        $arRelationshipIds = array();
-        foreach (array_merge($this->product_cat, $this->warehouse, $this->developer, $this->properties) as $obRelationship)
+        $terms = array();
+        foreach ($this->product_cat as $Relationship)
         {
-            if( $relID = $obRelationship->get_id() ) {
-                $taxonomy = $obRelationship->getTaxonomy();
+            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+        }
 
-                if( empty($arRelationshipIds[ $taxonomy ]) ) {
-                    $arRelationshipIds[ $taxonomy ] = array();
-                }
+        $count += $this->updateObjectTerm($product_id, $terms, 'product_cat');
 
-                $arRelationshipIds[ $taxonomy ][] = $relID;
+        /**
+         * Update product's war-s
+         */
+        $terms = array();
+        foreach ($this->warehouse as $Relationship)
+        {
+            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+        }
+
+        $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ));
+
+        /**
+         * Update product's developers
+         */
+        $terms = array();
+        foreach ($this->developer as $Relationship)
+        {
+            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+        }
+
+        $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ));
+
+        /**
+         * Update product's properties
+         */
+        $taxs = array();
+        foreach ($this->properties as $Relationship)
+        {
+            if( $tax = $Relationship->getTaxonomy() ) {
+                if( !isset( $taxs[ $tax ] ) ) $taxs[ $tax ] = array();
+                if( $term_id = $Relationship->getValue() ) $taxs[ $tax ][] = $term_id;
             }
         }
 
-        foreach ($arRelationshipIds as $taxonomy => $values)
+        foreach ($taxs as $tax => $terms)
         {
-            if( !empty($values) ) {
-                /**
-                 * Добавляем терминов товару
-                 * $append = true - иначе, рискуем удалить связи с акциями,
-                 * новинками и т.д. как правило не созданные в 1с
-                 */
-                $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append = true );
-
-                if( is_array( $result ) ) {
-                    $count += sizeof( $result );
-                }
-
-                if( is_wp_error($result) ) {
-                    Utils::addLog( $result, array(
-                        'taxonomy' => $taxonomy,
-                        'values' => $values,
-                    ) );
-                    die();
-                }
-            }
+            $count += $this->updateObjectTerm($product_id, $terms, $tax);
         }
 
         return $count;

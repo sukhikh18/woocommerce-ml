@@ -32,6 +32,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     private $attribute_type = 'select';
     private $attribute_orderby = 'menu_order';
     private $attribute_public = 1;
+    private $attribute_value = '';
 
     private $ext;
 
@@ -99,6 +100,16 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return $this->terms;
     }
 
+    public function getValue()
+    {
+        return $this->attribute_value;
+    }
+
+    public function setValue( $value )
+    {
+        $this->attribute_value = $value;
+    }
+
     /**
      * For demonstration
      */
@@ -125,6 +136,11 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     function setExternal($ext)
     {
         $this->ext = (String) $ext;
+    }
+
+    function getType()
+    {
+        return $this->attribute_type;
     }
 
     static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''

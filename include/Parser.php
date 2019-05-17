@@ -297,23 +297,27 @@ class Parser
     {
         /** @var CommerceMLParser\Model\Property */
         $property = $propertyEvent->getProperty();
-
         $property_id = $property->getId();
-        $tax = array(
-            'attribute_label' => $property->getName(),
-        );
 
-        $taxonomy = new ExchangeAttribute( $tax, $property_id );
-        $taxonomy_slug = $taxonomy->getSlug();
+        if( 'Строка' == $property->getType() ) {
+            $taxonomy = new ExchangeAttribute( array(
+                'attribute_label' => $property->getName(),
+                'attribute_type' => 'text',
+            ), $property_id );
+        }
+        // elseif( 'Справочник' == $property->getType() ) {
+        // }
+        else {
+            $taxonomy = new ExchangeAttribute( array(
+                'attribute_label' => $property->getName(),
+            ), $property_id );
 
-        $values = $property->getValues();
-
-        if( !empty($values) ) {
+            $values = $property->getValues();
             foreach ($values as $term_id => $name)
             {
                 $taxonomy->addTerm( new ExchangeTerm( array(
                     'name' => $name,
-                    'taxonomy' => $taxonomy_slug,
+                    'taxonomy' => $taxonomy->getSlug(),
                 ), $term_id ) );
             }
         }
@@ -356,32 +360,32 @@ class Parser
         $propertiesCollection = $product->getProperties();
 
         if( !$propertiesCollection->isEmpty() ) {
+
             /**
              * @var Types\PropertyValue $property
              */
-
-            foreach ($propertiesCollection as $property)
+            foreach ($propertiesCollection as $PropertyValue)
             {
-                $property_id = $property->getId();
+                $propertyId = $PropertyValue->getId();
+                $propertyValue = $PropertyValue->getValue();
 
-                if( empty( $this->arProperties ) && empty( $this->arTaxonomies ) ) {
-                    $this->arTaxonomies = getTaxonomies();
-                }
+                if( isset($this->arProperties[ $propertyId ]) ) {
 
-                $obProperty = null;
-                if( isset($this->arTaxonomies[ $property_id ]) ) {
-                    $obProperty = $this->arTaxonomies[ $property_id ];
-                }
-                elseif( isset($this->arProperties[ $property_id ]) ) {
-                    $obProperty = $this->arProperties[ $property_id ];
-                }
-                // else {
-                //     $obProperty = \NikolayS93\Exchange\Model\getTaxonomyByExternal( $property_id );
-                // }
+                    $property = $this->arProperties[ $propertyId ];
 
-                if( $obProperty ) {
-                    $property_term = new ExchangeTerm( array('taxonomy' => $obProperty->getSlug()), $property_id );
-                    $this->arProducts[ $id ]->setRelationship( 'property', $property_term );
+                    if( 'select' == $property->getType() ) {
+                        $terms = $property->getTerms();
+
+                        if( $term = $terms->offsetGet( $propertyValue ) ) {
+                            $this->arProducts[ $id ]->setRelationship( 'properties', $term );
+                        }
+                    }
+                    else {
+                        $this->arProducts[ $id ]->setRelationship( 'properties', array(
+                            'external' => $propertyId,
+                            'value'    => $propertyValue,
+                        ) );
+                    }
                 }
             }
         }
