@@ -751,7 +751,9 @@ class Parser
                         /**
                          * Unique external
                          */
-                        $term->setExternal( 'pa_' . $taxonomy->getSlug() . '/' . $term->get_slug() );
+                        $extSlug = $taxonomy->getSlug();
+                        if( 0 !== strpos($extSlug, 'pa_') ) $extSlug = 'pa_' . $extSlug;
+                        $term->setExternal( $extSlug . '/' . $term->get_slug() );
 
                         /**
                          * Unique slug (may be equal slugs on other taxonomy)

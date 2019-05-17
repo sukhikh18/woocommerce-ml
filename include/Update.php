@@ -70,10 +70,35 @@ class Update
         $date_now = date('Y-m-d H:i:s');
         $gmdate_now = gmdate('Y-m-d H:i:s');
 
+        $qy = "SELECT `AUTO_INCREMENT`
+                    FROM  INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = '". DB_NAME ."'
+                    AND   TABLE_NAME   = '$wpdb->posts'";
+        $q = $wpdb->get_results( $qy );
+
+        $c = current( $q );
+        $start_from = intval( $c->AUTO_INCREMENT );
+
+        $results = array(
+            'create' => 0,
+            'update' => 0,
+        );
+
         foreach ($products as &$product)
         {
             $product->prepare();
             $p = $product->getObject();
+
+            if( !$product->isNew() ) continue;
+
+            if( !$p->ID ) {
+                $product->set_id( $start_from );
+                $start_from++;
+                $results['create']++;
+            }
+            else {
+                $results['update']++;
+            }
 
             if( '0000-00-00 00:00:00' === $p->post_date )     $p->post_date = $date_now;
             if( '0000-00-00 00:00:00' === $p->post_date_gmt ) $p->post_date_gmt = $gmdate_now;
@@ -111,19 +136,28 @@ class Update
          */
         if( sizeof($insert) && sizeof($phs) ) {
             $query = static::get_sql_update($wpdb->posts, $structure, $insert, $phs, $duplicate);
-            $wpdb->query( $query );
+            $q = $wpdb->query( $query );
         }
+
+        return $results;
     }
 
     public static function postmeta( &$products )
     {
+        $results = array(
+            'update' => 0,
+        );
+
         foreach ($products as &$product)
         {
+            if( !$product->isNew() ) continue;
+
             /**
              * @todo think how to get inserted meta
              */
             if( !$post_id = $product->get_id() ) {
                 Utils::addLog( 'Нет ID товара для его наполнения пользовательскими поялми', $product );
+                continue;
             }
 
             /**
@@ -134,8 +168,11 @@ class Update
             foreach ($listOfMeta as $mkey => $mvalue)
             {
                 update_post_meta( $post_id, $mkey, trim($mvalue) );
+                $results['update']++;
             }
         }
+
+        return $results;
     }
 
     /**
@@ -422,15 +459,15 @@ class Update
 
         foreach ($posts as $post)
         {
-            if( !$post_id = $post->get_id() ) continue;
-
-            $wp_post = $post->getObject();
-
             /**
              * for new products only
              * @todo add filter
              */
-            // if( $wp_post->post_date != $wp_post->post_modified ) continue;
+            if( $post->isNew() ) continue;
+
+            if( !$post_id = $post->get_id() ) continue;
+
+            $wp_post = $post->getObject();
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();

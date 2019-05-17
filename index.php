@@ -87,6 +87,15 @@ if (!defined('EX_EXT_METAFIELD')) define('EX_EXT_METAFIELD', 'EXT_ID');
 
 require_once PLUGIN_DIR . '/.register.php';
 
+add_filter( 'exchange_posts_import_offset', __NAMESPACE__ . '\metas_exchange_posts_import_offset', 10, 4 );
+function metas_exchange_posts_import_offset($offset, $productsCount, $offersCount, $filename) {
+    if( 0 === strpos($filename, 'rest') || 0 === strpos($filename, 'price') ) {
+        $offset = 1000;
+    }
+
+    return $offset;
+}
+
 add_action( '1c4wp_exchange', __NAMESPACE__ . '\doExchange', 10 );
 function doExchange() {
     /**
@@ -317,7 +326,7 @@ function doExchange() {
         $productsCount = sizeof( $products );
         $offersCount = sizeof( $offers );
 
-        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
+        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount, $filename);
 
         /** @recursive update if is $productsCount > $offset */
         if( $productsCount > $progress ) {
@@ -328,7 +337,6 @@ function doExchange() {
 
             /** Count products will be updated */
             $progress += sizeof( $products );
-            $msg = "$progress из $productsCount товаров обновлено.";
 
             /** Require retry */
             if( $progress < $productsCount ) {
@@ -339,10 +347,18 @@ function doExchange() {
                 Utils::setMode('relationships');
             }
 
-            Update::posts( $products );
-            Update::postmeta( $products );
+            $resProducts = Update::posts( $products );
+            $resProductsMeta = Update::postmeta( $products );
 
-            exit("progress\n$mode\n1: $msg");
+            $status = array();
+            $status[] = "$progress из $productsCount записей товаров обработано.";
+            if( $resProducts['create'] ) $status[] = $resProducts['create'] . " товаров добавлено.";
+            if( $resProducts['update'] ) $status[] = $resProducts['update'] . " из $productsCount товаров обновлено.";
+            if( $resProductsMeta['update'] ) $status[] = $resProductsMeta['update'] . " произвольных записей товаров обновлено.";
+
+            $msg = implode(' <br>', $status);
+
+            exit("progress\n$mode\n$msg");
         }
 
         /** @recursive update if is $offersCount > $offset */
@@ -354,7 +370,16 @@ function doExchange() {
 
             /** Count offers who will be updated */
             $progress += sizeof($offers);
-            $msg = "$progress из $offersCount предложений обновлено.";
+
+            if( 0 === strpos($filename, 'price') ) {
+                $msg = "$progress из $offersCount цен обработано.";
+            }
+            elseif( 0 === strpos($filename, 'rest') ) {
+                $msg = "$progress из $offersCount запасов обработано.";
+            }
+            else {
+                $msg = "$progress из $offersCount предложений обработано.";
+            }
 
             $answer = 'progress';
 
@@ -410,7 +435,7 @@ function doExchange() {
         $productsCount = sizeof( $products );
         $offersCount = sizeof( $offers );
 
-        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount);
+        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount, $filename);
 
         $msg = 'Обновление зависимостей завершено.';
 
@@ -419,7 +444,7 @@ function doExchange() {
 
             $relationships = Update::relationships( $products );
             $progress += sizeof( $products );
-            $msg = "$relationships зависимостей $offset/$progress товаров (из $productsCount) обновлено.";
+            $msg = "$relationships зависимостей $offset товаров (всего $progress из $productsCount) обработано.";
 
             /** Require retry */
             if( $progress < $productsCount ) {
@@ -433,7 +458,7 @@ function doExchange() {
 
             $relationships = Update::relationships( $offers );
             $progress += sizeof( $offers );
-            $msg = "$relationships зависимостей $offset/$progress предложений (из $offersCount) обновлено.";
+            $msg = "$relationships зависимостей $offset предложений (всего $progress из $offersCount) обработано.";
 
             /** Require retry */
             if( $progress < $offersCount ) {

@@ -238,6 +238,16 @@ class ExchangePost
         $this->setExternal($ext ? $ext : $args['post_mime_type']);
     }
 
+    function isNew()
+    {
+        return $this->post->post_date == $this->post->post_date_modified;
+    }
+
+    function set_id( $value )
+    {
+        $this->post->ID = intval($value);
+    }
+
     function get_id()
     {
         return $this->post->ID;

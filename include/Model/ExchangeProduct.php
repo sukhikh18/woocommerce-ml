@@ -66,9 +66,9 @@ class ExchangeProduct extends ExchangePost
         update_post_meta($this->get_id(), '_product_attributes', $arAttributes);
     }
 
-    private function updateObjectTerm($product_id, $values, $taxonomy)
+    private function updateObjectTerm($product_id, $values, $taxonomy, $append = true )
     {
-        $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append = true );
+        $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append );
 
         if( is_wp_error($result) ) {
             Utils::addLog( $result, array(
@@ -102,7 +102,7 @@ class ExchangeProduct extends ExchangePost
             if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
         }
 
-        $count += $this->updateObjectTerm($product_id, $terms, 'product_cat');
+        $count += $this->updateObjectTerm($product_id, $terms, 'product_cat'); // , 0 < $count
 
         /**
          * Update product's war-s
