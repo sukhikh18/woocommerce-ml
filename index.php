@@ -358,7 +358,7 @@ function doExchange() {
 
             $msg = implode(' <br>', $status);
 
-            exit("progress\n$mode\n$msg");
+            exit("progress\n$msg");
         }
 
         /** @recursive update if is $offersCount > $offset */
@@ -401,7 +401,7 @@ function doExchange() {
             Update::offers( $offers );
             Update::offerPostMetas( $offers );
 
-            exit("$answer\n$mode\n2: $msg");
+            exit("$answer\n2: $msg");
         }
 
         exit("success\nИмпорт успешно завершен.");
@@ -435,7 +435,7 @@ function doExchange() {
         $productsCount = sizeof( $products );
         $offersCount = sizeof( $offers );
 
-        $offset = apply_filters('exchange_posts_import_offset', 500, $productsCount, $offersCount, $filename);
+        $offset = apply_filters('exchange_posts_relationships_offset', 500, $productsCount, $offersCount, $filename);
 
         $msg = 'Обновление зависимостей завершено.';
 
@@ -449,7 +449,7 @@ function doExchange() {
             /** Require retry */
             if( $progress < $productsCount ) {
                 Utils::setMode('relationships', array('progress' => (int) $progress));
-                exit("progress\n$mode\n$msg");
+                exit("progress\n$msg");
             }
         }
 
@@ -463,17 +463,17 @@ function doExchange() {
             /** Require retry */
             if( $progress < $offersCount ) {
                 Utils::setMode('relationships', array('progress' => (int) $progress));
-                exit("progress\n$mode\n$msg");
+                exit("progress\n$msg");
             }
 
             if( floatval($version) < 3 ) {
                 Utils::setMode('deactivate');
-                exit("progress\n$mode\n$msg");
+                exit("progress\n$msg");
             }
         }
 
         Utils::setMode('');
-        exit("success\n$mode\n$msg");
+        exit("success\n$msg");
     }
 
     /**
@@ -622,11 +622,11 @@ function doExchange() {
             @rename( $file, $pathname . ltrim(basename($file), "./\\") );
         }
 
-        $msg = 'деактивация товаров завершена';
+        $msg = 'Деактивация товаров завершена';
 
         if( floatval($version) < 3 ) {
             Utils::setMode('complete');
-            exit("progress\n$mode\n$msg");
+            exit("progress\n$msg");
         }
 
         exit("success\n$msg");

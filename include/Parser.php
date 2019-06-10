@@ -53,10 +53,9 @@ class Parser
         if( is_array($files) ) {
             foreach ($files as $file)
             {
-                /**
-                 * @todo set handler
-                 */
-                if(!is_readable($file)) die();
+                if(!is_readable($file)) {
+                    Utils::error( 'File ' . $file . ' is not readble.' );
+                }
 
                 $Parser->parse( $file );
             }

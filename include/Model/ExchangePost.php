@@ -240,7 +240,7 @@ class ExchangePost
 
     function isNew()
     {
-        return $this->post->post_date == $this->post->post_date_modified;
+        return empty($this->post->post_date_modified) || $this->post->post_date == $this->post->post_date_modified;
     }
 
     function set_id( $value )
