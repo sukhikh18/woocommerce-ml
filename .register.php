@@ -164,21 +164,21 @@ function __init() {
         }
     ) );
 
-    $Page->add_metabox( new Admin\Metabox(
-        'statusbox',
-        __('Status', DOMAIN),
-        function() {
-            Plugin::get_admin_template('statusbox', false, $inc = true);
-        }
-    ) );
+    // $Page->add_metabox( new Admin\Metabox(
+    //     'statusbox',
+    //     __('Status', DOMAIN),
+    //     function() {
+    //         Plugin::get_admin_template('statusbox', false, $inc = true);
+    //     }
+    // ) );
 
-    $Page->add_metabox( new Admin\Metabox(
-        'uploadbox',
-        __('Upload New Files', DOMAIN),
-        function() {
-            Plugin::get_admin_template('uploadbox', false, $inc = true);
-        }
-    ) );
+    // $Page->add_metabox( new Admin\Metabox(
+    //     'uploadbox',
+    //     __('Upload New Files', DOMAIN),
+    //     function() {
+    //         Plugin::get_admin_template('uploadbox', false, $inc = true);
+    //     }
+    // ) );
 }
 
 /**

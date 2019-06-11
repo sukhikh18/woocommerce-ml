@@ -65,68 +65,59 @@ foreach ($offers as $offer)
 ?>
 <table class="table widefat striped">
     <tr>
-        <td>Найдено файлов</td>
+        <td><?= __('Finded files', DOMAIN); ?></td>
         <td><?php foreach ($files as $file) {
             echo basename($file), '<br>';
         } ?></td>
     </tr>
     <tr>
-        <td>Кол-во товаров</td>
-        <td><?= sizeof($products) ;?> (<?= $newProductsCount ?>)</td>
+        <td><?= __('Products count', DOMAIN); ?></td>
+        <td><?= sizeof($products) ;?> (<?= $newProductsCount ?> новых)</td>
     </tr>
     <tr>
-        <td>Кол-во предложений</td>
-        <td><?= sizeof($offers) ;?> (<?= $newOffersCount ?>)</td>
+        <td><?= __('Offers count', DOMAIN); ?></td>
+        <td><?= sizeof($offers) ;?> (<?= $newOffersCount ?> новых)</td>
     </tr>
     <?php if( $orphanedProducts ): ?>
     <tr>
-        <td style="color: #f00;">Товаров без предложений</td>
+        <td style="color: #f00;"><?= __('Orphaned products', DOMAIN); ?></td>
         <td style="color: #f00;"><?= $orphanedProducts ?></td>
     </tr>
     <?php endif; ?>
     <?php if( $negativeCount ): ?>
     <tr>
-        <td style="color: #f00;">Отрицательные остатки</td>
+        <td style="color: #f00;"><?= __('Negative counts', DOMAIN); ?></td>
         <td style="color: #f00;"><?= $negativeCount ?></td>
     </tr>
     <?php endif; ?>
     <?php if( $nullPrice ) : ?>
     <tr>
-        <td style="color: #f00;">Предложения с нулевой стоимостью</td>
+        <td style="color: #f00;"><?= __('Null price offers', DOMAIN); ?></td>
         <td style="color: #f00;"><?= $negativeCount ?></td>
     </tr>
     <?php endif; ?>
     <tr>
-        <td>Кол-во категорий</td>
-        <td><?= sizeof($categories) ;?> (<?= $newCatsCount ?>)</td>
+        <td><?= __('Category count', DOMAIN); ?></td>
+        <td><?= sizeof($categories) ;?> (<?= $newCatsCount ?> новых)</td>
     </tr>
     <tr>
-        <td>Кол-во свойств</td>
+        <td><?= __('Properties count', DOMAIN); ?></td>
         <td><?= sizeof($properties) ;?></td>
     </tr>
     <tr>
-        <td>Кол-во значений свойств</td>
+        <td><?= __('Property\'s value count', DOMAIN); ?></td>
         <td><?= sizeof($attributeValues); ?></td>
     </tr>
     <tr>
-        <td>Кол-во производителей</td>
-        <td><?= sizeof($developers) ;?> (<?= $newDevsCount ?>)</td>
+        <td><?= __('Manufacturers count', DOMAIN); ?></td>
+        <td><?= sizeof($developers) ;?> (<?= $newDevsCount ?> новых)</td>
     </tr>
     <tr>
-        <td>Кол-во складов</td>
+        <td><?= __('Warehouses count', DOMAIN); ?></td>
         <td><?= sizeof($warehouses) ?></td>
     </tr>
     <tr>
-        <td colspan="2" align="center">В скобках указано количество не зарегистрированных объектов</td>
+        <td><?= __('Last update', DOMAIN); ?></td>
+        <td><?= get_option('exchange_last-update') ?></td>
     </tr>
 </table>
-
-<!-- <textarea id="ex-report-textarea" style="width: 100%; height: 350px;">
-<?php
-/*
-if( $last = Plugin::get('last_update') ) {
-    echo "Последнее обновление: {$last}\n";
-}
-*/
-?>
-</textarea> -->
