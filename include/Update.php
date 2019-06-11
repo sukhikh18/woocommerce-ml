@@ -67,21 +67,12 @@ class Update
         $duplicate = static::get_sql_duplicate( $posts_structure );
         $sql_placeholder = static::get_sql_placeholder( $posts_structure );
 
-        $date_now = date('Y-m-d H:i:s');
+        $date_now = current_time('mysql');
         $gmdate_now = gmdate('Y-m-d H:i:s');
-
-        $qy = "SELECT `AUTO_INCREMENT`
-                    FROM  INFORMATION_SCHEMA.TABLES
-                    WHERE TABLE_SCHEMA = '". DB_NAME ."'
-                    AND   TABLE_NAME   = '$wpdb->posts'";
-        $q = $wpdb->get_results( $qy );
-
-        $c = current( $q );
-        $start_from = intval( $c->AUTO_INCREMENT );
 
         $results = array(
             'create' => 0,
-            'update' => 0,
+            'update' => array(),
         );
 
         foreach ($products as &$product)
@@ -89,55 +80,72 @@ class Update
             $product->prepare();
             $p = $product->getObject();
 
-            if( !$product->isNew() ) continue;
-
-            if( !$p->ID ) {
-                $product->set_id( $start_from );
-                $start_from++;
+            if( !$product->get_id() ) {
                 $results['create']++;
+
+                /**
+                 * Collect insert data
+                 */
+
+                // Is date null
+                if( '0000-00-00 00:00:00' === $p->post_date || '' === $p->post_date )         $p->post_date = $date_now;
+                if( '0000-00-00 00:00:00' === $p->post_date_gmt || '' === $p->post_date_gmt ) $p->post_date_gmt = $gmdate_now;
+
+                array_push($insert,
+                    $p->ID,
+                    $p->post_author,
+                    $p->post_date,
+                    $p->post_date_gmt,
+                    $p->post_content,
+                    $p->post_title,
+                    $p->post_excerpt,
+                    $p->post_status,
+                    $p->comment_status,
+                    $p->ping_status,
+                    $p->post_password,
+                    $p->post_name,
+                    $p->to_ping,
+                    $p->pinged,
+                    $p->post_modified = $date_now,
+                    $p->post_modified_gmt = $gmdate_now,
+                    $p->post_content_filtered,
+                    $p->post_parent,
+                    $p->guid,
+                    $p->menu_order,
+                    $p->post_type,
+                    $p->post_mime_type,
+                    $p->comment_count);
+                array_push($phs, $sql_placeholder);
             }
             else {
-                $results['update']++;
+                $results['update'][] = $product->get_id();
             }
-
-            if( '0000-00-00 00:00:00' === $p->post_date )     $p->post_date = $date_now;
-            if( '0000-00-00 00:00:00' === $p->post_date_gmt ) $p->post_date_gmt = $gmdate_now;
-
-            array_push($insert,
-                $p->ID,
-                $p->post_author,
-                $p->post_date,
-                $p->post_date_gmt,
-                $p->post_content,
-                $p->post_title,
-                $p->post_excerpt,
-                $p->post_status,
-                $p->comment_status,
-                $p->ping_status,
-                $p->post_password,
-                $p->post_name,
-                $p->to_ping,
-                $p->pinged,
-                $p->post_modified = $date_now,
-                $p->post_modified_gmt = $gmdate_now,
-                $p->post_content_filtered,
-                $p->post_parent,
-                $p->guid,
-                $p->menu_order,
-                $p->post_type,
-                $p->post_mime_type,
-                $p->comment_count);
-
-            array_push($phs, $sql_placeholder);
         }
 
         /**
-         * Update posts
+         * Check update exists
+         */
+        $update_count = sizeof( $results['update'] );
+
+        /**
+         * Update date_modify
+         */
+        if( 0 < $update_count ) {
+            $q = $wpdb->query( "UPDATE $wpdb->posts
+                SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
+                WHERE ID in (" . implode(",", $results['update']) . ")
+            " );
+        }
+
+        /**
+         * Create new posts
          */
         if( sizeof($insert) && sizeof($phs) ) {
             $query = static::get_sql_update($wpdb->posts, $structure, $insert, $phs, $duplicate);
             $q = $wpdb->query( $query );
         }
+
+        $results['update'] = $update_count;
 
         return $results;
     }
@@ -155,10 +163,7 @@ class Update
             /**
              * @todo think how to get inserted meta
              */
-            if( !$post_id = $product->get_id() ) {
-                Utils::addLog( 'Нет ID товара для его наполнения пользовательскими поялми', $product );
-                continue;
-            }
+            if( !$post_id = $product->get_id() ) continue;
 
             /**
              * Get list of all meta by product
@@ -340,6 +345,10 @@ class Update
      */
     public static function offers( Array &$offers )
     {
+        return array(
+            'create' => 0,
+            'update' => 0,
+        );
     }
 
     public static function offerPostMetas( Array &$offers ) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
@@ -463,7 +472,7 @@ class Update
              * for new products only
              * @todo add filter
              */
-            if( $post->isNew() ) continue;
+            if( !$post->isNew() ) continue;
 
             if( !$post_id = $post->get_id() ) continue;
 

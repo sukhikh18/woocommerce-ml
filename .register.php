@@ -184,21 +184,59 @@ function __init() {
 /**
  * Add last modified to products table
  */
-add_filter( 'manage_edit-product_columns', __NAMESPACE__ . '\true_add_post_columns', 10, 1 );
-function true_add_post_columns($my_columns) {
-    $my_columns['modified'] = 'Last modified';
-    return $my_columns;
-}
+// add_filter( 'manage_edit-product_columns', __NAMESPACE__ . '\true_add_post_columns', 10, 1 );
+// function true_add_post_columns($my_columns) {
+//     $my_columns['modified'] = 'Last modified';
+//     return $my_columns;
+// }
 
-add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\true_fill_post_columns', 10, 1 );
-function true_fill_post_columns( $column ) {
-    global $post;
-    switch ( $column ) {
-        case 'modified':
-            echo $post->post_modified;
-            break;
+// add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\true_fill_post_columns', 10, 1 );
+// function true_fill_post_columns( $column ) {
+//     global $post;
+//     switch ( $column ) {
+//         case 'modified':
+//             echo $post->post_modified;
+//             break;
+//     }
+// }
+add_filter( 'post_date_column_status', function($status, $post, $strDate, $mode) {
+
+    if( $post->post_date < $post->post_modified && 'future' !== $post->post_status ) {
+
+        if ( 'publish' === $post->post_status ) {
+            $time   = get_post_modified_time( 'G', true, $post );
+            $time_diff = time() - $time;
+
+            if ( $time_diff > 0 && $time_diff < DAY_IN_SECONDS ) {
+                $showTime = sprintf( __( '%s ago' ), human_time_diff( $time ) );
+            } else {
+                $showTime = mysql2date( __( 'Y/m/d' ), $time );
+            }
+
+            echo __( 'Last Modified' ) . '<br />';
+
+            /** This filter is documented in wp-admin/includes/class-wp-posts-list-table.php */
+            echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime, $post, 'date', $mode ) . '</abbr><br />';
+        }
     }
-}
+
+    return $status;
+}, 10, 4 );
+
+/** @var @todo Change hook */
+add_action( 'restrict_manage_posts', function($post_type) {
+    if( 'product' == $post_type ) {
+        ?>
+        <style>
+            body table.wp-list-table td.column-thumb img {
+                max-width: 75px;
+                max-height: 75px;
+            }
+        </style>
+        <?php
+    }
+}, 10, 1 );
+
 
 /**
  * WC Product additional properties

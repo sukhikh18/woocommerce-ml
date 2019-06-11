@@ -240,7 +240,20 @@ class ExchangePost
 
     function isNew()
     {
-        return empty($this->post->post_date_modified) || $this->post->post_date == $this->post->post_date_modified;
+        $start_date = get_option( 'exchange_start-date', '' );
+
+        if( $start_date && strtotime($start_date) <= strtotime($this->post->post_date) ) {
+            return true;
+        }
+
+        /**
+         * 2d secure ;D
+         */
+        if( empty($this->post->post_modified) || $this->post->post_date == $this->post->post_modified ) {
+            return true;
+        }
+
+        return false;
     }
 
     function set_id( $value )

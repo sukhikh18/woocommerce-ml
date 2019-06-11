@@ -118,14 +118,16 @@ class Utils
     {
         if( is_wp_error( $err ) ) {
             $err = $err->get_error_code() . ': ' . $err->get_error_message();
+            // var_dump( $err );
         }
 
         if( $thing ) {
-            var_dump( $thing );
-            echo "<br><br>";
+            // var_dump( $thing );
+            // echo "<br><br>";
         }
 
-        static::error($err);
+        file_put_contents(__DIR__ . '/debug.log', print_r(array($err, $thing), 1));
+        // static::error($err);
     }
 
     static function get_status( $num )
