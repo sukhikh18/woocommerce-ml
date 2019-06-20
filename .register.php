@@ -41,6 +41,18 @@ function template_redirect() {
     // }
 }
 
+add_action('wp_ajax_1c4wp_exchange', __NAMESPACE__ . '\ajax_1c4wp_exchange');
+function ajax_1c4wp_exchange() {
+    if( ! wp_verify_nonce( $_REQUEST['exchange_nonce'], DOMAIN ) ) {
+        echo 'Ошибка! нарушены правила безопасности';
+        wp_die();
+    }
+
+    do_action( '1c4wp_exchange' );
+    wp_die();
+}
+
+
 /**
  * Register custom taxonomies
  */
@@ -123,12 +135,26 @@ function __init() {
     ) );
 
     $Page->set_assets( function() {
+        $files = Parser::getFiles();
+        usort($files, function($a, $b) {
+            return filemtime($a) > filemtime($b);
+        });
+
+        $filenames = array_map(function($path) {
+            return basename($path);
+        }, $files);
+
         wp_enqueue_style( 'exchange-page', Plugin::get_plugin_url('/admin/assets/exchange-page.css') );
-        // wp_enqueue_script( 'exchange-requests', Plugin::get_plugin_url('/admin/assets/exchange-requests.js') );
-        // wp_localize_script('exchange-requests', DOMAIN, array(
-        //     'debug_only' => Utils::is_debug(),
-        //     'exchange_url' => site_url('/exchange/'),
-        // ) );
+        wp_enqueue_script( 'Timer', Plugin::get_plugin_url('/admin/assets/Timer.js') );
+        wp_enqueue_script( 'ExhangeProgress', Plugin::get_plugin_url('/admin/assets/ExhangeProgress.js') );
+        wp_localize_script('ExhangeProgress', 'ml2e', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce( DOMAIN ),
+            'debug_only' => Utils::is_debug(),
+            'files' => $filenames,
+        ) );
+
+        wp_enqueue_script( 'exchange-page-js', Plugin::get_plugin_url('/admin/assets/admin.js') );
 
         /**
          * Upload Script
@@ -164,13 +190,13 @@ function __init() {
         }
     ) );
 
-    // $Page->add_metabox( new Admin\Metabox(
-    //     'statusbox',
-    //     __('Status', DOMAIN),
-    //     function() {
-    //         Plugin::get_admin_template('statusbox', false, $inc = true);
-    //     }
-    // ) );
+    $Page->add_metabox( new Admin\Metabox(
+        'statusbox',
+        __('Status', DOMAIN),
+        function() {
+            Plugin::get_admin_template('statusbox', false, $inc = true);
+        }
+    ) );
 
     // $Page->add_metabox( new Admin\Metabox(
     //     'uploadbox',
