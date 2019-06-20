@@ -22,7 +22,7 @@ jQuery(document).ready(function($) {
         this.error = false;
         this.request = null;
 
-        this.currentFilename = 0;
+        this.currentFilename = -1;
         this.filenames = ml2e.files;
 
         this.currentStep = -1;
@@ -112,17 +112,22 @@ jQuery(document).ready(function($) {
                     self.addReport( message );
 
                     if( 'success' === result ) {
-                        this.currentFilename++;
+                        self.currentFilename++;
 
-                        // @note set next iteration
-                        var nextStep    = self.getNextStep();
-                        if( nextStep ) {
-                            self.__exchange( nextStep );
+                        if( self.currentFilename && self.getCurrentFilename() ) {
+                            self.__exchange( currentStep );
                         }
                         else {
-                            self.setProgress( 100 );
-                            self.addReport( 'Выгрузка успешно завершена.' );
-                            self.onEnd();
+                            // @note set next iteration
+                            var nextStep    = self.getNextStep();
+                            if( nextStep ) {
+                                self.__exchange( nextStep );
+                            }
+                            else {
+                                self.setProgress( 100 );
+                                self.addReport( 'Выгрузка успешно завершена.' );
+                                self.onEnd();
+                            }
                         }
                     }
 
@@ -138,6 +143,8 @@ jQuery(document).ready(function($) {
                 console.error('Step "' + step + '" not exists');
                 return false;
             }
+
+            console.log(this.currentFilename, this.getCurrentFilename());
 
             this[ step ]();
         },
@@ -193,7 +200,7 @@ jQuery(document).ready(function($) {
                  * @todo fixit!
                  */
                 var width = parseFloat(this.$progress.width()) || 0;
-                this.$progress.css('width', (100 / (this.$progress.parent().width() / width)) + 10 + '%' );
+                this.$progress.css('width', (100 / (this.$progress.parent().width() / width)) + 3 + '%' );
                 this.$progress.css('max-width', '99%' );
             }
         },
