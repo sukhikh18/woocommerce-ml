@@ -215,7 +215,7 @@ class ExchangePost
         ) );
 
         if( empty($args['post_name']) ) {
-            $args['post_name'] = Utils::esc_cyr($args['post_title']);
+            $args['post_name'] = sanitize_title( Utils::esc_cyr($args['post_title'], false) );
         }
 
         /**

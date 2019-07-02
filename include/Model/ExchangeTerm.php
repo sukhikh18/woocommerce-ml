@@ -172,7 +172,7 @@ class ExchangeTerm implements Interfaces\ExternalCode
 
     public function set_slug( $slug )
     {
-        $this->term['slug'] = Utils::esc_cyr( (string) $slug );
+        $this->term['slug'] = sanitize_title( Utils::esc_cyr((string) $slug, false) );
     }
 
     public function get_description()
