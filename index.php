@@ -487,7 +487,7 @@ function doExchange() {
                 exit("success\n$msg");
             }
 
-            exit("success\nПустой импорт данных..Товаров $productsCount, предложений $offersCount\n$mode");
+            exit("success"); // \n$mode
         break;
 
         /**

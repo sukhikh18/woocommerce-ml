@@ -229,8 +229,8 @@ jQuery(document).ready(function($) {
         init: function() {
             this.request = this.__getRequest({
                 'type': 'catalog',
-                'mode': 'init'
-                // 'version' : '3.1'
+                'mode': 'init',
+                'version' : this.filenames.length > 4 ? '3.1' : '',
             }, this.init);
         },
 
