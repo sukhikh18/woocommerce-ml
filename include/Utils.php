@@ -2,17 +2,11 @@
 
 namespace NikolayS93\Exchange;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // disable direct access
-
-class Utils
-{
-    static $is_transaction = false;
-
+if( !function_exists('save_get_request') ) {
     /**
-     * Check consts
+     * Get requested data
      */
-    static function save_get_request( $k )
-    {
+    function save_get_request() {
         $value = false;
 
         if( isset($_REQUEST[ $k ]) ) {
@@ -21,39 +15,10 @@ class Utils
 
         return apply_filters('get_request__' . $k, $value);
     }
+}
 
-    static function get_filename()
-    {
-        return static::save_get_request('filename');
-    }
-
-    static function get_type()
-    {
-        return static::save_get_request('type');
-    }
-
-    static function get_mode()
-    {
-        $mode = static::save_get_request('mode');
-
-
-        if( !in_array($mode, array('checkauth', 'init')) && $ownMode = Plugin::get('mode') ) {
-            $mode = $ownMode;
-        }
-
-        return $mode;
-    }
-
-    static function is_debug_show() {
-        return (!defined('WP_DEBUG_DISPLAY') && defined('WP_DEBUG') && true == WP_DEBUG) ||
-        defined('WP_DEBUG_DISPLAY') && true == WP_DEBUG_DISPLAY;
-    }
-
-    static function is_debug() {
-        return ( defined('EX_DEBUG_ONLY') && TRUE === EX_DEBUG_ONLY );
-    }
-
-    static function get_full_request_uri() {
+if( !function_exists('get_full_request_uri') ) {
+    function get_full_request_uri() {
         $uri = 'http';
         if (@$_SERVER['HTTPS'] == 'on') $uri .= 's';
         $uri .= "://{$_SERVER['SERVER_NAME']}";
@@ -62,100 +27,21 @@ class Utils
 
         return $uri;
     }
+}
 
+if( !function_exists('check_zip_extension') ) {
     /**
-     * Escapes string
+     * Zip functions required
      */
-    static function esc_cyr($s, $context = 'url')
-    {
-        if( 'url' == $context ) {
-            $s = strip_tags( (string) $s);
-            $s = str_replace(array("\n", "\r"), " ", $s);
-            $s = preg_replace("/\s+/", ' ', $s);
-        }
-
-        $s = trim($s);
-        $s = function_exists('mb_strtolower') ? mb_strtolower($s) : strtolower($s);
-        $s = strtr($s, array('а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e','ж'=>'j','з'=>'z','и'=>'i','й'=>'y','к'=>'k','л'=>'l','м'=>'m','н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u','ф'=>'f','х'=>'h','ц'=>'c','ч'=>'ch','ш'=>'sh','щ'=>'shch','ы'=>'y','э'=>'e','ю'=>'yu','я'=>'ya','ъ'=>'','ь'=>''));
-        if( 'url' == $context ) {
-            $s = preg_replace("/[^0-9a-z-_ ]/i", "", $s);
-            $s = str_replace(" ", "-", $s);
-        }
-        return $s;
-    }
-
-    // static function parse_decimal($number)
-    // {
-    //     $number = str_replace(array(',', ' '), array('.', ''), $number);
-
-    //     return (float) $number;
-    // }
-
-    // static function sanitize_price( $string, $delimiter = '.' )
-    // {
-    //     $price = 0;
-
-    //     if( $string ) {
-    //         $arrPriceStr = explode($delimiter, $string);
-    //         foreach ($arrPriceStr as $i => $priceStr)
-    //         {
-    //             if( sizeof($arrPriceStr) !== $i + 1 ) {
-    //                 $price += (int)preg_replace("/\D/", '', $priceStr);
-    //             }
-    //             else {
-    //                 $price += (int)$priceStr / 100;
-    //             }
-    //         }
-    //     }
-
-    //     return $price;
-    // }
-
-    /**
-     * @todo
-     */
-    static function addLog( $err, $thing = false )
-    {
-        if( is_wp_error( $err ) ) {
-            $err = $err->get_error_code() . ': ' . $err->get_error_message();
-            // var_dump( $err );
-        }
-
-        if( $thing ) {
-            // var_dump( $thing );
-            // echo "<br><br>";
-        }
-
-        file_put_contents(__DIR__ . '/debug.log', print_r(array($err, $thing), 1));
-        // static::error($err);
-    }
-
-    static function get_status( $num )
-    {
-        $statuses = array(
-            0 => 'Not initialized',
-            1 => 'Started',
-            2 => 'imported',
-            3 => 'Cached',
-            4 => 'Terms updated',
-            5 => 'Products updated',
-            6 => 'Relationships updated',
-        );
-
-        return isset($statuses[ $num ]) ? $statuses[ $num ] : false;
-    }
-
-    /**
-     * Zip functions
-     */
-    static function check_zip()
-    {
+    function check_zip_extension() {
         @exec("which unzip", $_, $status);
         $is_zip = @$status === 0 || class_exists('ZipArchive');
-        if (!$is_zip) static::error("The PHP extension zip is required.");
+        if (!$is_zip) Plugin::error("The PHP extension zip is required.");
     }
+}
 
-    static function filesize_to_bytes($filesize) {
+if( !function_exists('filesize_to_bytes') ) {
+    function filesize_to_bytes($filesize) {
         switch (substr($filesize, -1)) {
             case 'G':
             case 'g':
@@ -170,14 +56,15 @@ class Utils
             return $filesize;
         }
     }
+}
 
-    static function get_filesize_limit()
-    {
+if( !function_exists('get_filesize_limit') ) {
+    function get_filesize_limit() {
         // wp_max_upload_size()
         $file_limits = array(
-            static::filesize_to_bytes('10M'),
-            static::filesize_to_bytes(ini_get('post_max_size')),
-            static::filesize_to_bytes(ini_get('memory_limit')),
+            filesize_to_bytes('10M'),
+            filesize_to_bytes(ini_get('post_max_size')),
+            filesize_to_bytes(ini_get('memory_limit')),
         );
 
         @exec("grep ^MemFree: /proc/meminfo", $output, $status);
@@ -186,217 +73,141 @@ class Utils
             $file_limits[] = intval($output[1] * 1000 * 0.7);
         }
 
-        if (FILE_LIMIT) $file_limits[] = static::filesize_to_bytes(FILE_LIMIT);
+        if (FILE_LIMIT) $file_limits[] = filesize_to_bytes(FILE_LIMIT);
         $file_limit = min($file_limits);
 
         return $file_limit;
     }
+}
 
-    /**
-    * @param  Array   $paths for ex. glob("$fld/*.zip")
-    * @param  String  $dir   for ex. EX_DATA_DIR . '/catalog'
-    * @param  Boolean $rm    is remove after unpack
-    * @return String|true    error message | all right
-    */
-    static function unzip( $paths, $dir, $rm = false ) {
-        // if (!$paths) sprintf("No have a paths");
-
-        // распаковывает но возвращает статус 0
-        // $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));
-        // @exec($command, $_, $status);
-
-        // if (@$status !== 0) {
-        foreach ($paths as $zip_path) {
-            $zip = new \ZipArchive();
-            $result = $zip->open($zip_path);
-            if ($result !== true) return sprintf("Failed open archive %s with error code %d", $zip_path, $result);
-
-            $zip->extractTo($dir) or static::error(sprintf("Failed to extract from archive %s", $zip_path));
-            $zip->close() or static::error(sprintf("Failed to close archive %s", $zip_path));
-        }
-
-        if( $rm ) {
-            $remove_errors = array();
-
-            foreach ($paths as $zip_path) {
-                if( !@unlink($zip_path) ) $remove_errors[] = sprintf("Failed to unlink file %s", $zip_path);
-            }
-
-            if( !empty($remove_errors) ) {
-                return implode("\n", $remove_errors);
-            }
-        }
-
-        return true;
-        // }
-    }
-
-    /**
-    * errors
-    */
-    static function error($message, $type = "Error", $no_exit = false) {
-        global $ex_is_error;
-
-        $ex_is_error = true;
-
-        // failure\n think about
-        $message = "$type: $message";
-        $last_char = substr($message, -1);
-        if (!in_array($last_char, array('.', '!', '?'))) $message .= '.';
-
-        error_log($message);
-        echo "$message\n";
-
-        if ( static::is_debug_show() ) {
-            echo "\n";
-            debug_print_backtrace();
-
-            $arInfo = array(
-                "Request URI" => static::get_full_request_uri(),
-                "Server API" => PHP_SAPI,
-                "Memory limit" => ini_get('memory_limit'),
-                "Maximum POST size" => ini_get('post_max_size'),
-                "PHP version" => PHP_VERSION,
-                "WordPress version" => get_bloginfo('version'),
-                "Plugin version" => Plugin::get_plugin_data('Version'),
-            );
-            echo "\n";
-            foreach ($arInfo as $info_name => $info_value)
-            {
-                echo "$info_name: $info_value\n";
-            }
-        }
-
-        if ( !$no_exit ) {
-            static::wpdb_stop();
-            exit;
-        }
-    }
-
-    static function wp_error($wp_error, $only_error_code = null) {
-        $messages = array();
-        foreach ($wp_error->get_error_codes() as $error_code) {
-            if ($only_error_code && $error_code != $only_error_code) continue;
-
-            $wp_error_messages = implode(", ", $wp_error->get_error_messages($error_code));
-            $wp_error_messages = strip_tags($wp_error_messages);
-            $messages[] = sprintf("%s: %s", $error_code, $wp_error_messages);
-        }
-
-        static::error(implode("; ", $messages), "WP Error");
-    }
-
-    static function check_wpdb_error()
-    {
-        global $wpdb;
-
-        if (!$wpdb->last_error) return;
-
-        static::error(sprintf("%s for query \"%s\"", $wpdb->last_error, $wpdb->last_query), "DB Error", true);
-
-        static::wpdb_stop(false, true);
-
-        exit;
-    }
-
-    /**
-     * Set modes
-     */
-    static function disable_time_limit()
-    {
+if( !function_exists('disable_time_limit') ) {
+    function disable_time_limit() {
         $disabled_functions = explode(',', ini_get('disable_functions'));
         if (!in_array('set_time_limit', $disabled_functions)) @set_time_limit(0);
     }
+}
 
-    static function is_transaction()
-    {
-        return static::$is_transaction;
-    }
-
-    static function set_transaction_mode()
-    {
-        global $wpdb;
-
-        static::disable_time_limit();
-
-        register_shutdown_function(__NAMESPACE__ . '\transaction_shutdown_function');
-
-        $wpdb->show_errors(false);
-        $wpdb->query("START TRANSACTION");
-
-        static::$is_transaction = true;
-        static::check_wpdb_error();
-    }
-
-    static function wpdb_stop($is_commit = false, $no_check = false)
-    {
-        global $wpdb, $ex_is_transaction;
-
-        if ( !static::$is_transaction ) return;
-        static::$is_transaction = false;
-
-        $sql_query = !$is_commit ? "ROLLBACK" : "COMMIT";
-        $wpdb->query($sql_query);
-        if (!$no_check) Utils::check_wpdb_error();
-
-        if (Utils::is_debug_show()) echo "\n" . strtolower($sql_query);
-    }
-
-    static function start_exchange_session() {
-        set_error_handler( __NAMESPACE__ . '\strict_error_handler' );
-        set_exception_handler( __NAMESPACE__ . '\strict_exception_handler' );
-
-        ob_start( __NAMESPACE__ . '\output_callback' );
-    }
-
-    /**
-     * User validation
-     */
-    /**
-     * [check_user_permissions description]
-     * @param  int|WP_User $user [description]
-     * @return [type]       [description]
-     */
-    static function check_user_permissions( $user )
-    {
-        if (!user_can($user, 'shop_manager') && !user_can($user, 'administrator')) {
-            static::error("No {$user} user permissions");
-        }
-    }
-
-    static function check_wp_auth()
-    {
+if( !function_exists('check_wp_auth') ) {
+    function check_wp_auth() {
         global $user_id;
 
         if (preg_match("/ Development Server$/", $_SERVER['SERVER_SOFTWARE'])) return;
 
         if( is_user_logged_in() ) {
             $user = wp_get_current_user();
-            if (!$user_id = $user->ID) static::error("Not logged in");
+            if (!$user_id = $user->ID) Plugin::error("Not logged in");
         }
         elseif( !empty($_COOKIE[ COOKIENAME ]) ) {
             $user = wp_validate_auth_cookie($_COOKIE[ COOKIENAME ], 'auth');
-            if (!$user_id = $user) static::error("Invalid cookie");
+            if (!$user_id = $user) Plugin::error("Invalid cookie");
         }
 
-        static::check_user_permissions($user_id);
-    }
-
-    static function getTime($time = false)
-    {
-        return $time === false? microtime(true) : microtime(true) - $time;
-    }
-
-    static function setMode( $mode, $args = array() )
-    {
-        $args = wp_parse_args( $args, array(
-            'mode' => $mode,
-            'progress' => 0,
-        ) );
-
-        Plugin::set( $args );
+        Plugin::check_user_permissions($user_id);
     }
 }
+
+if( !function_exists('esc_cyr') ) {
+    /**
+     * Escape cyrilic chars
+     */
+    function esc_cyr($s, $context = 'url') {
+        if( 'url' == $context ) {
+            $s = strip_tags( (string) $s);
+            $s = str_replace(array("\n", "\r"), " ", $s);
+            $s = preg_replace("/\s+/", ' ', $s);
+        }
+
+        $s = trim($s);
+        $s = function_exists('mb_strtolower') ? mb_strtolower($s) : strtolower($s);
+        $s = strtr($s, array(
+            'а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e',
+            'ж'=>'j','з'=>'z','и'=>'i','й'=>'y','к'=>'k','л'=>'l','м'=>'m',
+            'н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u',
+            'ф'=>'f','х'=>'h','ц'=>'c','ч'=>'ch','ш'=>'sh','щ'=>'shch',
+            'ы'=>'y','э'=>'e','ю'=>'yu','я'=>'ya','ъ'=>'','ь'=>''
+        ) );
+
+        if( 'url' == $context ) {
+            $s = preg_replace("/[^0-9a-z-_ ]/i", "", $s);
+            $s = str_replace(" ", "-", $s);
+        }
+
+        return $s;
+    }
+}
+
+/**
+ * Waste?
+ */
+
+// if( !function_exists('getTaxonomyByExternal') ) {
+//     function getTaxonomyByExternal( $raw_ext_code ) {
+//         global $wpdb;
+
+//         $rsResult = $wpdb->get_results( $wpdb->prepare("
+//             SELECT wat.*, watm.* FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
+//             INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id
+//             WHERE watm.meta_value = %d
+//             LIMIT 1
+//             ", $raw_ext_code) );
+
+//         if( $rsResult ) {
+//             $res = current($rsResult);
+//             $obResult = new ExchangeAttribute( $res, $res->meta_value );
+//         }
+
+//         return $obResult;
+//     }
+// }
+
+// if( !function_exists('getAttributesMap') ) {
+//     function getAttributesMap() {
+//         global $wpdb;
+
+//         $arResult = array();
+//         $rsResult = $wpdb->get_results( "
+//             SELECT wat.*, watm.*, watm.meta_value as ext FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
+//             INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id" );
+
+//         die();
+
+//         foreach ($rsResult as $res)
+//         {
+//             $arResult[ $res->meta_value ] = new ExchangeAttribute( $res, $res->meta_value );
+//         }
+
+//         return $arResult;
+//     }
+// }
+
+// if( !function_exists('parse_decimal') ) {
+//     function parse_decimal($number) {
+//         $number = str_replace(array(',', ' '), array('.', ''), $number);
+
+//         return (float) $number;
+//     }
+// }
+
+// if( !function_exists('sanitize_price') ) {
+//     function sanitize_price($string, $delimiter = '.') {
+//         $price = 0;
+
+//         if( $string ) {
+//             $arrPriceStr = explode($delimiter, $string);
+//             foreach ($arrPriceStr as $i => $priceStr)
+//             {
+//                 if( sizeof($arrPriceStr) !== $i + 1 ) {
+//                     $price += (int)preg_replace("/\D/", '', $priceStr);
+//                 }
+//                 else {
+//                     $price += (int)$priceStr / 100;
+//                 }
+//             }
+//         }
+
+//         return $price;
+//     }
+// }
 
 // add_action('delete_term', 'wc1c_delete_term', 10, 4);
 // function wc1c_delete_term($term_id, $tt_id, $taxonomy, $deleted_term) {

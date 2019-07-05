@@ -364,54 +364,6 @@ class Update
              */
             $update = false;
 
-            // if( !$update ) {
-            //     $properties = array(
-            //         '_unit' => $exOffer->unit,
-            //         // '_wc_review_count' => '0',
-            //         // '_wc_rating_count' => 'a:0:{}',
-            //         // '_wc_average_rating' => '0',
-            //         // '_edit_lock' => '',
-            //         '_product_attributes' => 'a:0:{}',
-            //         '_regular_price' => $obExchangeOffer->getMeta('_regular_price'),
-            //         '_price' => $obExchangeOffer->getMeta('_price'),
-            //         '_manage_stock' => 'yes',
-            //         '_stock_status' => 1 <= $exOffer->quantity ? 'instock' : 'outofstock',
-            //         '_stock' => $exOffer->quantity,
-            //         '_edit_last' => get_current_user_id(),
-            //         '_sale_price' => '',
-            //         '_sale_price_dates_from' => '',
-            //         '_sale_price_dates_to' => '',
-            //         '_tax_status' => 'taxable',
-            //         '_tax_class' => '',
-            //         // '_backorders' => 'no',
-            //         // '_low_stock_amount' => '',
-            //         '_sold_individually' => 'no',
-            //         '_weight' => $exOffer->weight,
-            //         '_length' => '',
-            //         '_width' => '',
-            //         '_height' => '',
-            //         // '_upsell_ids' => 'a:0:{}',
-            //         // '_crosssell_ids' => 'a:0:{}',
-            //         // '_purchase_note' => '',
-            //         '_default_attributes' => 'a:0:{}',
-            //         '_virtual' => 'no',
-            //         '_downloadable' => 'no',
-            //         '_product_image_gallery' => '',
-            //         // '_download_limit' => '-1',
-            //         // '_download_expiry' => '-1',
-            //         '_product_version' => '3.5.6',
-            //         'total_sales' => 0,
-            //     );
-
-            //     if( $exOffer->prices ) {
-            //         $properties['_prices'] = $exOffer->prices;
-            //     }
-
-            //     if( $exOffer->stock_wh ) {
-            //         $properties['_stock_wh'] = $exOffer->stock_wh;
-            //     }
-            // }
-
             $properties = array();
 
             if( $unit = $obExchangeOffer->getMeta('unit') ) {

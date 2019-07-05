@@ -47,4 +47,26 @@ jQuery(document).ready(function($) {
         $( '#stop-exchange' ).attr('disabled', 'true');
         $( '#exchangeit' ).attr('disabled', 'true');
     });
+
+    // @todo add preloader
+    $('#get_statistic').on('click', function(event) {
+        event.preventDefault();
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'GET',
+            dataType: 'html',
+            data: {
+                action: 'statistic_table',
+                exchange_nonce: ml2e.nonce
+            },
+        })
+        .done(function(html) {
+            $('#statistic_table').html(html);
+            console.log("Statistic updated");
+        })
+        .fail(function() {
+            console.log("error");
+        });
+    });
 });
