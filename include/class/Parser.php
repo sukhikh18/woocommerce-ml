@@ -514,7 +514,9 @@ class Parser
             $this->arOffers[ $id ]->set_quantity($quantity);
         }
 
-        // '_weight'        => $offer->getWeight(),
+        if( $weight = $offer->getWeight() ) {
+            $meta['_price'] = $weight;
+        }
 
         /** @var collection [description] */
         $warehousesCollection = $offer->getWarehouses();

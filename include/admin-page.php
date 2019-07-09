@@ -47,83 +47,12 @@ function admin_page() {
         Plugin::get_admin_template('menu-page', false, $inc = true);
     } );
 
-    // $Page->add_metabox( new Admin\Metabox(
-    //     'uploadbox',
-    //     __('Upload New Files', DOMAIN),
-    //     function() {
-    //         Plugin::get_admin_template('uploadbox', false, $inc = true);
-    //     }
-    // ) );
-
-    $Page->add_section( new Admin\Section(
-        'reportbox',
-        __('Report', DOMAIN),
-        function() {
-            ?>
-            <p class="submit" style="margin-top: -65px;"><input type="button" name="get_statistic" id="get_statistic" class="button button-primary right" value="Обновить статистику"></p>
-            <!-- <div class="postbox" style="margin-bottom: 0;">
-                <h2 class="hndle" style="cursor: pointer;"><span>Статистика</span></h2>
-                <div class="inside">
-                    -->
-                    <div id="statistic_table"> 
-                    <?php
-                    statisticTable( true );
-                    ?>
-                    </div><!--
-
-                    <p class="submit"><input type="button" name="get_statistic" id="get_statistic" class="button button-primary right" value="Обновить"></p>
-                </div>
-            </div> -->
-            <?php
-        }
-    ) );
-
-    $Page->add_section( new Admin\Section(
-        'postsinfo',
-        __('Posts', DOMAIN),
-        function() {
-            Plugin::get_admin_template('posts', false, $inc = true);
-        }
-    ) );
-
-    $Page->add_section( new Admin\Section(
-        'termsinfo',
-        __('Terms', DOMAIN),
-        function() {
-            Plugin::get_admin_template('terms', false, $inc = true);
-        }
-    ) );
-
-    $Page->add_metabox( new Admin\Metabox(
-        'statusbox',
-        __('Status', DOMAIN),
-        function() {
-            Plugin::get_admin_template('statusbox', false, $inc = true);
-        }
-    ) );
-
-    $Page->add_metabox( new Admin\Metabox(
-        'settings-post',
-        __('Товары', DOMAIN),
-        function() {
-            Plugin::get_admin_template('settings-post', false, true);
-        }
-    ) );
-
-    $Page->add_metabox( new Admin\Metabox(
-        'settings-offer',
-        __('Предложения', DOMAIN),
-        function() {
-            Plugin::get_admin_template('settings-offer', false, true);
-        }
-    ) );
-
-    $Page->add_metabox( new Admin\Metabox(
-        'settings-term',
-        __('Термины (Категории)', DOMAIN),
-        function() {
-            Plugin::get_admin_template('settings-term', false, true);
-        },
-        'normal'
-    ) );
+    include Plugin::get_admin_template('section-statistic');
+    include Plugin::get_admin_template('section-posts');
+    include Plugin::get_admin_template('section-terms');
+    include Plugin::get_admin_template('metabox-status');
+    include Plugin::get_admin_template('metabox-settings-post');
+    include Plugin::get_admin_template('metabox-settings-offer');
+    include Plugin::get_admin_template('metabox-settings-term');
+    // include Plugin::get_admin_template('metabox-upload');
 }

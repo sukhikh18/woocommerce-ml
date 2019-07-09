@@ -34,17 +34,16 @@ class ExchangeProduct extends ExchangePost
         $arAttributes = array();
 
         /**
-         * @var Relationship $property
+         * @var $property Relationship
          */
         foreach ($this->properties as $property)
         {
-
             $taxonomy = $property->getTaxonomy();
 
-            if( $external = $property->getExternal() ) {
+            if( $external = $property->getExternal() && term_exists( (int) $property->getValue(), $taxonomy ) ) {
                 $arAttributes[ $taxonomy ] = array(
                     'name'         => $taxonomy,
-                    'value'        => '', // $property->getValue()
+                    'value'        => '',
                     'position'     => 1,
                     'is_visible'   => 1,
                     'is_variation' => 0,
@@ -66,15 +65,29 @@ class ExchangeProduct extends ExchangePost
         update_post_meta($this->get_id(), '_product_attributes', $arAttributes);
     }
 
-    private function updateObjectTerm($product_id, $values, $taxonomy, $append = true )
+    private function updateObjectTerm($product_id, $terms, $taxonomy, $append = true )
     {
-        $result = wp_set_object_terms( $product_id, $values, $taxonomy, $append );
+        $result = array();
+
+        if( 'product_cat' == $taxonomy ) {
+            if( 'off' === ($post_relationship = Utils::get('post_relationship')) ) {
+                return 0;
+            }
+
+            elseif( 'default' == $post_relationship ) {
+                $default_term_id = get_option( 'default_' . $taxonomy );
+
+                $result = wp_set_object_terms( $product_id, (int) $default_term_id, $taxonomy );
+            }
+        }
+
+        if( empty($result) ) $result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
 
         if( is_wp_error($result) ) {
             Utils::addLog( $result, array(
                 'product_id' => $product_id,
                 'taxonomy'   => $taxonomy,
-                'values'     => $values,
+                'terms'     => $terms,
             ) );
         }
         else {
@@ -103,6 +116,8 @@ class ExchangeProduct extends ExchangePost
         }
 
         $count += $this->updateObjectTerm($product_id, $terms, 'product_cat'); // , 0 < $count
+
+        if( !$this->isNew() ) return $count;
 
         /**
          * Update product's war-s

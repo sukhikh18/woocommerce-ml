@@ -3,7 +3,7 @@
 namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\ORM\ExchangeItemMeta;
-use NikolayS93\Exchange\Utils;
+use NikolayS93\Exchange\Plugin;
 
 /**
  * Works with posts, term_relationships, postmeta
@@ -319,16 +319,19 @@ class ExchangePost
      */
     static public function fillExistsFromDB( &$products, $orphaned_only = false )
     {
-        /** @global wpdb wordpress database object */
-        global $wpdb, $site_url;
+        // $startExchange = get_option( 'exchange_start-date', '' );
+        // $intStartExchange = strtotime($startExchange);
 
-        $site_url = get_site_url();
+        /** @global wpdb wordpress database object */
+        global $wpdb;
 
         /** @var List of external code items list in database attribute context (%s='%s') */
         $externals = array();
 
         /** @var array list of objects exists from posts db */
         $exists = array();
+
+        $_products = array();
 
         /** @var $product NikolayS93\Exchange\Model\ProductModel or */
         /** @var $product NikolayS93\Exchange\Model\OfferModel */
@@ -339,54 +342,49 @@ class ExchangePost
         foreach ($products as $rawExternalCode => $product)
         {
             if( !$orphaned_only || ($orphaned_only && !$product->get_id()) ) {
-                list($ext) = explode("#", $product->getExternal());
-                $externals[] = "`post_mime_type` = '". $ext ."'";
+                list($product_ext) = explode('#', $product->getExternal());
+                $externals[] = "`post_mime_type` = '". esc_sql( $product_ext ) ."'";
             }
         }
 
-        if( !empty($externals) ) {
-            //ID, post_date, post_date_gmt, post_name, post_mime_type
-            $exists_query = "
+        if( $externals = implode(" \t\n OR ", $externals) ) {
+            // ID, post_author, post_date, post_title, post_content, post_excerpt, post_date_gmt, post_name, post_mime_type - required
+            $exists = $wpdb->get_results( "
                 SELECT *
                 FROM $wpdb->posts
                 WHERE post_type = 'product'
-                AND (\n". implode(" \t\n OR ", $externals) . "\n)";
-
-            $exists = $wpdb->get_results( $exists_query );
-
-            unset($externals);
+                AND (\n\t\n $externals \n)" );
         }
-
-        // $startExchange = get_option( 'exchange_start-date', '' );
-        // $intStartExchange = strtotime($startExchange);
 
         foreach ($exists as $exist)
         {
-            /** @var post_mime_type without XML/ */
-            $mime = substr($exist->post_mime_type, 4);
+            /** @var $mime post_mime_type without XML/ */
+            if( ($mime = substr($exist->post_mime_type, 4)) && isset($products[ $mime ]->post) ) {
 
-            if( $mime && isset($products[ $mime ]->post) ) {
+                /** Skip if selected */
+                if( Plugin::get('post_name', false) )         unset( $exist->post_name );
+                if( Plugin::get('skip_post_author', false) )  unset( $exist->post_author );
+                if( Plugin::get('skip_post_title', false) )   unset( $exist->post_title );
+                if( Plugin::get('skip_post_content', false) ) unset( $exist->post_content );
+                if( Plugin::get('skip_post_excerpt', false) ) unset( $exist->post_excerpt );
 
-                $originalPost = $products[ $mime ]->post;
-
-                /** @var stdObject (similar WP_Post) */
-                $post = &$products[ $mime ]->post;
-
-                /**
-                 * Set exists data
-                 */
-                foreach (get_object_vars( $exist ) as $vKey => $vVal)
+                foreach (get_object_vars( $exist ) as $key => $value)
                 {
-                    if( !empty($vVal) ) {
-                        $post->$vKey = $vVal;
-                    }
+                    $products[ $mime ]->post->$key = $value;
                 }
 
-                /**
-                 * @todo What do you want to keep the same?
-                 */
-                $post = apply_filters( 'exchange-keep-product', $post, $originalPost, $exist );
+                $_products[ $mime ] = $products[ $mime ];
             }
         }
+
+        return $_products;
+    }
+
+    function getProductMeta()
+    {
+        $meta = $this->getMeta();
+
+        unset( $meta['_price'], $meta['_regular_price'], $meta['_manage_stock'], $meta['_stock_status'], $meta['_stock'] );
+        return $meta;
     }
 }

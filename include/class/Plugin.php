@@ -302,21 +302,21 @@ class Plugin
         $mode = save_get_request('mode');
 
 
-        if( !in_array($mode, array('checkauth', 'init')) && $ownMode = Plugin::get('mode') ) {
+        if( !in_array($mode, array('checkauth', 'init')) && $ownMode = Plugin::get('mode', 'false', 'status') ) {
             $mode = $ownMode;
         }
 
         return $mode;
     }
 
-    static function setMode( $mode, $args = array() )
+    static function set_mode( $mode, $args = array() )
     {
         $args = wp_parse_args( $args, array(
             'mode' => $mode,
             'progress' => 0,
         ) );
 
-        Plugin::set( $args );
+        Plugin::set( $args, null, 'status' );
     }
 
     /**

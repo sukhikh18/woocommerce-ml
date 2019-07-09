@@ -10,6 +10,29 @@ use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
 use NikolayS93\Exchange\Model\ExchangePost;
 
+// post_mode  '' | update | off
+// post_name  '' | update | translit
+// skip_post_author           '' | on
+// skip_post_title            '' | on
+// skip_post_content          '' | on
+// skip_post_excerpt          '' | on
+
+// skip_post_attribute_value  '' | on
+
+// offer_mode  '' | update | off
+// skip_offer_price  '' | on
+// skip_offer_qty    '' | on
+// skip_offer_unit   '' | on
+// skip_offer_weight '' | on
+
+// attribute_mode
+// category_mode
+// developer_mode
+// warehouse_mode
+
+// post_relationship
+// post_attribute
+
 class Update
 {
 
@@ -54,123 +77,134 @@ class Update
 
     public static function posts( &$products )
     {
-        global $wpdb, $user_id;
+        global $wpdb, $user_id; //, $site_url
+        // $site_url = get_site_url();
 
-        if( empty($products) || !is_array($products) ) return;
+        // If data is empty
+        if( empty($products) ) return;
 
-        $insert = array();
-        $phs = array();
+        // If disabled option
+        if( 'off' === ($post_mode = Plugin::get('post_mode')) ) return;
 
+        // Current date for update modify
+        $date_now = current_time('mysql');
+        $gmdate_now = gmdate('Y-m-d H:i:s');
+
+        // Generate DUPLICATE KEY UPDATE structure
         $posts_structure = ExchangePost::get_structure('posts');
 
         $structure = static::get_sql_structure( $posts_structure );
         $duplicate = static::get_sql_duplicate( $posts_structure );
         $sql_placeholder = static::get_sql_placeholder( $posts_structure );
 
-        $date_now = current_time('mysql');
-        $gmdate_now = gmdate('Y-m-d H:i:s');
+        // define empty data for fill
+        $insert = array();
+        $filler = array();
 
+        // Define empty result
         $results = array(
             'create' => 0,
-            'update' => array(),
+            'update' => 0,
         );
 
+        /**
+         * Prepare data
+         * @var $product NikolayS93\Exchange\Model\ExchangePost
+         */
         foreach ($products as &$product)
         {
             $product->prepare();
             $p = $product->getObject();
 
             if( !$product->get_id() ) {
+                /** if is update only */
+                if( 'update' === $post_mode ) continue;
+
                 $results['create']++;
-
-                /**
-                 * Collect insert data
-                 */
-
-                // Is date null
-                if( '0000-00-00 00:00:00' === $p->post_date || '' === $p->post_date )         $p->post_date = $date_now;
-                if( '0000-00-00 00:00:00' === $p->post_date_gmt || '' === $p->post_date_gmt ) $p->post_date_gmt = $gmdate_now;
-
-                array_push($insert,
-                    $p->ID,
-                    $p->post_author,
-                    $p->post_date,
-                    $p->post_date_gmt,
-                    $p->post_content,
-                    $p->post_title,
-                    $p->post_excerpt,
-                    $p->post_status,
-                    $p->comment_status,
-                    $p->ping_status,
-                    $p->post_password,
-                    $p->post_name,
-                    $p->to_ping,
-                    $p->pinged,
-                    $p->post_modified = $date_now,
-                    $p->post_modified_gmt = $gmdate_now,
-                    $p->post_content_filtered,
-                    $p->post_parent,
-                    $p->guid,
-                    $p->menu_order,
-                    $p->post_type,
-                    $p->post_mime_type,
-                    $p->comment_count);
-                array_push($phs, $sql_placeholder);
             }
             else {
-                $results['update'][] = $product->get_id();
+                $results['update']++;
             }
+
+            // Is date null set now
+            if( !(int) preg_replace('/[^0-9]/', '', $p->post_date) ) $p->post_date = $date_now;
+            if( !(int) preg_replace('/[^0-9]/', '', $p->post_date_gmt) ) $p->post_date_gmt = $gmdate_now;
+
+            array_push($insert,
+                $p->ID,
+                $p->post_author,
+                $p->post_date,
+                $p->post_date_gmt,
+                $p->post_content,
+                $p->post_title,
+                $p->post_excerpt,
+                $p->post_status,
+                $p->comment_status,
+                $p->ping_status,
+                $p->post_password,
+                $p->post_name,
+                $p->to_ping,
+                $p->pinged,
+                $p->post_modified = $date_now,
+                $p->post_modified_gmt = $gmdate_now,
+                $p->post_content_filtered,
+                $p->post_parent,
+                $p->guid,
+                $p->menu_order,
+                $p->post_type,
+                $p->post_mime_type,
+                $p->comment_count
+            );
+
+            array_push($filler, $sql_placeholder);
         }
 
         /**
-         * Check update exists
+         * Execute: sql update (DUPLICATE KEY) posts
          */
-        $update_count = sizeof( $results['update'] );
-
-        /**
-         * Update date_modify
-         */
-        if( 0 < $update_count ) {
-            $q = $wpdb->query( "UPDATE $wpdb->posts
-                SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
-                WHERE ID in (" . implode(",", $results['update']) . ")
-            " );
+        if( sizeof($insert) && sizeof($filler) ) {
+            $query = static::get_sql_update($wpdb->posts, $structure, $insert, $filler, $duplicate);
+            $wpdb->query( $query );
         }
-
-        /**
-         * Create new posts
-         */
-        if( sizeof($insert) && sizeof($phs) ) {
-            $query = static::get_sql_update($wpdb->posts, $structure, $insert, $phs, $duplicate);
-            $q = $wpdb->query( $query );
-        }
-
-        $results['update'] = $update_count;
 
         return $results;
     }
 
-    public static function postmeta( &$products )
+    public static function postmeta( $products )
     {
         $results = array(
             'update' => 0,
         );
 
-        foreach ($products as &$product)
+        $skip_post_meta_value = Plugin::get('skip_post_meta_value', false);
+        $skip_post_meta_sku   = Plugin::get('skip_post_meta_sku', false);
+        $skip_post_meta_unit  = Plugin::get('skip_post_meta_unit', false);
+        $skip_post_meta_tax   = Plugin::get('skip_post_meta_tax', false);
+
+        foreach ($products as $product)
         {
-            if( !$product->isNew() ) continue;
+            if( $skip_post_meta_value && !$product->isNew() ) continue;
 
             /**
-             * @todo think how to get inserted meta
+             * @todo @fixed think how to get inserted meta
+             * We fillExists oraphned before postmeta update
+             * @todo check this
              */
             if( !$post_id = $product->get_id() ) continue;
 
             /**
              * Get list of all meta by product
+             * ["_sku"], ["_unit"], ["_tax"], ["{$custom}"],
              */
-            $listOfMeta = $product->getMeta();
+            $productMeta = $product->getProductMeta();
 
-            foreach ($listOfMeta as $mkey => $mvalue)
+            if( !$product->isNew() ) {
+                if( $skip_post_meta_sku ) unset( $productMeta["_sku"] );
+                if( $skip_post_meta_unit ) unset( $productMeta["_unit"] );
+                if( $skip_post_meta_tax ) unset( $productMeta["_tax"] );
+            }
+
+            foreach ($productMeta as $mkey => $mvalue)
             {
                 update_post_meta( $post_id, $mkey, trim($mvalue) );
                 $results['update']++;
@@ -211,16 +245,60 @@ class Update
             /**
              * @todo Check why need double iteration for parents
              * @note do not update exists terms
-             * @todo add filter for update oldest
-             * @note So, i think, we can write author's user_id and do not touch if is edited by not automaticly
+             * @note So, i think, we can write author's user_id and do not touch if is manual edited by adminisrator
              */
+
+            if( 'product_cat' == $arTerm['taxonomy'] ) {
+                if( 'off' === ($category_mode = Plugin::get('category_mode')) ) continue;
+                if( 'create' == $category_mode && $term_id ) continue;
+                if( 'update' == $category_mode && !$term_id ) continue;
+
+                if( $term_id ) {
+                    if( !Plugin::get('cat_name') )   unset($arTerm['name']);
+                    if( !Plugin::get('cat_desc') )   unset($arTerm['description']);
+                    if( !Plugin::get('cat_parent') ) unset($arTerm['parent']);
+                }
+            }
+
+            elseif( apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ) == $arTerm['taxonomy'] ) {
+                if( 'off' === ($developer_mode = Plugin::get('developer_mode')) ) continue;
+                if( 'create' == $developer_mode && $term_id ) continue;
+                if( 'update' == $developer_mode && !$term_id ) continue;
+
+                if( $term_id ) {
+                    if( !Plugin::get('dev_name') ) unset($arTerm['name']);
+                    if( !Plugin::get('dev_desc') ) unset($arTerm['description']);
+                }
+            }
+
+            elseif( apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG ) == $arTerm['taxonomy'] ) {
+                if( 'off' === ($warehouse_mode = Plugin::get('warehouse_mode')) ) continue;
+                if( 'create' == $warehouse_mode && $term_id ) continue;
+                if( 'update' == $warehouse_mode && !$term_id ) continue;
+
+                if( $term_id ) {
+                    if( !Plugin::get('wh_name') ) unset($arTerm['name']);
+                    if( !Plugin::get('wh_desc') ) unset($arTerm['description']);
+                }
+            }
+
+            // attributes
+            else {
+                if( 'off' === ($attribute_mode = Plugin::get('attribute_mode')) ) continue;
+                if( 'create' == $attribute_mode && $term_id ) continue;
+                if( 'update' == $attribute_mode && !$term_id ) continue;
+
+                if( $term_id ) {
+                    if( !Plugin::get('pa_name') ) unset($arTerm['name']);
+                    if( !Plugin::get('pa_desc') ) unset($arTerm['description']);
+                }
+            }
+
             if( $term_id ) {
-                $result = array('term_id' => $term_id);
-                // unset( $arTerm['parent'] );
-                // $result = wp_update_term( $term_id, $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_update_term', $arTerm )) );
+                $result = wp_update_term( $term_id, $arTerm['taxonomy'], $arTerm );
             }
             else {
-                $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], array_filter(apply_filters('1c4wp_insert_term', $arTerm )) );
+                $result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], $arTerm );
             }
 
             if( !is_wp_error($result) ) {
@@ -355,49 +433,49 @@ class Update
     {
         global $wpdb, $user_id;
 
-        foreach ($offers as $obExchangeOffer)
-        {
-            if( !$post_id = $obExchangeOffer->get_id() ) continue;
+        $result = array(
+            'update' => 0,
+        );
 
-            /**
-             * @todo How to check new product?
-             */
-            $update = false;
+        /** @var offer ExchangeOffer */
+        foreach ($offers as $offer)
+        {
+            // if ($offer->isNew())
+            if( !$post_id = $offer->get_id() ) continue;
 
             $properties = array();
 
-            if( $unit = $obExchangeOffer->getMeta('unit') ) {
+            // its on post only?
+            if( $unit = $offer->getMeta('unit') ) {
                 $properties['_unit'] = $unit;
             }
 
-            if( $price = $obExchangeOffer->getMeta('price') ) {
-                $properties['_regular_price'] = $price;
-                $properties['_price'] = $price;
+            if( 'off' !== Plugin::get('offer_price', false) ) {
+                if( $price = $offer->getMeta('price') ) {
+                    $properties['_regular_price'] = $price;
+                    $properties['_price'] = $price;
+                }
             }
 
+            if( 'off' !== Plugin::get('offer_qty', false) ) {
+                $qty = $offer->get_quantity();
 
-            /**
-             * @todo fixit (think about)
-             * We want manage all stock :)
-             */
-            $qty = $obExchangeOffer->get_quantity();
-
-            // if( null !== $qty ) {
                 $properties['_manage_stock'] = 'yes';
                 $properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
                 $properties['_stock']        = $qty;
-            // }
 
-            if( $weight = $obExchangeOffer->getMeta('weight') ) {
+                if( $stock_wh = $offer->getMeta('stock_wh') ) {
+                    $properties['_stock_wh'] = $stock_wh;
+                }
+            }
+
+            if( 'off' !== Plugin::get('offer_weight', false) && $weight = $offer->getMeta('weight') ) {
                 $properties['_weight'] = $weight;
             }
 
+            // Типы цен
             // if( $exOffer->prices ) {
             //     $properties['_prices'] = $exOffer->prices;
-            // }
-
-            // if( $exOffer->stock_wh ) {
-            //     $properties['_stock_wh'] = $exOffer->stock_wh;
             // }
 
             foreach ($properties as $property_key => $property)
@@ -420,22 +498,14 @@ class Update
 
         foreach ($posts as $post)
         {
-            /**
-             * for new products only
-             * @todo add filter
-             */
-            if( !$post->isNew() ) continue;
-
             if( !$post_id = $post->get_id() ) continue;
 
-            $wp_post = $post->getObject();
+            // if( method_exists($post, 'updateObjectTerms') ) {
+            //     $updated += $post->updateObjectTerms();
+            // }
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();
-            }
-
-            if( method_exists($post, 'updateObjectTerms') ) {
-                $updated += $post->updateObjectTerms();
             }
         }
 

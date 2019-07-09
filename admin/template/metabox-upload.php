@@ -1,3 +1,12 @@
+<?php
+// $Page->add_metabox( new Admin\Metabox(
+//     'uploadbox',
+//     __('Upload New Files', DOMAIN),
+//     function() {
+//         Plugin::get_admin_template('uploadbox', false, $inc = true);
+//     }
+// ) );
+?>
 <div class="uploader-inline" style="text-align: center;">
     <!-- <button class="close dashicons dashicons-no"><span class="screen-reader-text">Закрыть окно загрузчика</span></button> -->
 

@@ -2,6 +2,10 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
+
+
 function do_exchange() {
     /**
      * @global $wpdb
@@ -104,7 +108,7 @@ function do_exchange() {
                  */
                 update_option( 'exchange_start-date', current_time('mysql') );
 
-                Plugin::setMode('');
+                Plugin::set_mode('');
             }
 
             exit("zip=yes\nfile_limit=" . get_filesize_limit());
@@ -192,7 +196,7 @@ function do_exchange() {
             $offersCount = sizeof( $offers );
 
             /** @var $progress int Offset from */
-            $progress = intval( Plugin::get('progress', 0) );
+            $progress = intval( Plugin::get('progress', 0, 'status') );
 
             $categories = $Parser->getCategories();
             $properties = $Parser->getProperties();
@@ -263,21 +267,24 @@ function do_exchange() {
 
                     /** Require retry */
                     if( $progress < $productsCount ) {
-                        Plugin::setMode('', array('progress' => (int) $progress));
+                        Plugin::set_mode('', array('progress' => (int) $progress));
                     }
                     /** Go away */
                     else {
-                        Plugin::setMode('relationships');
+                        Plugin::set_mode('relationships');
                     }
 
                     $resProducts = Update::posts( $products );
-                    $resProductsMeta = array('update' => 0);
 
-                    // has new products without id
+                    /**
+                     * has created products without ID in array
+                     */
                     if( 0 < $resProducts['create'] ) {
+                        /** Update products array */
                         ExchangeProduct::fillExistsFromDB( $products, $orphaned_only = true );
-                        $resProductsMeta = Update::postmeta( $products );
                     }
+
+                    $resProductsMeta = Update::postmeta( $products, $resProducts );
 
                     $status = array();
                     $status[] = "$progress из $productsCount записей товаров обработано.";
@@ -306,16 +313,16 @@ function do_exchange() {
 
                     /** Require retry */
                     if( $progress < $offersCount ) {
-                        Plugin::setMode('', array('progress' => (int) $progress));
+                        Plugin::set_mode('', array('progress' => (int) $progress));
                     }
                     /** Go away */
                     else {
                         if( 0 === strpos($filename, 'offers') ) {
-                            Plugin::setMode('relationships');
+                            Plugin::set_mode('relationships');
                         }
                         else {
                             $answer = 'success';
-                            Plugin::setMode('');
+                            Plugin::set_mode('');
                         }
                     }
 
@@ -359,7 +366,7 @@ function do_exchange() {
 
                     /** Require retry */
                     if( $progress < $productsCount ) {
-                        Plugin::setMode('relationships', array('progress' => (int) $progress));
+                        Plugin::set_mode('relationships', array('progress' => (int) $progress));
                         exit("progress\n$msg");
                     }
                 }
@@ -375,17 +382,17 @@ function do_exchange() {
 
                     /** Require retry */
                     if( $progress < $offersCount ) {
-                        Plugin::setMode('relationships', array('progress' => (int) $progress));
+                        Plugin::set_mode('relationships', array('progress' => (int) $progress));
                         exit("progress\n$msg");
                     }
 
                     if( floatval($version) < 3 ) {
-                        Plugin::setMode('deactivate');
+                        Plugin::set_mode('deactivate');
                         exit("progress\n$msg");
                     }
                 }
 
-                Plugin::setMode('');
+                Plugin::set_mode('');
                 exit("success\n$msg");
             }
 
@@ -541,7 +548,7 @@ function do_exchange() {
             $msg = 'Деактивация товаров завершена';
 
             if( floatval($version) < 3 ) {
-                Plugin::setMode('complete');
+                Plugin::set_mode('complete');
                 exit("progress\n$msg");
             }
 
@@ -574,7 +581,7 @@ function do_exchange() {
 
             delete_transient( 'wc_attribute_taxonomies' );
 
-            Plugin::setMode('');
+            Plugin::set_mode('');
             update_option( 'exchange_last-update', current_time('mysql') );
 
             exit("success\nВыгрузка данных завершена");

@@ -6,7 +6,7 @@ if( !function_exists('save_get_request') ) {
     /**
      * Get requested data
      */
-    function save_get_request() {
+    function save_get_request( $k ) {
         $value = false;
 
         if( isset($_REQUEST[ $k ]) ) {
