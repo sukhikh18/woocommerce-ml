@@ -84,7 +84,7 @@ jQuery(document).ready(function($) {
                      * @type [array]
                      */
                     var answer   = response.split('\n'),
-                        result   = answer[0].toLowerCase(), // (success|progress|failure),
+                        result   = answer[0].toLowerCase().trim(), // (success|progress|failure),
                         message  = answer[1],
                         extended = answer[2] || '';
                         // , mysql    = answer[3] || '';
@@ -111,7 +111,7 @@ jQuery(document).ready(function($) {
                     self.setProgress( currentStep );
                     self.addReport( message );
 
-                    if( 'success' === result ) {
+                    if( 'success' == result ) {
                         self.currentFilename++;
 
                         if( self.currentFilename && self.getCurrentFilename() ) {
@@ -125,7 +125,7 @@ jQuery(document).ready(function($) {
                             }
                             else {
                                 self.setProgress( 100 );
-                                self.addReport( 'Выгрузка успешно завершена.' );
+                                // self.addReport( 'Выгрузка успешно завершена.' );
                                 self.onEnd();
                             }
                         }
@@ -133,6 +133,10 @@ jQuery(document).ready(function($) {
 
                     else if( 'progress' === result ) {
                         self.__exchange( currentStep );
+                    }
+
+                    else {
+                        console.log('something wrong, result: ', result);
                     }
                 }
             });
@@ -143,8 +147,6 @@ jQuery(document).ready(function($) {
                 console.error('Step "' + step + '" not exists');
                 return false;
             }
-
-            console.log(this.currentFilename, this.getCurrentFilename());
 
             this[ step ]();
         },
@@ -244,11 +246,17 @@ jQuery(document).ready(function($) {
         },
 
         import: function() {
-            this.request = this.__getRequest({
-                'type': 'catalog',
-                'mode': 'import',
-                filename: this.getCurrentFilename()
-            }, this.import);
+            var filename = this.getCurrentFilename();
+            if( filename ) {
+                this.request = this.__getRequest({
+                    'type': 'catalog',
+                    'mode': 'import',
+                    filename: this.getCurrentFilename()
+                }, this.import);
+            }
+            else {
+                this.setError('Проверьте папку /wp-content/uploads/1c-exchange/catalog возможно она пуста.');
+            }
         },
 
         deactivate: function() {

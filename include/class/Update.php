@@ -10,29 +10,6 @@ use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
 use NikolayS93\Exchange\Model\ExchangePost;
 
-// post_mode  '' | update | off
-// post_name  '' | update | translit
-// skip_post_author           '' | on
-// skip_post_title            '' | on
-// skip_post_content          '' | on
-// skip_post_excerpt          '' | on
-
-// skip_post_attribute_value  '' | on
-
-// offer_mode  '' | update | off
-// skip_offer_price  '' | on
-// skip_offer_qty    '' | on
-// skip_offer_unit   '' | on
-// skip_offer_weight '' | on
-
-// attribute_mode
-// category_mode
-// developer_mode
-// warehouse_mode
-
-// post_relationship
-// post_attribute
-
 class Update
 {
 
@@ -199,9 +176,9 @@ class Update
             $productMeta = $product->getProductMeta();
 
             if( !$product->isNew() ) {
-                if( $skip_post_meta_sku ) unset( $productMeta["_sku"] );
+                if( $skip_post_meta_sku )  unset( $productMeta["_sku"] );
                 if( $skip_post_meta_unit ) unset( $productMeta["_unit"] );
-                if( $skip_post_meta_tax ) unset( $productMeta["_tax"] );
+                if( $skip_post_meta_tax )  unset( $productMeta["_tax"] );
             }
 
             foreach ($productMeta as $mkey => $mvalue)
@@ -256,8 +233,9 @@ class Update
                 if( $term_id ) {
                     if( !Plugin::get('cat_name') )   unset($arTerm['name']);
                     if( !Plugin::get('cat_desc') )   unset($arTerm['description']);
-                    if( !Plugin::get('cat_parent') ) unset($arTerm['parent']);
                 }
+
+                if( Plugin::get('skip_parent') ) unset($arTerm['parent']);
             }
 
             elseif( apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ) == $arTerm['taxonomy'] ) {
@@ -357,6 +335,8 @@ class Update
         global $wpdb;
 
         $retry = false;
+
+        if( 'off' === ($attribute_mode = Plugin::get('attribute_mode')) ) return $retry;
 
         foreach ($properties as $propSlug => $property)
         {
@@ -480,10 +460,13 @@ class Update
 
             foreach ($properties as $property_key => $property)
             {
+                $result['update']++;
                 update_post_meta( $post_id, $property_key, $property );
                 // wp_cache_delete( $post_id, "{$property_key}_meta" );
             }
         }
+
+        return $result['update'];
     }
 
     /***************************************************************************
@@ -500,9 +483,9 @@ class Update
         {
             if( !$post_id = $post->get_id() ) continue;
 
-            // if( method_exists($post, 'updateObjectTerms') ) {
-            //     $updated += $post->updateObjectTerms();
-            // }
+            if( method_exists($post, 'updateObjectTerms') ) {
+                $updated += $post->updateObjectTerms();
+            }
 
             if( method_exists($post, 'updateAttributes') ) {
                 $post->updateAttributes();

@@ -28,7 +28,7 @@ class Relationship
 
     function setValue($value)
     {
-        $this->value = (int) $value;
+        $this->value = $value;
     }
 
     function getTaxonomy()

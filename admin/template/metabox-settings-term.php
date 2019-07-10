@@ -9,6 +9,44 @@ $Page->add_metabox( new Metabox(
     'settings-term',
     __('Термины (Категории)', DOMAIN),
     function() {
+        $cats = array(
+            array(
+                'id'    => 'category_mode',
+                'type'  => 'select',
+                'label' => '',
+                'options' => array(
+                    ''       => 'Создавать и обновлять',
+                    'create' => 'Выгружать новые',
+                    'update' => 'Обновлять только',
+                    'off'    => 'Не выгружать',
+                ),
+            ),
+            array(
+                'id'    => 'cat_name',
+                'type'  => 'checkbox',
+                'label' => 'Название',
+            ),
+            array(
+                'id'    => 'cat_desc',
+                'type'  => 'checkbox',
+                'label' => 'Описание',
+            ),
+            array(
+                'id'    => 'skip_parent',
+                'type'  => 'checkbox',
+                'label' => 'Игнорировать иерархию',
+            ),
+            // array(
+            //     'id'    => 'cat_name',
+            //     'type'  => 'select',
+            //     'options' => array(
+            //         '' => 'Не обновлять код',
+            //         'update' => 'Обновлять',
+            //         'translit' => 'С транслитерацией',
+            //     ),
+            // ),
+        );
+
         $attrs = array(
             array(
                 'id'    => 'attribute_mode',
@@ -33,39 +71,6 @@ $Page->add_metabox( new Metabox(
             ),
             // array(
             //     'id'    => 'pa_name',
-            //     'type'  => 'select',
-            //     'options' => array(
-            //         '' => 'Не обновлять код',
-            //         'update' => 'Обновлять',
-            //         'translit' => 'С транслитерацией',
-            //     ),
-            // ),
-        );
-
-        $cats = array(
-            array(
-                'id'    => 'category_mode',
-                'type'  => 'select',
-                'label' => '',
-                'options' => array(
-                    ''       => 'Создавать и обновлять',
-                    'create' => 'Выгружать новые',
-                    'update' => 'Обновлять только',
-                    'off'    => 'Не выгружать',
-                ),
-            ),
-            array(
-                'id'    => 'cat_name',
-                'type'  => 'checkbox',
-                'label' => 'Название',
-            ),
-            array(
-                'id'    => 'cat_desc',
-                'type'  => 'checkbox',
-                'label' => 'Описание',
-            ),
-            // array(
-            //     'id'    => 'cat_name',
             //     'type'  => 'select',
             //     'options' => array(
             //         '' => 'Не обновлять код',
@@ -159,8 +164,10 @@ $Page->add_metabox( new Metabox(
                 'type' => 'select',
                 'label' => 'Привязка к аттрибуту',
                 'options' => array(
-                    ''        => 'Set string (not taxonomy)',
-                    // 'create'  => 'Create new attribute',
+                    '' => 'Skip',
+                    // 'create' => 'Create new attribute',
+                    'text' => 'Set string (not taxonomy)',
+                    'off' => 'Do not exchange attr. value'
                 ),
                 'desc' => __('What\'s do action if is attribute not exists', DOMAIN)
             )
@@ -169,18 +176,18 @@ $Page->add_metabox( new Metabox(
         ?>
         <div class="row" style="display: flex;flex-wrap: wrap;">
             <div class="col inside">
-                <h3>Атрибуты</h3>
-
-                <?php
-                $form = new Form( $attrs, array('is_table' => false) );
-                $form->display();
-                ?>
-            </div>
-            <div class="col inside">
                 <h3>Категории</h3>
 
                 <?php
                 $form = new Form( $cats, array('is_table' => false) );
+                $form->display();
+                ?>
+            </div>
+            <div class="col inside">
+                <h3>Атрибуты</h3>
+
+                <?php
+                $form = new Form( $attrs, array('is_table' => false) );
                 $form->display();
                 ?>
             </div>

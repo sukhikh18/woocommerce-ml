@@ -95,6 +95,11 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return $this->attribute_name;
     }
 
+    public function getName()
+    {
+        return $this->attribute_label;
+    }
+
     public function getTerms()
     {
         return $this->terms;

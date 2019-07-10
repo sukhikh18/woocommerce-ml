@@ -3,6 +3,8 @@
 namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\Utils;
+use NikolayS93\Exchange\Parser;
+use NikolayS93\Exchange\Plugin;
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeTaxonomy;
 
@@ -33,14 +35,47 @@ class ExchangeProduct extends ExchangePost
          */
         $arAttributes = array();
 
+        if( 'off' === ($post_attribute = Plugin::get('post_attribute')) ) return;
+
         /**
          * @var $property Relationship
          */
         foreach ($this->properties as $property)
         {
             $taxonomy = $property->getTaxonomy();
+            $is_visible = 1;
 
-            if( $external = $property->getExternal() && term_exists( (int) $property->getValue(), $taxonomy ) ) {
+            if( $property->getExternal() && !$property->getValue() ) {
+                if( 'text' != $post_attribute ) continue;
+
+                $is_visible = 0;
+
+                if( empty($allProperties) ) {
+                    $Parser = Parser::getInstance();
+                    $allProperties = $Parser->getProperties();
+                }
+
+                foreach ($allProperties as $_property)
+                {
+                    if( $_property->getSlug() == $taxonomy && ($_terms = $_property->getTerms()) ) {
+                        if( isset($_terms[ $property->getExternal() ]) ) {
+                            $_term = $_terms[ $property->getExternal() ];
+
+                            if( $_term instanceof ExchangeTerm  ) {
+                                $taxonomy = $_property->getName();
+                                $property->setValue( $_term->get_name() );
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(
+                ($external = $property->getExternal()) &&
+                $property->getValue() &&
+                term_exists( (int) $property->getValue(), $taxonomy )
+            ) {
                 $arAttributes[ $taxonomy ] = array(
                     'name'         => $taxonomy,
                     'value'        => '',
@@ -55,7 +90,7 @@ class ExchangeProduct extends ExchangePost
                     'name'         => $taxonomy,
                     'value'        => $property->getValue(),
                     'position'     => 1,
-                    'is_visible'   => 1,
+                    'is_visible'   => $is_visible,
                     'is_variation' => 0,
                     'is_taxonomy'  => 0,
                 );
@@ -70,18 +105,25 @@ class ExchangeProduct extends ExchangePost
         $result = array();
 
         if( 'product_cat' == $taxonomy ) {
+            $default_term_id = get_option( 'default_' . $taxonomy );
+
             if( 'off' === ($post_relationship = Utils::get('post_relationship')) ) {
                 return 0;
             }
 
             elseif( 'default' == $post_relationship ) {
-                $default_term_id = get_option( 'default_' . $taxonomy );
+                $object_terms = wp_get_object_terms( $product_id, $taxonomy, array('fields' => 'ids') );
 
-                $result = wp_set_object_terms( $product_id, (int) $default_term_id, $taxonomy );
+                if( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
+                    $result = wp_set_object_terms( $product_id, (int) $default_term_id, $taxonomy );
+                }
             }
+
+            $is_object_in_term = is_object_in_term( $product_id, $taxonomy, 'uncategorized' );
+            $append = $is_object_in_term && !is_wp_error( $is_object_in_term ) ? false : $append;
         }
 
-        if( empty($result) ) $result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
+        if( empty($result) ) $result = wp_set_object_terms( $product_id, array_map('intval', $terms), $taxonomy, $append );
 
         if( is_wp_error($result) ) {
             Utils::addLog( $result, array(
@@ -144,9 +186,14 @@ class ExchangeProduct extends ExchangePost
         /**
          * Update product's properties
          */
+        $post_attribute = Plugin::get('post_attribute');
+
         $taxs = array();
+
         foreach ($this->properties as $Relationship)
         {
+            if( 'off' === $post_attribute ) continue;
+
             if( $tax = $Relationship->getTaxonomy() ) {
                 if( !isset( $taxs[ $tax ] ) ) $taxs[ $tax ] = array();
                 if( $term_id = $Relationship->getValue() ) $taxs[ $tax ][] = $term_id;

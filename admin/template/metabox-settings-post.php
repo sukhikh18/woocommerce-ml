@@ -59,7 +59,7 @@ $Page->add_metabox( new Metabox(
                 'id'    => 'skip_post_meta_value',
                 'type'  => 'checkbox',
                 'label' => 'Свойства',
-                'desc'  => 'В том числе возможно ед. изм.',
+                'desc'  => 'В том числе возможно ед. изм., артикул, налоговая ставка',
             ),
             // array(
             //     'id'    => 'skip_post_attribute_value',

@@ -359,12 +359,12 @@ class ExchangePost
             /** @var $mime post_mime_type without XML/ */
             if( ($mime = substr($exist->post_mime_type, 4)) && isset($products[ $mime ]->post) ) {
 
-                /** Skip if selected (unset new data field from array) */
+                /** Skip if selected (unset new data field from array (@care)) */
                 // if( $post_name = Plugin::get('post_name') )         unset( $exist->post_name );
-                if( Plugin::get('skip_post_author') )  unset( $exist->post_author );
-                if( Plugin::get('skip_post_title') )   unset( $exist->post_title );
-                if( Plugin::get('skip_post_content') ) unset( $exist->post_content );
-                if( Plugin::get('skip_post_excerpt') ) unset( $exist->post_excerpt );
+                if( !Plugin::get('skip_post_author') )  unset( $exist->post_author );
+                if( !Plugin::get('skip_post_title') )   unset( $exist->post_title );
+                if( !Plugin::get('skip_post_content') ) unset( $exist->post_content );
+                if( !Plugin::get('skip_post_excerpt') ) unset( $exist->post_excerpt );
 
                 foreach (get_object_vars( $exist ) as $key => $value)
                 {

@@ -345,7 +345,7 @@ function do_exchange() {
                         $msg = "$progress из $offersCount предложений обработано.";
                     }
 
-                    exit("$answer\n2: $msg");
+                    exit("$answer\n$msg");
                 }
             }
 
@@ -356,13 +356,14 @@ function do_exchange() {
                     // Plugin::set_transaction_mode();
                     $offset = apply_filters('exchange_products_relationships_offset', 500, $productsCount, $filename);
                     $products = array_slice($products, $progress, $offset);
+                    $sizeOfProducts = sizeof( $products );
 
                     /**
                      * @todo write realy update counter
                      */
                     $relationships = Update::relationships( $products );
-                    $progress += sizeof( $products );
-                    $msg = "$relationships зависимостей $offset товаров (всего $progress из $productsCount) обработано.";
+                    $progress += $sizeOfProducts;
+                    $msg = "$relationships зависимостей $sizeOfProducts товаров (всего $progress из $productsCount) обработано.";
 
                     /** Require retry */
                     if( $progress < $productsCount ) {
@@ -375,10 +376,11 @@ function do_exchange() {
                     // Plugin::set_transaction_mode();
                     $offset = apply_filters('exchange_offers_relationships_offset', 500, $offersCount, $filename);
                     $offers = array_slice($offers, $progress, $offset);
+                    $sizeOfOffers = sizeof( $offers );
 
                     $relationships = Update::relationships( $offers );
-                    $progress += sizeof( $offers );
-                    $msg = "$relationships зависимостей $offset предложений (всего $progress из $offersCount) обработано.";
+                    $progress += $sizeOfOffers;
+                    $msg = "$relationships зависимостей $sizeOfOffers предложений (всего $progress из $offersCount) обработано.";
 
                     /** Require retry */
                     if( $progress < $offersCount ) {
