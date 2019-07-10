@@ -55,16 +55,16 @@ $Page->add_metabox( new Metabox(
             //         'off'    => 'Не выгружать',
             //     ),
             // ),
-            array(
-                'id'    => 'offer_weight',
-                'type'  => 'select',
-                'label' => 'Вес',
-                'options' => array(
-                    ''       => 'Выгружать',
-                    // 'update' => 'Только новым',
-                    'off'    => 'Не выгружать',
-                ),
-            ),
+            // array(
+            //     'id'    => 'offer_weight',
+            //     'type'  => 'select',
+            //     'label' => 'Вес',
+            //     'options' => array(
+            //         ''       => 'Выгружать',
+            //         // 'update' => 'Только новым',
+            //         'off'    => 'Не выгружать',
+            //     ),
+            // ),
         );
 
         $form = new Form( $data, array('is_table' => true) );

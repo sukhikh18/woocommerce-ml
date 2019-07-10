@@ -514,9 +514,10 @@ class Parser
             $this->arOffers[ $id ]->set_quantity($quantity);
         }
 
-        if( $weight = $offer->getWeight() ) {
-            $meta['_price'] = $weight;
-        }
+        // Function not exists!
+        // if( $weight = $offer->getWeight() ) {
+        //     $meta['_weight'] = $weight;
+        // }
 
         /** @var collection [description] */
         $warehousesCollection = $offer->getWarehouses();
@@ -845,6 +846,6 @@ class Parser
     private function prepare()
     {
         $this->parseRequisites();
-        $this->prepareOffers()
+        $this->prepareOffers();
     }
 }
