@@ -181,6 +181,16 @@ add_action( 'restrict_manage_posts', function($post_type) {
     }
 }, 10, 1 );
 
+add_action( 'woocommerce_attribute_deleted', function($id, $attribute_name, $taxonomy) {
+    global $wpdb;
+
+    $is_deleted = $wpdb->delete(
+        $wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
+        array( 'tax_id' => $id ),
+        array( '%d' )
+    );
+}, 10, 3 );
+
 function strict_error_handler($errno, $errstr, $errfile, $errline, $errcontext)
 {
     if (0 === error_reporting()) return false;
