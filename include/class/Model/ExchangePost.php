@@ -331,12 +331,6 @@ class ExchangePost
         /** @var array list of objects exists from posts db */
         $exists = array();
 
-        if( // !($post_name    = Plugin::get('post_name')) &&
-            !($skip_post_author  = Plugin::get('skip_post_author')) &&
-            !($skip_post_title   = Plugin::get('skip_post_title')) &&
-            !($skip_post_content = Plugin::get('skip_post_content')) &&
-            !($skip_post_excerpt = Plugin::get('skip_post_excerpt')) ) { return null; }
-
         /** @var $product NikolayS93\Exchange\Model\ProductModel or */
         /** @var $product NikolayS93\Exchange\Model\OfferModel */
         /**
@@ -367,10 +361,10 @@ class ExchangePost
 
                 /** Skip if selected (unset new data field from array) */
                 // if( $post_name = Plugin::get('post_name') )         unset( $exist->post_name );
-                if( $skip_post_author )  unset( $exist->post_author );
-                if( $skip_post_title )   unset( $exist->post_title );
-                if( $skip_post_content ) unset( $exist->post_content );
-                if( $skip_post_excerpt ) unset( $exist->post_excerpt );
+                if( Plugin::get('skip_post_author') )  unset( $exist->post_author );
+                if( Plugin::get('skip_post_title') )   unset( $exist->post_title );
+                if( Plugin::get('skip_post_content') ) unset( $exist->post_content );
+                if( Plugin::get('skip_post_excerpt') ) unset( $exist->post_excerpt );
 
                 foreach (get_object_vars( $exist ) as $key => $value)
                 {
