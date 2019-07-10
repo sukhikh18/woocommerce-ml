@@ -783,13 +783,11 @@ class Parser
         }
     }
 
-    private function prepare()
+    /**
+     * @todo add documentation
+     */
+    private function prepareOffers()
     {
-        $this->parseRequisites();
-
-        /**
-         * Magic ;D
-         */
         foreach ($this->arOffers as $i => $ExchangeOffer)
         {
             /**
@@ -842,5 +840,11 @@ class Parser
                 unset( $this->arOffers[$i] );
             }
         }
+    }
+
+    private function prepare()
+    {
+        $this->parseRequisites();
+        $this->prepareOffers()
     }
 }

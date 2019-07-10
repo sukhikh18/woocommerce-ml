@@ -326,12 +326,16 @@ class ExchangePost
         global $wpdb;
 
         /** @var List of external code items list in database attribute context (%s='%s') */
-        $externals = array();
+        $post_mime_types = array();
 
         /** @var array list of objects exists from posts db */
         $exists = array();
 
-        $_products = array();
+        if( // !($post_name    = Plugin::get('post_name')) &&
+            !($skip_post_author  = Plugin::get('skip_post_author')) &&
+            !($skip_post_title   = Plugin::get('skip_post_title')) &&
+            !($skip_post_content = Plugin::get('skip_post_content')) &&
+            !($skip_post_excerpt = Plugin::get('skip_post_excerpt')) ) { return null; }
 
         /** @var $product NikolayS93\Exchange\Model\ProductModel or */
         /** @var $product NikolayS93\Exchange\Model\OfferModel */
@@ -343,17 +347,17 @@ class ExchangePost
         {
             if( !$orphaned_only || ($orphaned_only && !$product->get_id()) ) {
                 list($product_ext) = explode('#', $product->getExternal());
-                $externals[] = "`post_mime_type` = '". esc_sql( $product_ext ) ."'";
+                $post_mime_types[] = "`post_mime_type` = '". esc_sql( $product_ext ) ."'";
             }
         }
 
-        if( $externals = implode(" \t\n OR ", $externals) ) {
+        if( $post_mime_type = implode(" \t\n OR ", $post_mime_types) ) {
             // ID, post_author, post_date, post_title, post_content, post_excerpt, post_date_gmt, post_name, post_mime_type - required
             $exists = $wpdb->get_results( "
                 SELECT *
                 FROM $wpdb->posts
                 WHERE post_type = 'product'
-                AND (\n\t\n $externals \n)" );
+                AND (\n\t\n $post_mime_type \n)" );
         }
 
         foreach ($exists as $exist)
@@ -361,23 +365,19 @@ class ExchangePost
             /** @var $mime post_mime_type without XML/ */
             if( ($mime = substr($exist->post_mime_type, 4)) && isset($products[ $mime ]->post) ) {
 
-                /** Skip if selected */
-                if( Plugin::get('post_name', false) )         unset( $exist->post_name );
-                if( Plugin::get('skip_post_author', false) )  unset( $exist->post_author );
-                if( Plugin::get('skip_post_title', false) )   unset( $exist->post_title );
-                if( Plugin::get('skip_post_content', false) ) unset( $exist->post_content );
-                if( Plugin::get('skip_post_excerpt', false) ) unset( $exist->post_excerpt );
+                /** Skip if selected (unset new data field from array) */
+                // if( $post_name = Plugin::get('post_name') )         unset( $exist->post_name );
+                if( $skip_post_author )  unset( $exist->post_author );
+                if( $skip_post_title )   unset( $exist->post_title );
+                if( $skip_post_content ) unset( $exist->post_content );
+                if( $skip_post_excerpt ) unset( $exist->post_excerpt );
 
                 foreach (get_object_vars( $exist ) as $key => $value)
                 {
                     $products[ $mime ]->post->$key = $value;
                 }
-
-                $_products[ $mime ] = $products[ $mime ];
             }
         }
-
-        return $_products;
     }
 
     function getProductMeta()
