@@ -57,92 +57,105 @@ class Update
         global $wpdb, $user_id; //, $site_url
         // $site_url = get_site_url();
 
-        // If data is empty
-        if( empty($products) ) return;
-
-        // If disabled option
-        if( 'off' === ($post_mode = Plugin::get('post_mode')) ) return;
-
-        // Current date for update modify
-        $date_now = current_time('mysql');
-        $gmdate_now = gmdate('Y-m-d H:i:s');
-
-        // Generate DUPLICATE KEY UPDATE structure
-        $posts_structure = ExchangePost::get_structure('posts');
-
-        $structure = static::get_sql_structure( $posts_structure );
-        $duplicate = static::get_sql_duplicate( $posts_structure );
-        $sql_placeholder = static::get_sql_placeholder( $posts_structure );
-
-        // define empty data for fill
-        $insert = array();
-        $filler = array();
-
         // Define empty result
         $results = array(
             'create' => 0,
             'update' => 0,
         );
 
-        /**
-         * Prepare data
-         * @var $product NikolayS93\Exchange\Model\ExchangePost
-         */
-        foreach ($products as &$product)
+        // If data is empty
+        if( empty($products) ) return $results;
+
+        // If disabled option
+        if( 'off' === ($post_mode = Plugin::get('post_mode')) ) {
+            // Current date for update modify
+            $date_now = current_time('mysql');
+            $gmdate_now = gmdate('Y-m-d H:i:s');
+
+            // Generate DUPLICATE KEY UPDATE structure
+            $posts_structure = ExchangePost::get_structure('posts');
+
+            $structure = static::get_sql_structure( $posts_structure );
+            $duplicate = static::get_sql_duplicate( $posts_structure );
+            $sql_placeholder = static::get_sql_placeholder( $posts_structure );
+
+            // define empty data for fill
+            $insert = array();
+            $filler = array();
+
+            /**
+             * Prepare data
+             * @var $product NikolayS93\Exchange\Model\ExchangePost
+             */
+            foreach ($products as &$product)
+            {
+                $product->prepare();
+                $p = $product->getObject();
+
+                if( !$product->get_id() ) {
+                    /** if is update only */
+                    if( 'update' === $post_mode ) continue;
+
+                    $results['create']++;
+                }
+                else {
+                    $results['update']++;
+                }
+
+                // Is date null set now
+                if( !(int) preg_replace('/[^0-9]/', '', $p->post_date) ) $p->post_date = $date_now;
+                if( !(int) preg_replace('/[^0-9]/', '', $p->post_date_gmt) ) $p->post_date_gmt = $gmdate_now;
+
+                array_push($insert,
+                    $p->ID,
+                    $p->post_author,
+                    $p->post_date,
+                    $p->post_date_gmt,
+                    $p->post_content,
+                    $p->post_title,
+                    $p->post_excerpt,
+                    $p->post_status,
+                    $p->comment_status,
+                    $p->ping_status,
+                    $p->post_password,
+                    $p->post_name,
+                    $p->to_ping,
+                    $p->pinged,
+                    $p->post_modified = $date_now,
+                    $p->post_modified_gmt = $gmdate_now,
+                    $p->post_content_filtered,
+                    $p->post_parent,
+                    $p->guid,
+                    $p->menu_order,
+                    $p->post_type,
+                    $p->post_mime_type,
+                    $p->comment_count
+                );
+
+                array_push($filler, $sql_placeholder);
+            }
+
+            /**
+             * Execute: sql update (DUPLICATE KEY) posts
+             */
+            if( sizeof($insert) && sizeof($filler) ) {
+                $query = static::get_sql_update($wpdb->posts, $structure, $insert, $filler, $duplicate);
+                $wpdb->query( $query );
+            }
+        }
+
+        // must be
+        $updated = array();
+        foreach ($products as $product)
         {
-            $product->prepare();
-            $p = $product->getObject();
-
-            if( !$product->get_id() ) {
-                /** if is update only */
-                if( 'update' === $post_mode ) continue;
-
-                $results['create']++;
+            if( $post_id = $product->get_id() ) {
+                $updated[] = $post_id;
             }
-            else {
-                $results['update']++;
-            }
-
-            // Is date null set now
-            if( !(int) preg_replace('/[^0-9]/', '', $p->post_date) ) $p->post_date = $date_now;
-            if( !(int) preg_replace('/[^0-9]/', '', $p->post_date_gmt) ) $p->post_date_gmt = $gmdate_now;
-
-            array_push($insert,
-                $p->ID,
-                $p->post_author,
-                $p->post_date,
-                $p->post_date_gmt,
-                $p->post_content,
-                $p->post_title,
-                $p->post_excerpt,
-                $p->post_status,
-                $p->comment_status,
-                $p->ping_status,
-                $p->post_password,
-                $p->post_name,
-                $p->to_ping,
-                $p->pinged,
-                $p->post_modified = $date_now,
-                $p->post_modified_gmt = $gmdate_now,
-                $p->post_content_filtered,
-                $p->post_parent,
-                $p->guid,
-                $p->menu_order,
-                $p->post_type,
-                $p->post_mime_type,
-                $p->comment_count
-            );
-
-            array_push($filler, $sql_placeholder);
         }
 
-        /**
-         * Execute: sql update (DUPLICATE KEY) posts
-         */
-        if( sizeof($insert) && sizeof($filler) ) {
-            $query = static::get_sql_update($wpdb->posts, $structure, $insert, $filler, $duplicate);
-            $wpdb->query( $query );
-        }
+        $wpdb->query( "UPDATE $wpdb->posts
+            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
+            WHERE ID in (" . implode(",", $updated) . ")" );
 
         return $results;
     }
