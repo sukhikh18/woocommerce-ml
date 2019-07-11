@@ -61,23 +61,6 @@ $Page->add_metabox( new Metabox(
                 'label' => 'Свойства',
                 'desc'  => 'В том числе возможно ед. изм., артикул, налоговая ставка',
             ),
-            // array(
-            //     'id'    => 'skip_post_attribute_value',
-            //     'type'  => 'checkbox',
-            //     'label' => 'Значения атрибутов',
-            //     // 'desc'  => 'Обратите внимание на пункт "Привязка к атрибуту"',
-            // ),
-            // array(
-            //     'id' => 'post_lost',
-            //     'type' => 'select',
-            //     'label' => '<h4>If product is lost</h4>',
-            //     'options' => array(
-            //         ''        => 'deactivate on the site',
-            //         'drop'    => 'Drop from the database',
-            //         'unstock' => 'Set unstock status',
-            //     ),
-            //     // 'desc' => __('What\'s do action if is product not exists', DOMAIN)
-            // ),
         );
 
         $form = new Form( $data, array('is_table' => false) );
