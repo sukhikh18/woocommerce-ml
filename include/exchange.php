@@ -406,109 +406,118 @@ function do_exchange() {
          * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=deactivate
          * @since  3.0
          * @return 'progress|success|failure'
+         * @note We need always update post_modified for true deactivate
          */
         case 'deactivate':
             /**
+             * move .xml files from exchange folder
+             */
+            $path_dir = Parser::getDir();
+            $files = Parser::getFiles();
+
+            foreach ($files as $file)
+            {
+                // @unlink($file);
+                $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
+                @mkdir( $pathname );
+                @rename( $file, $pathname . ltrim(basename($file), "./\\") );
+            }
+
+            /**
              * Чистим и пересчитываем количество записей в терминах
-             * /
-            $filename = Plugin::get_filename();
+             */
+            if( !$start_date = get_option( 'exchange_start-date', '' ) ) return;
 
             /**
-             * Get valid namespace ('import', 'offers', 'orders')
-             * /
-            // $namespace = $filename ?
-            //     preg_replace("/^([a-zA-Z]+).+/", '$1', $filename) : 'import';
-
-            // rest, prices (need debug in new sheme version)
-            // if (!in_array($namespace, array('import', 'offers', 'orders'))) {
-            //     Plugin::error( sprintf("Unknown import file type: %s", $namespace) );
-            // }
-
-            $dir = PathFinder::get_dir('catalog');
+             * Meta data from any finded file
+             * @var array { version: float, is_full: bool }
+             */
+            $summary = Plugin::get_summary_meta( $files[0] );
 
             /**
-             * Get import filepath
-             * /
-            if( $filename && is_readable($dir . $filename) ) {
-                $path = $dir . $filename;
+             * Need deactivate deposits products
+             * $summary['version'] < 3 && $version < 3 &&
+             */
+            if( true === $summary['is_full'] ) {
+                $post_lost = Plugin::get('post_lost');
+
+                if( !$post_lost ) {
+                    // $postmeta['_stock'] = 0; // required?
+                    $wpdb->query( "UPDATE $wpdb->postmeta pm
+                        SET
+                            pm.meta_value = 'outofstock'
+                        WHERE
+                            pm.meta_key = '_stock_status' AND
+                            pm.post_id IN (
+                                SELECT p.ID FROM $wpdb->posts p
+                                WHERE
+                                    p.post_type = 'product'
+                                    AND p.post_modified < '$start_date'
+                            )" );
+                }
+                elseif( 'delete' == $post_lost ) {
+                    // delete query
+                }
             }
-            else {
-                $filename = PathFinder::get_files( $namespace );
-                // check in once
-                $path = current($filename);
-            }
 
-            list($is_full, $is_moysklad) = ex_check_head_meta($path);
-            */
+            /**
+             * Set pending status when post no has price meta
+             * Most probably no has offer (or code error in last versions)
+             * @var array $notExistsPrice  List of objects
+             */
+            $notExistsPrice = $wpdb->get_results( "
+                SELECT p.ID, p.post_type, p.post_status
+                FROM $wpdb->posts p
+                WHERE
+                    p.post_type = 'product'
+                    AND p.post_status = 'publish'
+                    AND p.post_modified > '$start_date'
+                    AND NOT EXISTS (
+                        SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
+                        WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
+                    )
+            " );
 
-            // $noprice = $wpdb->get_results( "
-            //     SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-            //     FROM $wpdb->postmeta pm
-            //     INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-            //     WHERE   p.post_type   = 'product'
-            //         AND p.post_status = 'publish'
-            //         AND
-            //             (pm.meta_key = '_price' AND pm.meta_value = 0)
-            //             OR NOT EXISTS (
-            //                 SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
-            //                 WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
-            //             )
+            // Collect Ids
+            $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
 
-            //         -- AND p.post_date = p.post_modified
-            //     " );
-            $start_date = get_option( 'exchange_start-date', '' );
-            if( $start_date ) {
-                /**
-                 * Set pending status when post no has price meta
-                 * Most probably no has offer (or code error in last versions)
-                 * @var array $notExistsPrice  List of objects
-                 */
-                $notExistsPrice = $wpdb->get_results( "
-                    SELECT p.ID, p.post_type, p.post_status
-                    FROM $wpdb->posts p
-                    WHERE
-                        p.post_type = 'product'
-                        AND p.post_status = 'publish'
-                        AND p.post_modified > '$start_date'
-                        AND NOT EXISTS (
-                            SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
-                            WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
-                        )
-                " );
+            /**
+             * Set pending status when post has a less price meta (null value)
+             * @var array $nullPrice  List of objects
+             */
+            $nullPrice = $wpdb->get_results( "
+                SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+                FROM $wpdb->postmeta pm
+                INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+                WHERE   p.post_type   = 'product'
+                    AND p.post_status = 'publish'
+                    AND p.post_modified > '$start_date'
+                    AND pm.meta_key = '_price'
+                    AND pm.meta_value = 0
+            " );
 
-                // Collect Ids
-                $notExistsPriceIDs = array_map('intval', wp_list_pluck( $notExistsPrice, 'ID' ));
+            // Collect Ids
+            $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
 
-                /**
-                 * Set pending status when post has a less price meta (null value)
-                 * @var array $nullPrice  List of objects
-                 */
-                $nullPrice = $wpdb->get_results( "
-                    SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-                    FROM $wpdb->postmeta pm
-                    INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-                    WHERE   p.post_type   = 'product'
-                        AND p.post_status = 'publish'
-                        AND p.post_modified > '$start_date'
-                        AND pm.meta_key = '_price'
-                        AND pm.meta_value = 0
-                " );
+            // Merge Ids
+            $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
 
-                // Collect Ids
-                $nullPriceIDs = array_map('intval', wp_list_pluck( $nullPrice, 'post_id' ));
+            $price_lost = Plugin::get('price_lost');
 
-                // Merge Ids
-                $deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
-
+            /**
+             * Deactivate
+             */
+            if( !$price_lost && sizeof($deactivateIDs) ) {
                 /**
                  * Execute query (change post status to pending)
                  */
-                if( sizeof($deactivateIDs) ) {
-                    $wpdb->query(
-                        "UPDATE $wpdb->posts SET post_status = 'pending'
-                        WHERE ID IN (". implode(',', $deactivateIDs) .")"
-                    );
-                }
+                $wpdb->query(
+                    "UPDATE $wpdb->posts SET post_status = 'pending'
+                    WHERE ID IN (". implode(',', $deactivateIDs) .")"
+                );
+            }
+            elseif( 'delete' == $price_lost ) {
+                // delete query
             }
 
             /**
@@ -535,17 +544,6 @@ function do_exchange() {
             //         WHERE ID IN (". implode(',', $betterPriceIDs) .")"
             //     );
             // }
-
-            $path_dir = Parser::getDir();
-            $files = Parser::getFiles();
-
-            foreach ($files as $file)
-            {
-                // @unlink($file);
-                $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
-                @mkdir( $pathname );
-                @rename( $file, $pathname . ltrim(basename($file), "./\\") );
-            }
 
             $msg = 'Деактивация товаров завершена';
 

@@ -336,37 +336,6 @@ if( !function_exists('esc_cyr') ) {
 //     $wc1c_depth--;
 // }
 
-// function ex_check_head_meta($path) {
-//     $version = null;
-//     $is_full = null;
-//     $is_moysklad = null;
-//     $filename = basename($path);
-
-//     $fp = @fopen($path, 'r') or static::error(sprintf("Failed to open file %s", $filename));
-
-//     while (($buffer = fgets($fp)) !== false) {
-//         if( false !== $pos = strpos($buffer, " ВерсияСхемы=") ) {
-//             $version = floatval( substr($buffer, $pos + 25, 4) );
-//         }
-
-//         if( false !== strpos($buffer, " СинхронизацияТоваров=") ) {
-//             $is_moysklad = true;
-//         }
-
-//         if( strpos($buffer, " СодержитТолькоИзменения=") === false && strpos($buffer, "<СодержитТолькоИзменения>") === false ) continue;
-//         $is_full = strpos($buffer, " СодержитТолькоИзменения=\"false\"") !== false || strpos($buffer, "<СодержитТолькоИзменения>false<") !== false;
-//         break;
-//     }
-
-//     $meta_data = stream_get_meta_data($fp);
-//     $filename = basename($meta_data['uri']);
-
-//     @rewind($fp) or static::error(sprintf("Failed to rewind on file %s", $filename));
-//     @fclose($fp) or static::error(sprintf("Failed to close file %s", $filename));
-
-//     return array($is_full, $is_moysklad, $version);
-// }
-
 // add_action('wp_ajax_exchange_files_upload', __NAMESPACE__ . '\exchange_files_upload' );
 // function exchange_files_upload() {
 //     $file_errors = array(

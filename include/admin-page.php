@@ -51,8 +51,9 @@ function admin_page() {
     include Plugin::get_admin_template('section-posts');
     include Plugin::get_admin_template('section-terms');
     include Plugin::get_admin_template('metabox-status');
-    include Plugin::get_admin_template('metabox-settings-post');
-    include Plugin::get_admin_template('metabox-settings-offer');
-    include Plugin::get_admin_template('metabox-settings-term');
+    include Plugin::get_admin_template('metabox-post');
+    include Plugin::get_admin_template('metabox-deactivate');
+    include Plugin::get_admin_template('metabox-offer');
+    include Plugin::get_admin_template('metabox-term');
     // include Plugin::get_admin_template('metabox-upload');
 }

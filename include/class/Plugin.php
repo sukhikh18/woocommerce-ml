@@ -485,6 +485,39 @@ class Plugin
             static::error("No {$user} user permissions");
         }
     }
+
+    static function get_summary_meta( $filename ) {
+        $version = 0;
+        $is_full = null;
+        // $is_moysklad = null;
+
+        $fp = @fopen($filename, 'r') or static::error(sprintf("Failed to open file %s", $filename));
+
+        while (($buffer = fgets($fp)) !== false) {
+            if( false !== $pos = strpos($buffer, " ВерсияСхемы=") ) {
+                $version = substr($buffer, $pos + 14, 4);
+            }
+
+            // if( false !== strpos($buffer, " СинхронизацияТоваров=") ) {
+            //     $is_moysklad = true;
+            // }
+
+            if( strpos($buffer, " СодержитТолькоИзменения=") === false && strpos($buffer, "<СодержитТолькоИзменения>") === false ) continue;
+            $is_full = strpos($buffer, " СодержитТолькоИзменения=\"false\"") !== false || strpos($buffer, "<СодержитТолькоИзменения>false<") !== false;
+            break;
+        }
+
+        @rewind($fp) or static::error(sprintf("Failed to rewind on file %s", $filename));
+        @fclose($fp) or static::error(sprintf("Failed to close file %s", $filename));
+
+        $result = array(
+            'version' => (float) $version,
+            'is_full' => (bool) $is_full,
+            // 'is_moysklad' => $is_moysklad,
+        );
+
+        return $result;
+    }
 }
 
 // Back compat
