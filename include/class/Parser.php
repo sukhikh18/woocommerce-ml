@@ -135,7 +135,7 @@ class Parser
             ExchangeProduct::fillExistsFromDB( $this->arOffers );
             foreach ($this->arOffers as &$offer)
             {
-                $offer->fillRelatives();
+                $offer->fillExistsRelativesFromDB();
             }
         }
     }

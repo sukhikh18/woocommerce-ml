@@ -66,12 +66,12 @@ class Update
         // If data is empty
         if( empty($products) ) return $results;
 
-        // If disabled option
-        if( 'off' === ($post_mode = Plugin::get('post_mode')) ) {
-            // Current date for update modify
-            $date_now = current_time('mysql');
-            $gmdate_now = gmdate('Y-m-d H:i:s');
+        // Current date for update modify
+        $date_now = current_time('mysql');
+        $gmdate_now = gmdate('Y-m-d H:i:s');
 
+        // If not disabled option
+        if( 'off' !== ($post_mode = Plugin::get('post_mode')) ) {
             // Generate DUPLICATE KEY UPDATE structure
             $posts_structure = ExchangePost::get_structure('posts');
 

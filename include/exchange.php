@@ -363,7 +363,7 @@ function do_exchange() {
                      */
                     $relationships = Update::relationships( $products );
                     $progress += $sizeOfProducts;
-                    $msg = "$relationships зависимостей $sizeOfProducts товаров (всего $progress из $productsCount) обработано.";
+                    $msg = "$relationships зависимостей $sizeOfProducts товаров обновлено (всего $progress из $productsCount обработано).";
 
                     /** Require retry */
                     if( $progress < $productsCount ) {
@@ -380,7 +380,7 @@ function do_exchange() {
 
                     $relationships = Update::relationships( $offers );
                     $progress += $sizeOfOffers;
-                    $msg = "$relationships зависимостей $sizeOfOffers предложений (всего $progress из $offersCount) обработано.";
+                    $msg = "$relationships зависимостей $sizeOfOffers предложений обновлено (всего $progress из $offersCount обработано).";
 
                     /** Require retry */
                     if( $progress < $offersCount ) {
@@ -410,53 +410,57 @@ function do_exchange() {
          */
         case 'deactivate':
             /**
-             * move .xml files from exchange folder
-             */
-            $path_dir = Parser::getDir();
-            $files = Parser::getFiles();
-
-            foreach ($files as $file)
-            {
-                // @unlink($file);
-                $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
-                @mkdir( $pathname );
-                @rename( $file, $pathname . ltrim(basename($file), "./\\") );
-            }
-
-            /**
              * Чистим и пересчитываем количество записей в терминах
              */
             if( !$start_date = get_option( 'exchange_start-date', '' ) ) return;
 
             /**
-             * Meta data from any finded file
-             * @var array { version: float, is_full: bool }
+             * move .xml files from exchange folder
              */
-            $summary = Plugin::get_summary_meta( $files[0] );
+            $path_dir = Parser::getDir();
+            $files = Parser::getFiles();
 
-            /**
-             * Need deactivate deposits products
-             * $summary['version'] < 3 && $version < 3 &&
-             */
-            if( true === $summary['is_full'] ) {
-                $post_lost = Plugin::get('post_lost');
+            if( !empty($files) ) {
+                reset($files);
 
-                if( !$post_lost ) {
-                    // $postmeta['_stock'] = 0; // required?
-                    $wpdb->query( "UPDATE $wpdb->postmeta pm
-                        SET
-                            pm.meta_value = 'outofstock'
-                        WHERE
-                            pm.meta_key = '_stock_status' AND
-                            pm.post_id IN (
-                                SELECT p.ID FROM $wpdb->posts p
-                                WHERE
-                                    p.post_type = 'product'
-                                    AND p.post_modified < '$start_date'
-                            )" );
+                /**
+                 * Meta data from any finded file
+                 * @var array { version: float, is_full: bool }
+                 */
+                $summary = Plugin::get_summary_meta( current($files) );
+
+                foreach ($files as $file)
+                {
+                    // @unlink($file);
+                    $pathname = $path_dir . '/' . date('Ymd') . '_debug/';
+                    @mkdir( $pathname );
+                    @rename( $file, $pathname . ltrim(basename($file), "./\\") );
                 }
-                elseif( 'delete' == $post_lost ) {
-                    // delete query
+
+                /**
+                 * Need deactivate deposits products
+                 * $summary['version'] < 3 && $version < 3 &&
+                 */
+                if( true === $summary['is_full'] ) {
+                    $post_lost = Plugin::get('post_lost');
+
+                    if( !$post_lost ) {
+                        // $postmeta['_stock'] = 0; // required?
+                        $wpdb->query( "UPDATE $wpdb->postmeta pm
+                            SET
+                                pm.meta_value = 'outofstock'
+                            WHERE
+                                pm.meta_key = '_stock_status' AND
+                                pm.post_id IN (
+                                    SELECT p.ID FROM $wpdb->posts p
+                                    WHERE
+                                        p.post_type = 'product'
+                                        AND p.post_modified < '$start_date'
+                                )" );
+                    }
+                    elseif( 'delete' == $post_lost ) {
+                        // delete query
+                    }
                 }
             }
 
