@@ -64,143 +64,35 @@ class ExchangePost
         return false;
     }
 
-    function getTarget( $context )
+    function setRelationship( $context = '', $relation, $value = false )
     {
-        $target = null;
-
-        switch ($context) {
-            case 'properties':
-            case 'arProperties':
-            case 'property':
-                $target = 'properties';
-                break;
-
-            case 'warehouse':
-            case 'warehouses':
-            case 'arWarehouses':
-                $target = 'warehouse';
-                break;
-
-            case 'developer':
-            case 'developers':
-            case 'arDevelopers':
-                $target = 'developer';
-                break;
-
+        switch ( $context ) {
             case 'product_cat':
-            case 'products_cat':
-            case 'product_cats':
-            default:
-                $target = 'product_cat';
+            case 'warehouse':
+            case 'developer':
+                if( $relation instanceof ExchangeTerm ) {
+                    array_push( $this->$context, $relation );
+                }
+                else {
+                    Plugin::error('Fatal error: $relation must be ExchangeTerm');
+                }
                 break;
-        }
 
-        return $target;
-    }
+            case 'properties':
+                if( $relation instanceof ExchangeAttribute ) {
+                    $relationValue = clone $relation;
+                    $relationValue->setValue( $value );
+                    $relationValue->resetTerms();
 
-    function getAllRelativeExternals( $orphaned_only = false )
-    {
-        $arExternals = array();
-        $arRelationships = array();
+                    array_push( $this->$context, $relationValue );
+                }
+                else {
+                    Plugin::error('Fatal error: $relation must be ExchangeAttribute');
+                }
+                break;
 
-        if( !empty( $this->product_cat ) ) {
-            $arRelationships = array_merge($arRelationships, $this->product_cat);
-        }
-
-        if( !empty( $this->warehouse ) ) {
-            $arRelationships = array_merge($arRelationships, $this->warehouse);
-        }
-
-        if( !empty( $this->developer ) ) {
-            $arRelationships = array_merge($arRelationships, $this->developer);
-        }
-
-        if( !empty( $this->properties ) ) {
-            $arRelationships = array_merge($arRelationships, $this->properties);
-        }
-
-        foreach ($arRelationships as $arRelationship)
-        {
-            if( $orphaned_only && $arRelationship->get_id() ) {
-                continue;
-            }
-
-            $arExternals[] = $arRelationship->getExternal();
-        }
-
-        return $arExternals;
-    }
-
-    function fillRelatives()
-    {
-        /** @global wpdb $wpdb built in wordpress db object */
-        global $wpdb;
-
-        $arExternals = $this->getAllRelativeExternals();
-        foreach ($arExternals as $strExternal)
-        {
-            $arSqlExternals[] = "`meta_value` = '{$strExternal}'";
-        }
-
-        $ardbTerms = array();
-        if( !empty($arSqlExternals) ) {
-            $exsists_terms_query = "
-                SELECT term_id, meta_key, meta_value
-                FROM $wpdb->termmeta
-                WHERE meta_key = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", array_unique($arSqlExternals)) . ")";
-
-            $ardbTerms = $wpdb->get_results( $exsists_terms_query );
-
-            $arTerms = array();
-            foreach ($ardbTerms as $ardbTerm) {
-                $arTerms[ $ardbTerm->meta_value ] = $ardbTerm->term_id;
-            }
-        }
-
-        if( !empty($this->product_cat) ) {
-            foreach ($this->product_cat as &$product_cat)
-            {
-                $ext = $product_cat->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $product_cat->setValue( $arTerms[ $ext ] );
-            }
-        }
-        if( !empty($this->warehouse) ) {
-            foreach ($this->warehouse as &$warehouse)
-            {
-                $ext = $warehouse->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $warehouse->setValue( $arTerms[ $ext ] );
-            }
-        }
-        if( !empty($this->developer) ) {
-            foreach ($this->developer as &$developer)
-            {
-                $ext = $developer->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $developer->setValue( $arTerms[ $ext ] );
-            }
-        }
-        if( !empty($this->properties) ) {
-            foreach ($this->properties as &$property)
-            {
-                $ext = $property->getExternal();
-                if( !empty( $arTerms[ $ext ] ) ) $property->setValue( $arTerms[ $ext ] );
-            }
-        }
-    }
-
-    function setRelationship( $context = '', $term )
-    {
-        $target = $this->getTarget( $context );
-
-        if( $term instanceOf ExchangeTerm ) {
-            array_push($this->$target, new Relationship( array(
-                'external' => $term->getExternal(),
-                'value'    => $term->get_id(),
-                'taxonomy' => $term->getTaxonomy(),
-            ) ));
-        }
-        elseif( is_array($term) ) {
-            array_push($this->$target, new Relationship( $term ));
+            default:
+                Plugin::error('Fatal error: $relation unnamed $context relation');
         }
     }
 
@@ -369,6 +261,110 @@ class ExchangePost
                 foreach (get_object_vars( $exist ) as $key => $value)
                 {
                     $products[ $mime ]->post->$key = $value;
+                }
+            }
+        }
+    }
+
+    function getAllRelativeExternals( $orphaned_only = false )
+    {
+        $arExternals = array();
+        $arRelationships = array();
+
+        if( !empty( $this->product_cat ) ) {
+            $arRelationships = array_merge($arRelationships, $this->product_cat);
+        }
+
+        if( !empty( $this->warehouse ) ) {
+            $arRelationships = array_merge($arRelationships, $this->warehouse);
+        }
+
+        if( !empty( $this->developer ) ) {
+            $arRelationships = array_merge($arRelationships, $this->developer);
+        }
+
+        foreach ($arRelationships as $arRelationship)
+        {
+            if( $orphaned_only && $arRelationship->get_id() ) {
+                continue;
+            }
+
+            $arExternals[] = $arRelationship->getExternal();
+        }
+
+        if( !empty( $this->properties ) ) {
+            foreach ($this->properties as $property)
+            {
+                foreach ($property->getTerms() as $ex_term)
+                {
+                    if( $orphaned_only && $ex_term->get_id() ) continue;
+
+                    $arExternals[] = $ex_term->getExternal();
+                }
+            }
+        }
+
+        return $arExternals;
+    }
+
+    function fillExistsRelativesFromDB()
+    {
+        /** @global wpdb $wpdb built in wordpress db object */
+        global $wpdb;
+
+        $arExternals = $this->getAllRelativeExternals( true );
+        if( !empty( $arExternals ) ) {
+            foreach ($arExternals as $strExternal)
+            {
+                $arSqlExternals[] = "`meta_value` = '{$strExternal}'";
+            }
+
+            $arTerms = array();
+
+            $exsists_terms_query = "
+                SELECT term_id, meta_key, meta_value
+                FROM $wpdb->termmeta
+                WHERE meta_key = '". ExchangeTerm::getExtID() ."'
+                    AND (". implode(" \t\n OR ", array_unique($arSqlExternals)) . ")";
+
+            $ardbTerms = $wpdb->get_results( $exsists_terms_query );
+            foreach ($ardbTerms as $ardbTerm)
+            {
+                $arTerms[ $ardbTerm->meta_value ] = $ardbTerm->term_id;
+            }
+
+            if( !empty($this->product_cat) ) {
+                foreach ($this->product_cat as &$product_cat)
+                {
+                    $ext = $product_cat->getExternal();
+                    if( !empty( $arTerms[ $ext ] ) ) $product_cat->set_id( $arTerms[ $ext ] );
+                }
+            }
+
+            if( !empty($this->warehouse) ) {
+                foreach ($this->warehouse as &$warehouse)
+                {
+                    $ext = $warehouse->getExternal();
+                    if( !empty( $arTerms[ $ext ] ) ) $warehouse->set_id( $arTerms[ $ext ] );
+                }
+            }
+
+            if( !empty($this->developer) ) {
+                foreach ($this->developer as &$developer)
+                {
+                    $ext = $developer->getExternal();
+                    if( !empty( $arTerms[ $ext ] ) ) $developer->set_id( $arTerms[ $ext ] );
+                }
+            }
+
+            if( !empty($this->properties) ) {
+                foreach ($this->properties as &$property)
+                {
+                    foreach ($property->get_terms() as &$term)
+                    {
+                        $ext = $term->getExternal();
+                        if( !empty( $arTerms[ $ext ] ) ) $term->set_id( $arTerms[ $ext ] );
+                    }
                 }
             }
         }

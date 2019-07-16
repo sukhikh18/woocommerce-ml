@@ -24,7 +24,6 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return true;
     }
 
-    /** @var need? */
     private $id;
 
     private $attribute_name;
@@ -59,18 +58,24 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         }
 
         if( $ext ) $this->ext = $ext;
+        $this->resetTerms();
+    }
 
+    function resetTerms()
+    {
         $this->terms = new Collection();
+    }
+
+    public function getTerms()
+    {
+        return $this->terms;
     }
 
     function addTerm( $term )
     {
         $term->setTaxonomy( $this->attribute_name );
 
-        /**
-         * external for unique terms
-         */
-        $this->terms[ $term->getExternal() ] = $term;
+        $this->terms->add( $term );
     }
 
     /**
@@ -100,11 +105,6 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         return $this->attribute_label;
     }
 
-    public function getTerms()
-    {
-        return $this->terms;
-    }
-
     public function getValue()
     {
         return $this->attribute_value;
@@ -112,7 +112,17 @@ class ExchangeAttribute implements Interfaces\ExternalCode
 
     public function setValue( $value )
     {
-        $this->attribute_value = $value;
+        /** @var Collection */
+        $terms = $this->getTerms();
+
+        if( $relationTerm = $terms->offsetGet( $value ) ) {
+            $this->attribute_value = $relationTerm;
+        }
+        else {
+            $this->attribute_value = (string) $value;
+        }
+
+        $this->resetTerms();
     }
 
     /**
@@ -160,7 +170,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode
         $taxExternals = array();
         $termExternals = array();
 
-
+        /** @var $obAttributeTaxonomy ExchangeAttribute */
         foreach ($obAttributeTaxonomies as $obAttributeTaxonomy)
         {
             /**

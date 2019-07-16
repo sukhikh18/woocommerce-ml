@@ -35,61 +35,68 @@ class ExchangeProduct extends ExchangePost
          */
         $arAttributes = array();
 
-        if( 'off' === ($post_attribute = Plugin::get('post_attribute')) ) return;
+        if( 'off' === ($post_attribute_mode = Plugin::get('post_attribute')) ) return;
 
         /**
          * @var $property Relationship
          */
         foreach ($this->properties as $property)
         {
-            $taxonomy = $property->getTaxonomy();
-            $is_visible = 1;
+            $label = $property->getName();
+            $external_code = $property->getExternal();
+            $property_value = $property->getValue();
+            $taxonomy = $property->getSlug();
+            $type = $property->getType();
+            $is_visible = 0;
 
-            if( $property->getExternal() && !$property->getValue() ) {
-                if( 'text' != $post_attribute ) continue;
-
-                $is_visible = 0;
-
-                if( empty($allProperties) ) {
-                    $Parser = Parser::getInstance();
-                    $allProperties = $Parser->getProperties();
-                }
-
-                foreach ($allProperties as $_property)
-                {
-                    if( $_property->getSlug() == $taxonomy && ($_terms = $_property->getTerms()) ) {
-                        if( isset($_terms[ $property->getExternal() ]) ) {
-                            $_term = $_terms[ $property->getExternal() ];
-
-                            if( $_term instanceof ExchangeTerm  ) {
-                                $taxonomy = $_property->getName();
-                                $property->setValue( $_term->get_name() );
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if(
-                ($external = $property->getExternal()) &&
-                $property->getValue() &&
-                term_exists( (int) $property->getValue(), $taxonomy )
-            ) {
+            /**
+             * I can write relation if term exists (term as value)
+             */
+            if( $property_value instanceof ExchangeTerm ) {
                 $arAttributes[ $taxonomy ] = array(
                     'name'         => $taxonomy,
                     'value'        => '',
-                    'position'     => 1,
-                    'is_visible'   => 1,
+                    'position'     => 10,
+                    'is_visible'   => 0,
                     'is_variation' => 0,
                     'is_taxonomy'  => 1,
                 );
             }
             else {
+                // Try set as text if term is not exists
+                // @todo check this
+                if( 'text' != $type && 'text' == $post_attribute_mode && $taxonomy && $external_code ) {
+                    $is_visible = 0;
+
+                    /**
+                     * Try set attribute name by exists terms
+                     * Get all properties from parser
+                     */
+                    if( empty($allProperties) ) {
+                        $Parser = Parser::getInstance();
+                        $allProperties = $Parser->getProperties();
+                    }
+
+                    foreach ($allProperties as $_property)
+                    {
+                        if( $_property->getSlug() == $taxonomy && ($_terms = $_property->getTerms()) ) {
+                            if( isset($_terms[ $external_code ]) ) {
+                                $_term = $_terms[ $external_code ];
+
+                                if( $_term instanceof ExchangeTerm  ) {
+                                    $label = $_property->getName();
+                                    $property->setValue( $_term->get_name() );
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 $arAttributes[ $taxonomy ] = array(
-                    'name'         => $taxonomy,
+                    'name'         => $label ? $label : $taxonomy,
                     'value'        => $property->getValue(),
-                    'position'     => 1,
+                    'position'     => 10,
                     'is_visible'   => $is_visible,
                     'is_variation' => 0,
                     'is_taxonomy'  => 0,
@@ -152,9 +159,9 @@ class ExchangeProduct extends ExchangePost
          * Update product's cats
          */
         $terms = array();
-        foreach ($this->product_cat as $Relationship)
+        foreach ($this->product_cat as $ExchangeTerm)
         {
-            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+            if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
         $count += $this->updateObjectTerm($product_id, $terms, 'product_cat'); // , 0 < $count
@@ -165,9 +172,9 @@ class ExchangeProduct extends ExchangePost
          * Update product's war-s
          */
         $terms = array();
-        foreach ($this->warehouse as $Relationship)
+        foreach ($this->warehouse as $ExchangeTerm)
         {
-            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+            if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
         $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ));
@@ -176,9 +183,9 @@ class ExchangeProduct extends ExchangePost
          * Update product's developers
          */
         $terms = array();
-        foreach ($this->developer as $Relationship)
+        foreach ($this->developer as $ExchangeTerm)
         {
-            if( $term_id = $Relationship->getValue() ) $terms[] = $term_id;
+            if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
         $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ));
@@ -186,23 +193,21 @@ class ExchangeProduct extends ExchangePost
         /**
          * Update product's properties
          */
-        $post_attribute = Plugin::get('post_attribute');
+        if( 'off' !== ($post_attribute = Plugin::get('post_attribute')) ) {
+            // $taxs = array();
 
-        $taxs = array();
+            // foreach ($this->properties as $Relationship)
+            // {
+            //     if( $tax = $Relationship->getTaxonomy() ) {
+            //         if( !isset( $taxs[ $tax ] ) ) $taxs[ $tax ] = array();
+            //         if( $term_id = $Relationship->getValue() ) $taxs[ $tax ][] = $term_id;
+            //     }
+            // }
 
-        foreach ($this->properties as $Relationship)
-        {
-            if( 'off' === $post_attribute ) continue;
-
-            if( $tax = $Relationship->getTaxonomy() ) {
-                if( !isset( $taxs[ $tax ] ) ) $taxs[ $tax ] = array();
-                if( $term_id = $Relationship->getValue() ) $taxs[ $tax ][] = $term_id;
-            }
-        }
-
-        foreach ($taxs as $tax => $terms)
-        {
-            $count += $this->updateObjectTerm($product_id, $terms, $tax);
+            // foreach ($taxs as $tax => $terms)
+            // {
+            //     $count += $this->updateObjectTerm($product_id, $terms, $tax);
+            // }
         }
 
         return $count;

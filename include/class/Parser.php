@@ -82,11 +82,52 @@ class Parser
             ExchangeAttribute::fillExistsFromDB( $this->arProperties );
         }
 
+        // Я что то не понял как, но ID уже присвоены заранее
+        // Кроме категорий (надо разобраться)
         if( !empty($this->arProducts) ) {
+            /** Get exists product information by database */
             ExchangeProduct::fillExistsFromDB( $this->arProducts );
+
+            /** Fill id if is term exists in filedata */
             foreach ($this->arProducts as &$product)
             {
-                $product->fillRelatives();
+                foreach ($product->product_cat as &$product_cat)
+                {
+                    if( $product_cat->get_id() ) continue;
+                    if( isset( $this->arCategories[ $product_cat->getExternal() ] ) ) {
+                        $product_cat->set_id( $this->arCategories[ $product_cat->getExternal() ]->get_id() );
+                    }
+                }
+
+                foreach ($product->developer as &$developer)
+                {
+                    if( $developer->get_id() ) continue;
+                    if( isset( $this->arDevelopers[ $developer->getExternal() ] ) ) {
+                        $developer->set_id( $this->arDevelopers[ $developer->getExternal() ]->get_id() );
+                    }
+                }
+
+                foreach ($product->warehouse as &$warehouse)
+                {
+                    if( $warehouse->get_id() ) continue;
+                    if( isset( $this->arWarehouses[ $warehouse->getExternal() ] ) ) {
+                        $warehouse->set_id( $this->arWarehouses[ $warehouse->getExternal() ]->get_id() );
+                    }
+                }
+
+                foreach ($product->properties as $property)
+                {
+                    foreach ($property->getTerms() as $term)
+                    {
+                        if( $term->get_id() ) continue;
+                        if( isset( $this->arProperties[ $term->getExternal() ] ) ) {
+                            $term->set_id( $this->arProperties[ $term->getExternal() ]->get_id() );
+                        }
+                    }
+                }
+
+                /** Fill relative exists who not exists in this exchange (filedata) */
+                $product->fillExistsRelativesFromDB();
             }
         }
 
@@ -298,30 +339,21 @@ class Parser
         $property = $propertyEvent->getProperty();
         $property_id = $property->getId();
 
-        if( 'Строка' == $property->getType() ) {
-            $taxonomy = new ExchangeAttribute( array(
-                'attribute_label' => $property->getName(),
-                'attribute_type' => 'text',
-            ), $property_id );
-        }
-        // elseif( 'Справочник' == $property->getType() ) {
-        // }
-        else {
-            $taxonomy = new ExchangeAttribute( array(
-                'attribute_label' => $property->getName(),
-            ), $property_id );
+        $attribute = new ExchangeAttribute( array(
+            'attribute_label' => $property->getName(),
+            'attribute_type'  => 'Строка' == $property->getType() ? 'text' : 'select',
+        ), $property_id );
 
-            $values = $property->getValues();
-            foreach ($values as $term_id => $name)
-            {
-                $taxonomy->addTerm( new ExchangeTerm( array(
-                    'name' => $name,
-                    'taxonomy' => $taxonomy->getSlug(),
-                ), $term_id ) );
-            }
+        $values = $property->getValues();
+        foreach ($values as $term_id => $name)
+        {
+            $attribute->addTerm( new ExchangeTerm( array(
+                'name'     => $name,
+                'taxonomy' => $attribute->getSlug(),
+            ), $term_id ) );
         }
 
-        $this->arProperties[ $property_id ] = $taxonomy;
+        $this->arProperties[ $property_id ] = $attribute;
     }
 
     function parseProductsEvent(Event\ProductEvent $productEvent)
@@ -369,22 +401,7 @@ class Parser
                 $propertyValue = $PropertyValue->getValue();
 
                 if( isset($this->arProperties[ $propertyId ]) ) {
-
-                    $property = $this->arProperties[ $propertyId ];
-
-                    if( 'select' == $property->getType() ) {
-                        $terms = $property->getTerms();
-
-                        if( $term = $terms->offsetGet( $propertyValue ) ) {
-                            $this->arProducts[ $id ]->setRelationship( 'properties', $term );
-                        }
-                    }
-                    else {
-                        $this->arProducts[ $id ]->setRelationship( 'properties', array(
-                            'external' => $propertyId,
-                            'value'    => $propertyValue,
-                        ) );
-                    }
+                    $this->arProducts[ $id ]->setRelationship( 'properties', $this->arProperties[ $propertyId ], $propertyValue );
                 }
             }
         }

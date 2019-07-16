@@ -2,7 +2,7 @@
 
 namespace NikolayS93\Exchange\ORM;
 
-use CommerceMLParser\Model\Interfaces\IdModel;
+use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
 
 class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
 {
@@ -101,8 +101,8 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
             }
         }
         else {
-            if ($item instanceof IdModel) {
-                $this->items[$item->getId()] = $item;
+            if ($item instanceof ExternalCode) {
+                $this->items[$item->getExternal()] = $item;
             } else {
                 $this->items[] = $item;
             }
