@@ -440,12 +440,13 @@ class Parser
                 $developer_args = array(
                     'name'        => $developer->getName(),
                     'description' => $developer->getComment(),
-                    'taxonomy'    => apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ),
+                    // 'taxonomy'    => apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ),
                 );
 
-                $developer_term = new ExchangeTerm( $developer_args, $developer_id );
-                $this->arDevelopers[ $developer_id ] = $developer_term;
-                $this->arProducts[ $id ]->setRelationship( 'developer', $developer_term );
+                $this->arProducts[ $id ]->setMeta('Производитель', array_merge($developer_args, array('external' => $developer_id)));
+                // $developer_term = new ExchangeTerm( $developer_args, $developer_id );
+                // $this->arDevelopers[ $developer_id ] = $developer_term;
+                // $this->arProducts[ $id ]->setRelationship( 'developer', $developer_term );
             }
         }
 
@@ -599,13 +600,16 @@ class Parser
          * @var array $ParseRequisitesAsDevelopers,
          * @var array $ParseRequisitesAsWarehouses as $termLabel
          */
-        $ParseRequisitesAsDevelopers = (array) apply_filters('ParseRequisitesAsDevelopers', array('Производитель', 'мшПроизводитель'));
+        $ParseRequisitesAsDevelopers = (array) apply_filters('ParseRequisitesAsDevelopers', array()); // 'Производитель', 'мшПроизводитель'
         $ParseRequisitesAsWarehouses = (array) apply_filters('ParseRequisitesAsWarehouses', array('Склад'));
 
         /**
          * @var array $ParseRequisitesAsProperties as $taxonomySlug => $taxonomyLabel
          */
-        $ParseRequisitesAsProperties = (array) apply_filters('ParseRequisitesAsProperties', array('size' => 'Размер'));
+        $ParseRequisitesAsProperties = (array) apply_filters('ParseRequisitesAsProperties', array(
+            'size' => 'Размер',
+            'brand' => 'Производитель',
+        ));
 
         /**
          * @note Do not merge for KISS
@@ -781,9 +785,8 @@ class Parser
                          * @var ExchangeTerm
                          * @param array  ex.: [ name => НазваниеСвойства, taxonomy => pa_size ]
                          */
-                        $term = new ExchangeTerm( array(
-                            'name' => $meta
-                        ) );
+                        if( !is_array($meta) ) array( 'name' => $meta );
+                        $term = new ExchangeTerm( $meta );
 
                         /**
                          * Unique external
@@ -792,10 +795,12 @@ class Parser
                         if( 0 !== strpos($extSlug, 'pa_') ) $extSlug = 'pa_' . $extSlug;
                         $term->setExternal( $extSlug . '/' . $term->get_slug() );
 
+                        $term_slug = $taxonomy->getExternal() . '-' . $term->get_slug();
+
                         /**
                          * Unique slug (may be equal slugs on other taxonomy)
                          */
-                        $term->set_slug( $taxonomy->getExternal() . '-' . $term->get_slug() );
+                        $term->set_slug( $term_slug  );
 
                         /**
                          * Collect in taxonomy
@@ -807,7 +812,7 @@ class Parser
                          * Set product relative
                          * @param Object property name with list of terms
                          */
-                        $product->setRelationship('properties', $term);
+                        $product->setRelationship('properties', $taxonomy, $term_slug);
                     }
 
                     /**

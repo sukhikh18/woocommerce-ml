@@ -65,6 +65,9 @@ class ExchangeTerm implements Interfaces\ExternalCode
         return apply_filters('ExchangeTerm::getExtID', EXT_ID);
     }
 
+    /**
+     * @todo clear this
+     */
     function __construct( Array $term, $ext_id = '', $meta = array() )
     {
         $this->term = shortcode_atts( array(
@@ -95,6 +98,10 @@ class ExchangeTerm implements Interfaces\ExternalCode
         if( !$this->term['slug'] ) $this->set_slug($this->term['name']);
 
         $this->setMeta($meta);
+
+        if( !$ext_id && !empty($term['external']) ) {
+            $ext_id = $term['external'];
+        }
 
         if( !$ext_id ) {
             if( !$ext_id = $this->getExternal() ) {
