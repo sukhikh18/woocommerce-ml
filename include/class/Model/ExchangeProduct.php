@@ -7,26 +7,42 @@ use NikolayS93\Exchange\Parser;
 use NikolayS93\Exchange\Plugin;
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeTaxonomy;
+use NikolayS93\Exchange\ORM\Collection;
 
 class ExchangeProduct extends ExchangePost
 {
     /**
      * "Product_cat" type wordpress terms
-     * @var Array
+     * @var Collection
      */
-    public $product_cat = array();
+    public $product_cat;
 
     /**
      * Product properties with link by term (has taxonomy/term)
-     * @var Array
+     * @var Collection
      */
-    public $properties = array();
+    public $properties;
 
     /**
      * Single term. Link to developer (prev. created)
-     * @var String
+     * @var Collection
      */
-    public $developer = array();
+    public $developer;
+
+    function __construct( Array $post, $ext = '', $meta = array() )
+    {
+        parent::__construct( $post, $ext, $meta );
+
+        $this->product_cat = new Collection();
+        $this->properties = new Collection();
+        $this->developer = new Collection();
+    }
+
+    function getAttribute( $attrExternal = '' )
+    {
+        $attribute = $this->properties->offsetGet( $attrExternal );
+        return $attribute;
+    }
 
     function updateAttributes()
     {

@@ -4,6 +4,7 @@ namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\ORM\ExchangeItemMeta;
 use NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchange\ORM\Collection;
 
 /**
  * Works with posts, term_relationships, postmeta
@@ -20,6 +21,42 @@ class ExchangePost
      *      WHERE ID = %d
      */
     private $post;
+
+    function __construct( Array $post, $ext = '', $meta = array() )
+    {
+        $args = wp_parse_args( $post, array(
+            'post_author'       => get_current_user_id(),
+            'post_status'       => apply_filters('ExchangePost__post_status', 'publish'),
+            'comment_status'    => apply_filters('ExchangePost__comment_status', 'closed'),
+            'post_type'         => 'product',
+            'post_mime_type'    => '',
+        ) );
+
+        if( empty($args['post_name']) ) {
+            $args['post_name'] = sanitize_title( \NikolayS93\Exchange\esc_cyr($args['post_title'], false) );
+        }
+
+        /**
+         * For no offer defaults
+         */
+        $meta = wp_parse_args( $meta, array(
+            '_price' => 0,
+            '_regular_price' => 0,
+            '_manage_stock' => 'no',
+            '_stock_status' => 'outofstock',
+            '_stock' => 0,
+        ) );
+
+        /**
+         * @todo generate guid
+         */
+
+        $this->post = new \WP_Post( (object) $args );
+        $this->setMeta($meta);
+        $this->setExternal($ext ? $ext : $args['post_mime_type']);
+
+        $this->warehouse = new Collection();
+    }
 
     static function get_structure( $key )
     {
@@ -71,7 +108,7 @@ class ExchangePost
             case 'warehouse':
             case 'developer':
                 if( $relation instanceof ExchangeTerm ) {
-                    array_push( $this->$context, $relation );
+                    $this->$context->add( $relation );
                 }
                 else {
                     Plugin::error('Fatal error: $relation must be ExchangeTerm');
@@ -84,7 +121,7 @@ class ExchangePost
                     $relationValue->setValue( $value );
                     $relationValue->resetTerms();
 
-                    array_push( $this->$context, $relationValue );
+                    $this->$context->add( $relationValue );
                 }
                 else {
                     Plugin::error('Fatal error: $relation must be ExchangeAttribute');
@@ -94,40 +131,6 @@ class ExchangePost
             default:
                 Plugin::error('Fatal error: $relation unnamed $context relation');
         }
-    }
-
-    function __construct( Array $post, $ext = '', $meta = array() )
-    {
-        $args = wp_parse_args( $post, array(
-            'post_author'       => get_current_user_id(),
-            'post_status'       => apply_filters('ExchangePost__post_status', 'publish'),
-            'comment_status'    => apply_filters('ExchangePost__comment_status', 'closed'),
-            'post_type'         => 'product',
-            'post_mime_type'    => '',
-        ) );
-
-        if( empty($args['post_name']) ) {
-            $args['post_name'] = sanitize_title( \NikolayS93\Exchange\esc_cyr($args['post_title'], false) );
-        }
-
-        /**
-         * For no offer defaults
-         */
-        $meta = wp_parse_args( $meta, array(
-            '_price' => 0,
-            '_regular_price' => 0,
-            '_manage_stock' => 'no',
-            '_stock_status' => 'outofstock',
-            '_stock' => 0,
-        ) );
-
-        /**
-         * @todo generate guid
-         */
-
-        $this->post = new \WP_Post( (object) $args );
-        $this->setMeta($meta);
-        $this->setExternal($ext ? $ext : $args['post_mime_type']);
     }
 
     function isNew()
@@ -269,27 +272,29 @@ class ExchangePost
     function getAllRelativeExternals( $orphaned_only = false )
     {
         $arExternals = array();
-        $arRelationships = array();
 
         if( !empty( $this->product_cat ) ) {
-            $arRelationships = array_merge($arRelationships, $this->product_cat);
+            foreach ($this->product_cat as $product_cat)
+            {
+                if( $orphaned_only && $product_cat->get_id() ) continue;
+                $arExternals[] = $product_cat->getExternal();
+            }
         }
 
         if( !empty( $this->warehouse ) ) {
-            $arRelationships = array_merge($arRelationships, $this->warehouse);
+            foreach ($this->warehouse as $warehouse)
+            {
+                if( $orphaned_only && $warehouse->get_id() ) continue;
+                $arExternals[] = $warehouse->getExternal();
+            }
         }
 
         if( !empty( $this->developer ) ) {
-            $arRelationships = array_merge($arRelationships, $this->developer);
-        }
-
-        foreach ($arRelationships as $arRelationship)
-        {
-            if( $orphaned_only && $arRelationship->get_id() ) {
-                continue;
+            foreach ($this->developer as $developer)
+            {
+                if( $orphaned_only && $developer->get_id() ) continue;
+                $arExternals[] = $developer->getExternal();
             }
-
-            $arExternals[] = $arRelationship->getExternal();
         }
 
         if( !empty( $this->properties ) ) {

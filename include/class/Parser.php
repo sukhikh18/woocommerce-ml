@@ -6,7 +6,7 @@ use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
 use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\Model\ExchangeOffer;
-use CommerceMLParser\ORM\Collection;
+use NikolayS93\Exchange\ORM\Collection;
 use CommerceMLParser\Event;
 
 use CommerceMLParser\Creational\Singleton;
@@ -61,7 +61,8 @@ class Parser
             }
         }
 
-        $this->prepare();
+        $this->parseRequisites();
+        $this->prepareOffers();
     }
 
     function __fillExists()
@@ -338,10 +339,11 @@ class Parser
         /** @var CommerceMLParser\Model\Property */
         $property = $propertyEvent->getProperty();
         $property_id = $property->getId();
+        $property_type = 'Строка' == $property->getType() ? 'text' : 'select';
 
         $attribute = new ExchangeAttribute( array(
             'attribute_label' => $property->getName(),
-            'attribute_type'  => 'Строка' == $property->getType() ? 'text' : 'select',
+            'attribute_type'  => $property_type,
         ), $property_id );
 
         $values = $property->getValues();
@@ -400,7 +402,23 @@ class Parser
                 $propertyId = $PropertyValue->getId();
                 $propertyValue = $PropertyValue->getValue();
 
-                if( isset($this->arProperties[ $propertyId ]) ) {
+                $propertiesAsRequisites = (array) apply_filters('ParsePropertiesAsRequisites', array(
+                    'hotsale' => 'a35a3bd2-d12a-11e7-a4f2-0025904bff5d',
+                    'newer' => 'b0eff642-d12a-11e7-a4f2-0025904bff5d'
+                ));
+
+                $disallow = false;
+
+                foreach ($propertiesAsRequisites as $metakey => $external)
+                {
+                    if( $external == $propertyId ) {
+                        $this->arProducts[ $id ]->setMeta($metakey, $propertyValue);
+                        $disallow = true;
+                        break;
+                    }
+                }
+
+                if( !$disallow && isset($this->arProperties[ $propertyId ]) ) {
                     $this->arProducts[ $id ]->setRelationship( 'properties', $this->arProperties[ $propertyId ], $propertyValue );
                 }
             }
@@ -858,11 +876,5 @@ class Parser
                 unset( $this->arOffers[$i] );
             }
         }
-    }
-
-    private function prepare()
-    {
-        $this->parseRequisites();
-        $this->prepareOffers();
     }
 }
