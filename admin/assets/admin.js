@@ -55,20 +55,22 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: ajaxurl,
             type: 'GET',
-            dataType: 'html',
+            dataType: 'JSON',
             data: {
-                action: 'statistic_table',
+                action: 'update_statistic',
                 exchange_nonce: ml2e.nonce
             },
         })
-        .done(function(html) {
-            $('#statistic_table').html(html);
+        .done(function(response) {
+            $('#statistic_table').html(response.table);
+            $('#postsinfo').html(response.posts);
+            $('#termsinfo').html(response.terms);
             console.log("Statistic updated");
         })
         .fail(function() {
             console.log("error");
         });
-    });
+    }).click();
 
     $('#post_mode').on('change', function(event) {
         var selector = '#skip_post-wrap,#skip_post_author-wrap,#skip_post_title-wrap,' +
@@ -94,7 +96,7 @@ jQuery(document).ready(function($) {
     }).change();
 
     $('#category_mode').on('change', function(event) {
-        var selector = '#cat_name-wrap, #cat_desc-wrap';
+        var selector = '#cat_name-wrap, #cat_desc-wrap, #skip_parent-wrap';
         if( 'off' == $(this).val() ) {
             $(selector).fadeOut();
         }

@@ -3,6 +3,7 @@
 namespace NikolayS93\Exchange;
 
 use NikolayS93\WPAdminPage as Admin;
+use NikolayS93\WPAdminPage\Section;
 
 function admin_page() {
 
@@ -48,8 +49,23 @@ function admin_page() {
     } );
 
     include Plugin::get_admin_template('section-statistic');
-    include Plugin::get_admin_template('section-posts');
-    include Plugin::get_admin_template('section-terms');
+
+    $Page->add_section( new Section(
+        'postsinfo',
+        __('Posts', DOMAIN),
+        function() {
+            echo get_post_statistic();
+        }
+    ) );
+
+    $Page->add_section( new Section(
+        'termsinfo',
+        __('Terms', DOMAIN),
+        function() {
+            echo get_term_statistic();
+        }
+    ) );
+
     include Plugin::get_admin_template('metabox-status');
     include Plugin::get_admin_template('metabox-post');
     include Plugin::get_admin_template('metabox-deactivate');

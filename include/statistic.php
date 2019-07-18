@@ -2,71 +2,66 @@
 
 namespace NikolayS93\Exchange;
 
-function statisticTable( $empty = false ) {
-    $files = array();
-    $products = array();
-    $offers = array();
-    $categories = array();
-    $developers = array();
-    $warehouses = array();
-    $properties = array();
-    $attributeValues = array();
+function the_statistic_table( $files = array() ) {
+    if( !is_array($files) ) $files = array();
 
-    $newCatsCount = 0;
-    $newDevsCount = 0;
-    $newProductsCount = 0;
-    $orphanedProducts = 0;
-    $newOffersCount = 0;
-    $negativeCount = 0;
-    $nullPrice = 0;
+    extract( array(
+        'products'         => array(),
+        'offers'           => array(),
+        'categories'       => array(),
+        'developers'       => array(),
+        'warehouses'       => array(),
+        'properties'       => array(),
+        'attributeValues'  => array(),
+        'newCatsCount'     => 0,
+        'newDevsCount'     => 0,
+        'newProductsCount' => 0,
+        'orphanedProducts' => 0,
+        'newOffersCount'   => 0,
+        'negativeCount'    => 0,
+        'nullPrice'        => 0,
+    ) );
 
-    if( !$empty ) {
-        $filename = !empty($_GET['filename']) ? sanitize_text_field( $_GET['filename'] ) : null;
+    $Parser = Parser::getInstance();
 
-        $files  = Parser::getFiles( $filename );
-        $Parser = Parser::getInstance();
-        $Parser->__parse($files);
-        $Parser->__fillExists();
-
-        $products = $Parser->getProducts();
-        $offers = $Parser->getOffers();
-        foreach ($products as $product)
-        {
-            if( !$product->get_id() ) $newProductsCount++;
-            if( !isset($offers[ $product->getRawExternal() ]) ) $orphanedProducts++; // print_r($product);
-        }
-
-        foreach ($offers as $offer)
-        {
-            if( !$offer->get_id() ) $newOffersCount++;
-            if( $offer->get_quantity() < 0 ) $negativeCount++;
-            if( $offer->get_price() < 0 ) $nullPrice++;
-        }
-
-        $categories = $Parser->getCategories();
-        foreach ($categories as $cat)
-        {
-            if( !$cat->get_id() ) $newCatsCount++;
-        }
-
-        $properties = $Parser->getProperties();
-        foreach ($properties as $property)
-        {
-            /** Collection to simple array */
-            foreach ($property->getTerms() as $term)
-            {
-                $attributeValues[] = $term;
-            }
-        }
-
-        $developers = $Parser->getDevelopers();
-        foreach ($developers as $dev)
-        {
-            if( !$dev->get_id() ) $newDevsCount++;
-        }
-
-        $warehouses = $Parser->getWarehouses();
+    $products = $Parser->getProducts();
+    $offers = $Parser->getOffers();
+    foreach ($products as $product)
+    {
+        if( !$product->get_id() ) $newProductsCount++;
+        if( !isset($offers[ $product->getRawExternal() ]) ) $orphanedProducts++; // print_r($product);
     }
+
+    foreach ($offers as $offer)
+    {
+        if( !$offer->get_id() ) $newOffersCount++;
+        if( $offer->get_quantity() < 0 ) $negativeCount++;
+        if( $offer->get_price() < 0 ) $nullPrice++;
+    }
+
+    $categories = $Parser->getCategories();
+    foreach ($categories as $cat)
+    {
+        if( !$cat->get_id() ) $newCatsCount++;
+    }
+
+    $properties = $Parser->getProperties();
+    foreach ($properties as $property)
+    {
+        /** Collection to simple array */
+        foreach ($property->getTerms() as $term)
+        {
+            $attributeValues[] = $term;
+        }
+    }
+
+    $developers = $Parser->getDevelopers();
+    foreach ($developers as $dev)
+    {
+        if( !$dev->get_id() ) $newDevsCount++;
+    }
+
+    $warehouses = $Parser->getWarehouses();
     ?>
     <table class="table widefat striped">
         <tr>
@@ -129,13 +124,85 @@ function statisticTable( $empty = false ) {
     <?php
 }
 
-add_action('wp_ajax_statistic_table', __NAMESPACE__ . '\ajax_statistic_table');
-function ajax_statistic_table() {
+function get_post_statistic() {
+    $Parser = Parser::getInstance();
+
+    $products = $Parser->getProducts();
+    $offers = $Parser->getOffers();
+
+    $html = "\n" . '<pre style="max-width: 1400px;margin: 0 auto;display: flex;flex-wrap: wrap;">';
+    $html.= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
+    $html.= "\n" . '       <h3>Товары</h3>';
+    $html.= "\n" . '   ' . print_r(array_slice($products, 0, 20), 1);
+    $html.= "\n" . '   </div>';
+    $html.= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
+    $html.= "\n" . '       <h3>Предложения</h3>';
+    $html.= "\n" . '   ' . print_r(array_slice($offers, 0, 20), 1);
+    $html.= "\n" . '   </div>';
+    $html.= "\n" . '</pre>';
+    $html.= "\n" . '<div style="clear: both;"></div>';
+
+    return $html;
+}
+
+function get_term_statistic() {
+    $Parser = Parser::getInstance();
+
+    $categories = $Parser->getCategories();
+    $properties = $Parser->getProperties();
+    $developers = $Parser->getDevelopers();
+    $warehouses = $Parser->getWarehouses();
+
+    foreach ($properties as $property)
+    {
+        $property->sliceTerms();
+    }
+
+    $html = "\n" . '<pre style="max-width: 1400px;margin: 0 auto;display: flex;flex-wrap: wrap;">';
+    $html.= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
+    $html.= "\n" . '       <h3>Склады</h3>';
+    $html.= "\n" . '   ' . print_r( array_slice($warehouses, 0, 2), 1 );
+    $html.= "\n" . '       <h3>Категории</h3>';
+    $html.= "\n" . '   ' . print_r( array_slice($categories, 0, 2), 1 );
+    $html.= "\n" . '   </div>';
+
+    $html.= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
+    $html.= "\n" . '       <h3>Производители</h3>';
+    $html.= "\n" . '   ' . print_r( array_slice($developers, 0, 2), 1 );
+    $html.= "\n" . '       <h3>Свойства</h3>';
+    $html.= "\n" . '   ' . print_r( array_slice($properties, 0, 2), 1 );
+    $html.= "\n" . '   </div>';
+    $html.= "\n" . '</pre>';
+    $html.= "\n" . '<div style="clear: both;"></div>';
+
+    return $html;
+}
+
+add_action('wp_ajax_update_statistic', __NAMESPACE__ . '\ajax_update_statistic');
+function ajax_update_statistic() {
     if( ! wp_verify_nonce( $_REQUEST['exchange_nonce'], DOMAIN ) ) {
         echo 'Ошибка! нарушены правила безопасности';
         wp_die();
     }
 
-    statisticTable();
+    $filename = !empty($_GET['filename']) ? sanitize_text_field( $_GET['filename'] ) : null;
+
+    $files  = Parser::getFiles( $filename );
+    $Parser = Parser::getInstance();
+    $Parser->__parse($files);
+    $Parser->__fillExists();
+
+    $result = array(
+        'table' => '',
+        'posts' => get_post_statistic(),
+        'terms' => get_term_statistic(),
+    );
+
+    ob_start();
+    the_statistic_table( $files );
+    $result['table'] = ob_get_clean();
+
+    echo json_encode( $result );
+
     wp_die();
 }
