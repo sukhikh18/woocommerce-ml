@@ -210,20 +210,25 @@ class ExchangeProduct extends ExchangePost
          * Update product's properties
          */
         if( 'off' !== ($post_attribute = Plugin::get('post_attribute')) ) {
-            // $taxs = array();
+            $terms_id = array();
 
-            // foreach ($this->properties as $Relationship)
-            // {
-            //     if( $tax = $Relationship->getTaxonomy() ) {
-            //         if( !isset( $taxs[ $tax ] ) ) $taxs[ $tax ] = array();
-            //         if( $term_id = $Relationship->getValue() ) $taxs[ $tax ][] = $term_id;
-            //     }
-            // }
+            /** @var ExchangeAttribute attribute */
+            foreach ($this->properties as $attribute)
+            {
+                if( $taxonomy = $attribute->getSlug() ) {
+                    if( !isset( $terms_id[ $taxonomy ] ) ) $terms_id[ $taxonomy ] = array();
 
-            // foreach ($taxs as $tax => $terms)
-            // {
-            //     $count += $this->updateObjectTerm($product_id, $terms, $tax);
-            // }
+                    $value = $attribute->getValue();
+                    if( $term_id = $value->get_id() ) {
+                        $terms_id[ $taxonomy ][] = $term_id;
+                    }
+                }
+            }
+
+            foreach ($terms_id as $tax => $terms)
+            {
+                $count += $this->updateObjectTerm($product_id, $terms, $tax);
+            }
         }
 
         return $count;

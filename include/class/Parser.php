@@ -812,7 +812,7 @@ class Parser
                          * Set product relative
                          * @param Object property name with list of terms
                          */
-                        $product->setRelationship('properties', $taxonomy, $term_slug);
+                        $product->setRelationship('properties', $taxonomy, $term->getExternal());
                     }
 
                     /**
