@@ -80,38 +80,38 @@ $Page->add_metabox( new Metabox(
             // ),
         );
 
-        $devs = array(
-            array(
-                'id'    => 'developer_mode',
-                'type'  => 'select',
-                'label' => '',
-                'options' => array(
-                    ''       => 'Создавать и обновлять',
-                    'create' => 'Выгружать новые',
-                    'update' => 'Обновлять только',
-                    'off'    => 'Не выгружать',
-                ),
-            ),
-            array(
-                'id'    => 'dev_name',
-                'type'  => 'checkbox',
-                'label' => 'Название',
-            ),
-            array(
-                'id'    => 'dev_desc',
-                'type'  => 'checkbox',
-                'label' => 'Описание',
-            ),
-            // array(
-            //     'id'    => 'dev_name',
-            //     'type'  => 'select',
-            //     'options' => array(
-            //         '' => 'Не обновлять код',
-            //         'update' => 'Обновлять',
-            //         'translit' => 'С транслитерацией',
-            //     ),
-            // ),
-        );
+        // $devs = array(
+        //     array(
+        //         'id'    => 'developer_mode',
+        //         'type'  => 'select',
+        //         'label' => '',
+        //         'options' => array(
+        //             ''       => 'Создавать и обновлять',
+        //             'create' => 'Выгружать новые',
+        //             'update' => 'Обновлять только',
+        //             'off'    => 'Не выгружать',
+        //         ),
+        //     ),
+        //     array(
+        //         'id'    => 'dev_name',
+        //         'type'  => 'checkbox',
+        //         'label' => 'Название',
+        //     ),
+        //     array(
+        //         'id'    => 'dev_desc',
+        //         'type'  => 'checkbox',
+        //         'label' => 'Описание',
+        //     ),
+        //     // array(
+        //     //     'id'    => 'dev_name',
+        //     //     'type'  => 'select',
+        //     //     'options' => array(
+        //     //         '' => 'Не обновлять код',
+        //     //         'update' => 'Обновлять',
+        //     //         'translit' => 'С транслитерацией',
+        //     //     ),
+        //     // ),
+        // );
 
         $whs = array(
             array(
@@ -174,7 +174,7 @@ $Page->add_metabox( new Metabox(
         );
 
         ?>
-        <div class="row" style="display: flex;flex-wrap: wrap;">
+        <div class="row" style="display: flex;flex-wrap: wrap;justify-content: space-around;">
             <div class="col inside">
                 <h3>Категории</h3>
 
@@ -191,14 +191,14 @@ $Page->add_metabox( new Metabox(
                 $form->display();
                 ?>
             </div>
-            <div class="col inside">
+            <!-- <div class="col inside">
                 <h3>Производители</h3>
 
                 <?php
-                $form = new Form( $devs, array('is_table' => false) );
-                $form->display();
+                // $form = new Form( $devs, array('is_table' => false) );
+                // $form->display();
                 ?>
-            </div>
+            </div> -->
             <div class="col inside">
                 <h3>Склады</h3>
 

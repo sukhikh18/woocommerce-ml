@@ -112,14 +112,14 @@ class ExchangeAttribute implements Interfaces\ExternalCode
 
     public function setValue( $value )
     {
-        /** @var Collection */
-        $terms = $this->getTerms();
-
-        if( $relationTerm = $terms->offsetGet( $value ) ) {
-            $this->attribute_value = $relationTerm;
+        if( $value instanceof ExchangeTerm ) {
+            $this->attribute_value = $value;
         }
         else {
-            $this->attribute_value = (string) $value;
+            /** @var Collection */
+            $terms = $this->getTerms();
+
+            $this->attribute_value = ( $relationTerm = $terms->offsetGet( $value ) ) ? $relationTerm : (string) $value;
         }
 
         $this->resetTerms();
@@ -128,9 +128,12 @@ class ExchangeAttribute implements Interfaces\ExternalCode
     /**
      * For demonstration
      */
-    public function sliceTerms($start = 0, $count = 2)
+    public function sliceTerms()
     {
-        $this->terms = array_slice($this->terms->fetch(), $start, $count);
+        $sliced = new Collection( $this->terms->first() );
+        $sliced->add( $this->terms->last() );
+
+        $this->terms = $sliced;
     }
 
     public function get_id()

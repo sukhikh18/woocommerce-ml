@@ -318,6 +318,7 @@ class ExchangePost
         global $wpdb;
 
         $arExternals = $this->getAllRelativeExternals( true );
+
         if( !empty( $arExternals ) ) {
             foreach ($arExternals as $strExternal)
             {

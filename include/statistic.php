@@ -167,10 +167,10 @@ function get_term_statistic() {
     $html.= "\n" . '   </div>';
 
     $html.= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
-    $html.= "\n" . '       <h3>Производители</h3>';
-    $html.= "\n" . '   ' . print_r( array_slice($developers, 0, 2), 1 );
+    // $html.= "\n" . '       <h3>Производители</h3>';
+    // $html.= "\n" . '   ' . print_r( array_slice($developers, 0, 2), 1 );
     $html.= "\n" . '       <h3>Свойства</h3>';
-    $html.= "\n" . '   ' . print_r( array_slice($properties, 0, 2), 1 );
+    $html.= "\n" . '   ' . print_r( $properties, 1 );
     $html.= "\n" . '   </div>';
     $html.= "\n" . '</pre>';
     $html.= "\n" . '<div style="clear: both;"></div>';
@@ -186,7 +186,6 @@ function ajax_update_statistic() {
     }
 
     $filename = !empty($_GET['filename']) ? sanitize_text_field( $_GET['filename'] ) : null;
-
     $files  = Parser::getFiles( $filename );
     $Parser = Parser::getInstance();
     $Parser->__parse($files);

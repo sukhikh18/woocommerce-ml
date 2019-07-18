@@ -145,14 +145,22 @@ class ExchangeProduct extends ExchangePost
             $is_object_in_term = is_object_in_term( $product_id, $taxonomy, 'uncategorized' );
             $append = $is_object_in_term && !is_wp_error( $is_object_in_term ) ? false : $append;
         }
-
-        if( empty($result) ) $result = wp_set_object_terms( $product_id, array_map('intval', $terms), $taxonomy, $append );
+        elseif(apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) == $taxonomy ) {
+            $result = wp_set_object_terms( $product_id, array_map('intval', $terms), $taxonomy, $append );
+        }
+        elseif(apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) == $taxonomy ) {
+            $result = wp_set_object_terms( $product_id, array_map('intval', $terms), $taxonomy, $append );
+        }
+        // Attributes
+        else {
+            $result = wp_set_object_terms( $product_id, array_map('intval', $terms), $taxonomy, $append );
+        }
 
         if( is_wp_error($result) ) {
             Utils::addLog( $result, array(
                 'product_id' => $product_id,
                 'taxonomy'   => $taxonomy,
-                'terms'     => $terms,
+                'terms'      => $terms,
             ) );
         }
         else {
@@ -180,9 +188,12 @@ class ExchangeProduct extends ExchangePost
             if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
-        $count += $this->updateObjectTerm($product_id, $terms, 'product_cat'); // , 0 < $count
+        if( !empty($terms) ) {
+            $count += $this->updateObjectTerm($product_id, $terms, 'product_cat'); // , 0 < $count
+        }
 
-        if( !$this->isNew() ) return $count;
+        // @todo think about it
+        // if( !$this->isNew() ) return $count;
 
         /**
          * Update product's war-s
@@ -193,7 +204,10 @@ class ExchangeProduct extends ExchangePost
             if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
-        $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ));
+        if( !empty($terms) ) {
+            $count += $this->updateObjectTerm($product_id, $terms,
+                apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ));
+        }
 
         /**
          * Update product's developers
@@ -204,12 +218,15 @@ class ExchangeProduct extends ExchangePost
             if( $term_id = $ExchangeTerm->get_id() ) $terms[] = $term_id;
         }
 
-        $count += $this->updateObjectTerm($product_id, $terms, apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ));
+        if( !empty($terms) ) {
+            $count += $this->updateObjectTerm($product_id, $terms,
+                apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ));
+        }
 
         /**
          * Update product's properties
          */
-        if( 'off' !== ($post_attribute = Plugin::get('post_attribute')) ) {
+        if( 'off' !== ($post_attribute = Plugin::get('post_attribute')) && !$this->properties->isEmpty() ) {
             $terms_id = array();
 
             /** @var ExchangeAttribute attribute */

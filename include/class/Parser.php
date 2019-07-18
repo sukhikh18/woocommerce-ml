@@ -118,11 +118,21 @@ class Parser
 
                 foreach ($product->properties as $property)
                 {
-                    foreach ($property->getTerms() as $term)
+                    $terms = array();
+                    $value = $property->getValue();
+
+                    if( isset($this->arProperties[ $property->getExternal() ]) ) {
+                        $attribute = $this->arProperties[ $property->getExternal() ];
+                        $attributeTerms = $attribute->getTerms();
+                        $terms = ( $value instanceof ExchangeTerm ) ? array($value) : $property->getTerms();
+                    }
+
+                    foreach ($terms as $term)
                     {
                         if( $term->get_id() ) continue;
-                        if( isset( $this->arProperties[ $term->getExternal() ] ) ) {
-                            $term->set_id( $this->arProperties[ $term->getExternal() ]->get_id() );
+
+                        if( $filledRelation = $attributeTerms->offsetGet( $term->getExternal() ) ) {
+                            $property->setValue( $filledRelation );
                         }
                     }
                 }
