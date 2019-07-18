@@ -59,33 +59,62 @@ jQuery(document).ready(function($) {
     $('#get_statistic').on('click', function(event) {
         event.preventDefault();
 
-        $('#statistic_table').append( preloader );
-        $('#postsinfo').append( preloader );
-        $('#termsinfo').append( preloader );
-        setTimeout(function() {
-            $('#statistic_table').find('.preloader').remove();
-            $('#postsinfo').find('.preloader').remove();
-            $('#termsinfo').find('.preloader').remove();
-        }, 20000);
+        var timeout = null;
+        var request = null;
 
-        $.ajax({
+        function togglePreloader( stat = false ) {
+            if( stat ) {
+                $('#statistic_table').append( preloader );
+                $('#postsinfo').append( preloader );
+                $('#termsinfo').append( preloader );
+
+                timeout = setTimeout(function() {
+                    if( request ) request.abort();
+                    failUpdateStatistic();
+                }, 60000);
+            }
+            else {
+                $('#statistic_table').find('.preloader').remove();
+                $('#postsinfo').find('.preloader').remove();
+                $('#termsinfo').find('.preloader').remove();
+            }
+        }
+
+        function failUpdateStatistic() {
+            alert('Не удалось обновить статистику');
+            togglePreloader(false);
+        }
+
+        togglePreloader(true);
+
+        request = $.ajax({
             url: ajaxurl,
             type: 'GET',
-            dataType: 'JSON',
+            // dataType: 'JSON',
             data: {
                 action: 'update_statistic',
                 exchange_nonce: ml2e.nonce
             },
         })
         .done(function(response) {
-            $('#statistic_table').html(response.table).find('.preloader').remove();
-            $('#postsinfo').html(response.posts).find('.preloader').remove();
-            $('#termsinfo').html(response.terms).find('.preloader').remove();
-            console.log("Statistic updated");
+            // do not alert about error
+            if(timeout) clearTimeout(timeout);
+
+            try {
+                response = JSON.parse(response);
+
+                $('#statistic_table').html(response.table);
+                $('#postsinfo').html(response.posts);
+                $('#termsinfo').html(response.terms);
+
+                console.log("Statistic updated");
+            } catch(e) {
+                $('#statistic_table').html('<h4>В ходе обновления произошла ошибка:</h4><pre>' + response + '</pre>').find('.preloader').remove();
+            }
+
+            togglePreloader(false);
         })
-        .fail(function() {
-            console.log("error");
-        });
+        .fail(failUpdateStatistic);
     }).click();
 
     $('#post_mode').on('change', function(event) {
