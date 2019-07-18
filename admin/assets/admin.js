@@ -48,9 +48,25 @@ jQuery(document).ready(function($) {
         $( '#exchangeit' ).attr('disabled', 'true');
     });
 
-    // @todo add preloader
+    var preloader =
+          '<div class="preloader"><div class="sk-folding-cube">'
+        + '   <div class="sk-cube1 sk-cube"></div>'
+        + '   <div class="sk-cube2 sk-cube"></div>'
+        + '   <div class="sk-cube4 sk-cube"></div>'
+        + '   <div class="sk-cube3 sk-cube"></div>'
+        + '</div></div>';
+
     $('#get_statistic').on('click', function(event) {
         event.preventDefault();
+
+        $('#statistic_table').append( preloader );
+        $('#postsinfo').append( preloader );
+        $('#termsinfo').append( preloader );
+        setTimeout(function() {
+            $('#statistic_table').find('.preloader').remove();
+            $('#postsinfo').find('.preloader').remove();
+            $('#termsinfo').find('.preloader').remove();
+        }, 20000);
 
         $.ajax({
             url: ajaxurl,
@@ -62,9 +78,9 @@ jQuery(document).ready(function($) {
             },
         })
         .done(function(response) {
-            $('#statistic_table').html(response.table);
-            $('#postsinfo').html(response.posts);
-            $('#termsinfo').html(response.terms);
+            $('#statistic_table').html(response.table).find('.preloader').remove();
+            $('#postsinfo').html(response.posts).find('.preloader').remove();
+            $('#termsinfo').html(response.terms).find('.preloader').remove();
             console.log("Statistic updated");
         })
         .fail(function() {
