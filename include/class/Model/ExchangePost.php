@@ -366,10 +366,15 @@ class ExchangePost
             if( !empty($this->properties) ) {
                 foreach ($this->properties as &$property)
                 {
-                    foreach ($property->get_terms() as &$term)
-                    {
-                        $ext = $term->getExternal();
-                        if( !empty( $arTerms[ $ext ] ) ) $term->set_id( $arTerms[ $ext ] );
+                    if( $property instanceof ExchangeAttribute ) {
+                        foreach ($property->getTerms() as &$term)
+                        {
+                            $ext = $term->getExternal();
+                            if( !empty( $arTerms[ $ext ] ) ) $term->set_id( $arTerms[ $ext ] );
+                        }
+                    }
+                    else {
+                        Plugin::error( 'property: ' . print_r($property, 1) . ' not has attribute instance.' );
                     }
                 }
             }
