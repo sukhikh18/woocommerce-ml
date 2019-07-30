@@ -128,21 +128,18 @@ function do_exchange() {
          * D. Отправка файла обмена на сайт
          * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
          *
-         * Загрузка CommerceML2 файла или его части в виде POST.
+         * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковывает его)
          * @return success
          */
         case 'file':
-            /**
-             * Принимает файл и распаковывает его
-             */
             $filename = Plugin::get_filename();
             $path_dir = Parser::getDir( Plugin::get_type() );
 
             if ( !empty($filename) ) {
                 $path = $path_dir . '/' . ltrim($filename, "./\\");
+                $temp_path = "$path~";
 
                 $input_file = fopen("php://input", 'r');
-                $temp_path = "$path~";
                 $temp_file = fopen($temp_path, 'w');
                 stream_copy_to_stream($input_file, $temp_file);
 
@@ -163,9 +160,10 @@ function do_exchange() {
             }
 
             $zip_paths = glob("$path_dir/*.zip");
+            if( empty($zip_paths) ) Plugin::error('Archives list unavalible.');
 
             $r = Plugin::unzip( $zip_paths, $path_dir, $remove = true );
-            if( true !== $r ) Plugin::error($r);
+            if( true !== $r ) Plugin::error('Unzip archive error. ' . print_r($r, 1));
 
             if ('catalog' == Plugin::get_type()) exit("success\nФайл принят.");
         break;
