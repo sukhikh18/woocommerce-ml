@@ -145,7 +145,10 @@ function do_exchange() {
 
                 if ( is_file($path) ) {
                     $temp_header = file_get_contents($temp_path, false, null, 0, 32);
-                    if (strpos($temp_header, "<?xml ") !== false) unlink($path);
+                    if (strpos($temp_header, "<?xml ") !== false) {
+                        unlink($path);
+                        Plugin::addLog("Тэг xml во временном потоке не обнаружен.");
+                    }
                 }
 
                 $temp_file = fopen($temp_path, 'r');

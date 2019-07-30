@@ -4,5 +4,5 @@
  * This file for update languages only (Do not include)
  */
 
-__('New plugin');
-__('New plugin boilerplate');
+__('1C Exchange'); // Обмен данными 1C
+// __('');

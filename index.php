@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Plugin Name: 1c4wp
+ * Plugin Name: 1C Exchange
  * Plugin URI: https://github.com/nikolays93
- * Description: 1c exchange prototype
+ * Description: Передача данных для актуализации информации на сайте
  * Version: 0.2
  * Author: NikolayS93
  * Author URI: https://vk.com/nikolays_93
