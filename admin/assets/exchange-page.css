@@ -3,72 +3,79 @@
     height: 32px;
     border-radius: 4px;
 }
+
 .progress {
     width: 100%;
     background-color: #eee;
     border: 1px solid #ddd;
     margin-bottom: 25px;
 }
+
 .progress .progress-fill {
     background: #008ec2;
     width: 0%;
     max-width: 100%;
     transition: .5s linear width;
 }
+
 .button.button-danger {
     color: #fff;
     background-color: #d9534f;
     border-color: #d43f3a;
 }
+
 .button.button-danger:hover {
     color: #fff;
     background-color: #d9534f;
     border-color: #d43f3a;
     opacity: 0.9;
 }
+
 .ex-timer {
     font-size: 36px;
     line-height: 40px;
     text-align: center;
     color: #333;
 }
+
 #cache-report {
     background-color: #e5e5e5;
 }
+
 #exchange-logs {
     padding: 8px 14px;
-    width:100%;
-    resize:vertical;
-    margin:20px 0;
+    width: 100%;
+    resize: vertical;
+    margin: 20px 0;
 }
-
 
 .inside.dragged {
     border: 4px dashed #b4b9be;
 }
 
 .alert {
-    display:block;
-    width:100%;
-    padding:.25em .5em;
-    font-size:1.25em;
+    display: block;
+    width: 100%;
+    padding: .25em .5em;
+    font-size: 1.25em;
     text-align: center;
-    color:white;
+    color: white;
     border-radius: 3px;
 }
 
 .alert-success {
-    background-color:green;
+    background-color: green;
 }
 
 .alert-danger {
-    background-color:red;
+    background-color: red;
 }
 
 #statistic_table, #postsinfo, #termsinfo {
     position: relative;
     clear: both;
 }
+
 .preloader {
     position: absolute;
     display: flex;
@@ -81,6 +88,7 @@
     max-height: 80vh;
     background-color: rgba(255, 255, 255, 0.25);
 }
+
 /** https://github.com/tobiasahlin/SpinKit */
 .sk-folding-cube {
     margin: 20px auto;
@@ -100,6 +108,7 @@
     -ms-transform: scale(1.1);
     transform: scale(1.1);
 }
+
 .sk-folding-cube .sk-cube:before {
     content: '';
     position: absolute;
@@ -114,26 +123,32 @@
     -ms-transform-origin: 100% 100%;
     transform-origin: 100% 100%;
 }
+
 .sk-folding-cube .sk-cube2 {
     -webkit-transform: scale(1.1) rotateZ(90deg);
     transform: scale(1.1) rotateZ(90deg);
 }
+
 .sk-folding-cube .sk-cube3 {
     -webkit-transform: scale(1.1) rotateZ(180deg);
     transform: scale(1.1) rotateZ(180deg);
 }
+
 .sk-folding-cube .sk-cube4 {
     -webkit-transform: scale(1.1) rotateZ(270deg);
     transform: scale(1.1) rotateZ(270deg);
 }
+
 .sk-folding-cube .sk-cube2:before {
     -webkit-animation-delay: 0.3s;
     animation-delay: 0.3s;
 }
+
 .sk-folding-cube .sk-cube3:before {
     -webkit-animation-delay: 0.6s;
     animation-delay: 0.6s;
 }
+
 .sk-folding-cube .sk-cube4:before {
     -webkit-animation-delay: 0.9s;
     animation-delay: 0.9s;
@@ -144,15 +159,17 @@
         -webkit-transform: perspective(140px) rotateX(-180deg);
         transform: perspective(140px) rotateX(-180deg);
         opacity: 0;
-        } 25%, 75% {
-            -webkit-transform: perspective(140px) rotateX(0deg);
-            transform: perspective(140px) rotateX(0deg);
-            opacity: 1;
-            } 90%, 100% {
-                -webkit-transform: perspective(140px) rotateY(180deg);
-                transform: perspective(140px) rotateY(180deg);
-                opacity: 0;
-            }
+    }
+    25%, 75% {
+        -webkit-transform: perspective(140px) rotateX(0deg);
+        transform: perspective(140px) rotateX(0deg);
+        opacity: 1;
+    }
+    90%, 100% {
+        -webkit-transform: perspective(140px) rotateY(180deg);
+        transform: perspective(140px) rotateY(180deg);
+        opacity: 0;
+    }
 }
 
 @keyframes sk-foldCubeAngle {
@@ -160,13 +177,15 @@
         -webkit-transform: perspective(140px) rotateX(-180deg);
         transform: perspective(140px) rotateX(-180deg);
         opacity: 0;
-        } 25%, 75% {
-            -webkit-transform: perspective(140px) rotateX(0deg);
-            transform: perspective(140px) rotateX(0deg);
-            opacity: 1;
-            } 90%, 100% {
-                -webkit-transform: perspective(140px) rotateY(180deg);
-                transform: perspective(140px) rotateY(180deg);
-                opacity: 0;
-            }
+    }
+    25%, 75% {
+        -webkit-transform: perspective(140px) rotateX(0deg);
+        transform: perspective(140px) rotateX(0deg);
+        opacity: 1;
+    }
+    90%, 100% {
+        -webkit-transform: perspective(140px) rotateY(180deg);
+        transform: perspective(140px) rotateY(180deg);
+        opacity: 0;
+    }
 }

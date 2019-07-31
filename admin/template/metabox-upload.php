@@ -14,23 +14,24 @@
         <div class="upload-ui">
             <h2 class="upload-instructions drop-instructions"><?php _e( 'Drop files anywhere to upload' ); ?></h2>
             <p class="upload-instructions drop-instructions"><?php _ex( 'or', 'Uploader: Drop files here - or - Select Files' ); ?></p>
-            <button id="upload-button" type="button" class="browser button button-hero"><?php _e( 'Select Files' ); ?></button>
-            <input id="upload-new-files-input" type='file' name='files[]' multiple style="display: none;" />
+            <button id="upload-button" type="button"
+                    class="browser button button-hero"><?php _e( 'Select Files' ); ?></button>
+            <input id="upload-new-files-input" type='file' name='files[]' multiple style="display: none;"/>
         </div>
 
         <div class="upload-inline-status"></div>
 
         <div class="post-upload-ui">
-            <?php
-            $max_upload_size = wp_max_upload_size();
-            if ( ! $max_upload_size ) {
-                $max_upload_size = 0;
-            }
-            ?>
+			<?php
+			$max_upload_size = wp_max_upload_size();
+			if ( ! $max_upload_size ) {
+				$max_upload_size = 0;
+			}
+			?>
 
             <p class="max-upload-size"><?php
-            printf( __( 'Maximum upload file size: %s.' ), esc_html( size_format( $max_upload_size ) ) );
-            ?></p>
+				printf( __( 'Maximum upload file size: %s.' ), esc_html( size_format( $max_upload_size ) ) );
+				?></p>
         </div>
     </div>
 </div>

@@ -1,31 +1,31 @@
 {
-    "require": {
-        "nikolays93/wp-admin-form": "dev-master",
-        "nikolays93/wp-admin-page": "dev-master",
-        "nikolays93/wp-admin-table": "dev-master",
-        "karakum/commerceml": "dev-master"
+  "require": {
+    "nikolays93/wp-admin-form": "dev-master",
+    "nikolays93/wp-admin-page": "dev-master",
+    "nikolays93/wp-admin-table": "dev-master",
+    "karakum/commerceml": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "NikolayS93\\Exchange\\": "include\\class"
+    }
+  },
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/nikolays93/wp-admin-form"
     },
-    "autoload": {
-        "psr-4": {
-            "NikolayS93\\Exchange\\": "include\\class"
-        }
+    {
+      "type": "git",
+      "url": "https://github.com/nikolays93/wp-admin-page"
     },
-    "repositories": [
-        {
-            "type": "git",
-            "url": "https://github.com/nikolays93/wp-admin-form"
-        },
-        {
-            "type": "git",
-            "url": "https://github.com/nikolays93/wp-admin-page"
-        },
-        {
-            "type": "git",
-            "url": "https://github.com/nikolays93/wp-admin-table"
-        },
-        {
-            "type": "git",
-            "url": "https://github.com/nikolays93/commerceml"
-        }
-    ]
+    {
+      "type": "git",
+      "url": "https://github.com/nikolays93/wp-admin-table"
+    },
+    {
+      "type": "git",
+      "url": "https://github.com/nikolays93/commerceml"
+    }
+  ]
 }

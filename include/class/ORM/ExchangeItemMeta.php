@@ -2,45 +2,41 @@
 
 namespace NikolayS93\Exchange\ORM;
 
-trait ExchangeItemMeta
-{
-    private $meta = array();
+trait ExchangeItemMeta {
+	private $meta = array();
 
-    function getMeta( $key = '' )
-    {
-        if( $key ) {
+	function getMeta( $key = '' ) {
+		if ( $key ) {
 
-            if( isset( $this->meta[ '_'.$key ] ) ) {
-                return $this->meta[ '_'.$key ];
-            }
+			if ( isset( $this->meta[ '_' . $key ] ) ) {
+				return $this->meta[ '_' . $key ];
+			}
 
-            if( isset($this->meta[$key]) ) {
-                return $this->meta[$key];
-            }
+			if ( isset( $this->meta[ $key ] ) ) {
+				return $this->meta[ $key ];
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        return (array) $this->meta;
-    }
+		return (array) $this->meta;
+	}
 
-    function setMeta($key, $value = '')
-    {
-        if(!$key) return;
+	function setMeta( $key, $value = '' ) {
+		if ( ! $key ) {
+			return;
+		}
 
-        if( is_array($key) ) {
-            foreach ($key as $metakey => $metavalue)
-            {
-                $this->meta[ $metakey ] = $metavalue;
-            }
-        }
-        else {
-            $this->meta[ $key ] = $value;
-        }
-    }
+		if ( is_array( $key ) ) {
+			foreach ( $key as $metakey => $metavalue ) {
+				$this->meta[ $metakey ] = $metavalue;
+			}
+		} else {
+			$this->meta[ $key ] = $value;
+		}
+	}
 
-    function delMeta( $key )
-    {
-        unset( $this->meta[ $key ] );
-    }
+	function delMeta( $key ) {
+		unset( $this->meta[ $key ] );
+	}
 }

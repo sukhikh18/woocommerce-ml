@@ -8,258 +8,237 @@ use NikolayS93\Exchange\ORM\Collection;
 /**
  * Works with woocommerce_attribute_taxonomies
  */
-class ExchangeAttribute implements Interfaces\ExternalCode
-{
-    const EXT_ID = '_ext_ID';
-    static function getExtID()
-    {
-        return apply_filters('ExchangeTerm::getExtID', self::EXT_ID);
-    }
+class ExchangeAttribute implements Interfaces\ExternalCode {
+	const EXT_ID = '_ext_ID';
 
-    /**
-     * @todo
-     */
-    static function valid_attribute_name()
-    {
-        return true;
-    }
+	static function getExtID() {
+		return apply_filters( 'ExchangeTerm::getExtID', self::EXT_ID );
+	}
 
-    private $id;
+	/**
+	 * @todo
+	 */
+	static function valid_attribute_name() {
+		return true;
+	}
 
-    private $attribute_name;
-    private $attribute_label;
-    private $attribute_type = 'select';
-    private $attribute_orderby = 'menu_order';
-    private $attribute_public = 1;
-    private $attribute_value = '';
+	private $id;
 
-    private $ext;
+	private $attribute_name;
+	private $attribute_label;
+	private $attribute_type = 'select';
+	private $attribute_orderby = 'menu_order';
+	private $attribute_public = 1;
+	private $attribute_value = '';
 
-    /**
-     * @var array List of ExchangeTerm
-     */
-    private $terms;
-    // private $taxonomymeta; ?
+	private $ext;
 
-    function __construct( $args = array(), $ext = '' )
-    {
-        foreach (get_object_vars( (object) $args ) as $k => $arg)
-        {
-            if( property_exists($this, $k) ) $this->$k = $arg;
-        }
+	/**
+	 * @var array List of ExchangeTerm
+	 */
+	private $terms;
 
-        if( $this->attribute_name ) {
-            if( 0 !== strpos($this->attribute_name, 'pa_') ) {
-                $this->attribute_name = 'pa_' . wc_sanitize_taxonomy_name( $this->attribute_name );
-            }
-        }
-        else {
-            $this->attribute_name = wc_attribute_taxonomy_name(\NikolayS93\Exchange\esc_cyr($this->attribute_label));
-        }
+	// private $taxonomymeta; ?
 
-        if( $ext ) $this->ext = $ext;
-        $this->resetTerms();
-    }
+	function __construct( $args = array(), $ext = '' ) {
+		foreach ( get_object_vars( (object) $args ) as $k => $arg ) {
+			if ( property_exists( $this, $k ) ) {
+				$this->$k = $arg;
+			}
+		}
 
-    function resetTerms()
-    {
-        $this->terms = new Collection();
-    }
+		if ( $this->attribute_name ) {
+			if ( 0 !== strpos( $this->attribute_name, 'pa_' ) ) {
+				$this->attribute_name = 'pa_' . wc_sanitize_taxonomy_name( $this->attribute_name );
+			}
+		} else {
+			$this->attribute_name = wc_attribute_taxonomy_name( \NikolayS93\Exchange\esc_cyr( $this->attribute_label ) );
+		}
 
-    public function getTerms()
-    {
-        return $this->terms;
-    }
+		if ( $ext ) {
+			$this->ext = $ext;
+		}
+		$this->resetTerms();
+	}
 
-    function addTerm( $term )
-    {
-        $term->setTaxonomy( $this->attribute_name );
+	function resetTerms() {
+		$this->terms = new Collection();
+	}
 
-        $this->terms->add( $term );
-    }
+	public function getTerms() {
+		return $this->terms;
+	}
 
-    /**
-     * Object params to array
-     * @return array
-     */
-    public function fetch()
-    {
-        $attribute =  array(
-            'slug'          => str_replace('pa_', '', $this->attribute_name),
-            'name'          => $this->attribute_label,
-            'type'          => $this->attribute_type,
-            'order_by'      => $this->attribute_orderby,
-            'has_archives'  => $this->attribute_public,
-        );
+	function addTerm( $term ) {
+		$term->setTaxonomy( $this->attribute_name );
 
-        return $attribute;
-    }
+		$this->terms->add( $term );
+	}
 
-    public function getSlug()
-    {
-        return $this->attribute_name;
-    }
+	/**
+	 * Object params to array
+	 * @return array
+	 */
+	public function fetch() {
+		$attribute = array(
+			'slug'         => str_replace( 'pa_', '', $this->attribute_name ),
+			'name'         => $this->attribute_label,
+			'type'         => $this->attribute_type,
+			'order_by'     => $this->attribute_orderby,
+			'has_archives' => $this->attribute_public,
+		);
 
-    public function getName()
-    {
-        return $this->attribute_label;
-    }
+		return $attribute;
+	}
 
-    public function getValue()
-    {
-        return $this->attribute_value;
-    }
+	public function getSlug() {
+		return $this->attribute_name;
+	}
 
-    public function setValue( $value )
-    {
-        if( $value instanceof ExchangeTerm ) {
-            $this->attribute_value = $value;
-        }
-        else {
-            /** @var Collection */
-            $terms = $this->getTerms();
+	public function getName() {
+		return $this->attribute_label;
+	}
 
-            $this->attribute_value = ( $relationTerm = $terms->offsetGet( $value ) ) ? $relationTerm : (string) $value;
-        }
+	public function getValue() {
+		return $this->attribute_value;
+	}
 
-        $this->resetTerms();
-    }
+	public function setValue( $value ) {
+		if ( $value instanceof ExchangeTerm ) {
+			$this->attribute_value = $value;
+		} else {
+			/** @var Collection */
+			$terms = $this->getTerms();
 
-    /**
-     * For demonstration
-     */
-    public function sliceTerms()
-    {
-        $sliced = new Collection( $this->terms->first() );
-        $sliced->add( $this->terms->last() );
+			$this->attribute_value = ( $relationTerm = $terms->offsetGet( $value ) ) ? $relationTerm : (string) $value;
+		}
 
-        $this->terms = $sliced;
-    }
+		$this->resetTerms();
+	}
 
-    public function get_id()
-    {
-        return (int) $this->id;
-    }
+	/**
+	 * For demonstration
+	 */
+	public function sliceTerms() {
+		$sliced = new Collection( $this->terms->first() );
+		$sliced->add( $this->terms->last() );
 
-    public function set_id( $id )
-    {
-        $this->id = (int) $id;
-    }
+		$this->terms = $sliced;
+	}
 
-    function getExternal()
-    {
-        return $this->ext;
-    }
+	public function get_id() {
+		return (int) $this->id;
+	}
 
-    function setExternal($ext)
-    {
-        $this->ext = (String) $ext;
-    }
+	public function set_id( $id ) {
+		$this->id = (int) $id;
+	}
 
-    function getType()
-    {
-        return $this->attribute_type;
-    }
+	function getExternal() {
+		return $this->ext;
+	}
 
-    static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''
-    {
-        /** @global wpdb wordpress database object */
-        global $wpdb;
+	function setExternal( $ext ) {
+		$this->ext = (String) $ext;
+	}
 
-        /** @var boolean get data for items who not has term_id */
-        // $orphaned_only = true;
+	function getType() {
+		return $this->attribute_type;
+	}
 
-        /** @var List of external code items list in database attribute context (%s='%s') */
-        $taxExternals = array();
-        $termExternals = array();
+	static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''
+	{
+		/** @global wpdb wordpress database object */
+		global $wpdb;
 
-        /** @var $obAttributeTaxonomy ExchangeAttribute */
-        foreach ($obAttributeTaxonomies as $obAttributeTaxonomy)
-        {
-            /**
-             * Get taxonomy (attribute)
-             */
-            if( !$obAttributeTaxonomy->get_id() ) {
-                $taxExternals[] = "`meta_value` = '". $obAttributeTaxonomy->getExternal() ."'";
-            }
+		/** @var boolean get data for items who not has term_id */
+		// $orphaned_only = true;
 
-            /**
-             * Get terms (attribute values)
-             * @var ExchangeTerm $term
-             * @todo maybe add parents?
-             */
-            foreach ($obAttributeTaxonomy->getTerms() as $obExchangeTerm)
-            {
-                $termExternals[] = "`meta_value` = '". $obExchangeTerm->getExternal() ."'";
-            }
-        }
+		/** @var List of external code items list in database attribute context (%s='%s') */
+		$taxExternals  = array();
+		$termExternals = array();
 
-        $results = array();
+		/** @var $obAttributeTaxonomy ExchangeAttribute */
+		foreach ( $obAttributeTaxonomies as $obAttributeTaxonomy ) {
+			/**
+			 * Get taxonomy (attribute)
+			 */
+			if ( ! $obAttributeTaxonomy->get_id() ) {
+				$taxExternals[] = "`meta_value` = '" . $obAttributeTaxonomy->getExternal() . "'";
+			}
 
-        $taxExists = array();
-        if( !empty( $taxExternals ) ) {
-            $exists_query = "
+			/**
+			 * Get terms (attribute values)
+			 * @var ExchangeTerm $term
+			 * @todo maybe add parents?
+			 */
+			foreach ( $obAttributeTaxonomy->getTerms() as $obExchangeTerm ) {
+				$termExternals[] = "`meta_value` = '" . $obExchangeTerm->getExternal() . "'";
+			}
+		}
+
+		$results = array();
+
+		$taxExists = array();
+		if ( ! empty( $taxExternals ) ) {
+			$exists_query = "
                 SELECT meta_id, tax_id, meta_key, meta_value
                 FROM {$wpdb->prefix}woocommerce_attribute_taxonomymeta
-                WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", array_unique($taxExternals)) . ")";
+                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                    AND (" . implode( " \t\n OR ", array_unique( $taxExternals ) ) . ")";
 
-            $results = $wpdb->get_results( $exists_query );
-        }
+			$results = $wpdb->get_results( $exists_query );
+		}
 
-        foreach ($results as $exist)
-        {
-            $taxExists[ $exist->meta_value ] = $exist;
-        }
-        $results = array();
+		foreach ( $results as $exist ) {
+			$taxExists[ $exist->meta_value ] = $exist;
+		}
+		$results = array();
 
-        /**
-         * Get from database
-         * @var array list of objects exists from posts db
-         */
-        $exists  = array();
-        if( !empty($termExternals) ) {
-            $exists_query = "
+		/**
+		 * Get from database
+		 * @var array list of objects exists from posts db
+		 */
+		$exists = array();
+		if ( ! empty( $termExternals ) ) {
+			$exists_query = "
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '". ExchangeTerm::getExtID() ."'
-                    AND (". implode(" \t\n OR ", array_unique($termExternals)) . ")";
+                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                    AND (" . implode( " \t\n OR ", array_unique( $termExternals ) ) . ")";
 
-            $results = $wpdb->get_results( $exists_query );
-        }
+			$results = $wpdb->get_results( $exists_query );
+		}
 
-        /**
-         * Resort for convenience
-         */
-        foreach($results as $exist)
-        {
-            $exists[ $exist->meta_value ] = $exist;
-        }
-        $results = array();
+		/**
+		 * Resort for convenience
+		 */
+		foreach ( $results as $exist ) {
+			$exists[ $exist->meta_value ] = $exist;
+		}
+		$results = array();
 
-        foreach ($obAttributeTaxonomies as &$obAttributeTaxonomy)
-        {
-            /**
-             * Get taxonomy (attribute)
-             */
-            if( !empty($taxExists[ $obAttributeTaxonomy->getExternal() ]) ) {
-                $obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->getExternal() ]->tax_id );
-            }
+		foreach ( $obAttributeTaxonomies as &$obAttributeTaxonomy ) {
+			/**
+			 * Get taxonomy (attribute)
+			 */
+			if ( ! empty( $taxExists[ $obAttributeTaxonomy->getExternal() ] ) ) {
+				$obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->getExternal() ]->tax_id );
+			}
 
-            /**
-             * Get terms (attribute values)
-             * @var ExchangeTerm $term
-             */
-            foreach ($obAttributeTaxonomy->getTerms() as &$obExchangeTerm)
-            {
-                $ext = $obExchangeTerm->getExternal();
+			/**
+			 * Get terms (attribute values)
+			 * @var ExchangeTerm $term
+			 */
+			foreach ( $obAttributeTaxonomy->getTerms() as &$obExchangeTerm ) {
+				$ext = $obExchangeTerm->getExternal();
 
-                if(!empty( $exists[ $ext ] )) {
-                    $obExchangeTerm->set_id( $exists[ $ext ]->term_id );
-                    $obExchangeTerm->meta_id = $exists[ $ext ]->meta_id;
-                }
-            }
-        }
-    }
+				if ( ! empty( $exists[ $ext ] ) ) {
+					$obExchangeTerm->set_id( $exists[ $ext ]->term_id );
+					$obExchangeTerm->meta_id = $exists[ $ext ]->meta_id;
+				}
+			}
+		}
+	}
 }

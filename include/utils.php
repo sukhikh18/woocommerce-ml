@@ -2,138 +2,183 @@
 
 namespace NikolayS93\Exchange;
 
-if( !function_exists('save_get_request') ) {
-    /**
-     * Get requested data
-     */
-    function save_get_request( $k ) {
-        $value = false;
+if ( ! function_exists( 'save_get_request' ) ) {
+	/**
+	 * Get requested data
+	 */
+	function save_get_request( $k ) {
+		$value = false;
 
-        if( isset($_REQUEST[ $k ]) ) {
-            $value = sanitize_text_field($_REQUEST[ $k ]);
-        }
+		if ( isset( $_REQUEST[ $k ] ) ) {
+			$value = sanitize_text_field( $_REQUEST[ $k ] );
+		}
 
-        return apply_filters('get_request__' . $k, $value);
-    }
+		return apply_filters( 'get_request__' . $k, $value );
+	}
 }
 
-if( !function_exists('get_full_request_uri') ) {
-    function get_full_request_uri() {
-        $uri = 'http';
-        if (@$_SERVER['HTTPS'] == 'on') $uri .= 's';
-        $uri .= "://{$_SERVER['SERVER_NAME']}";
-        if ($_SERVER['SERVER_PORT'] != 80) $uri .= ":{$_SERVER['SERVER_PORT']}";
-        if (isset($_SERVER['REQUEST_URI'])) $uri .= $_SERVER['REQUEST_URI'];
+if ( ! function_exists( 'get_full_request_uri' ) ) {
+	function get_full_request_uri() {
+		$uri = 'http';
+		if ( @$_SERVER['HTTPS'] == 'on' ) {
+			$uri .= 's';
+		}
+		$uri .= "://{$_SERVER['SERVER_NAME']}";
+		if ( $_SERVER['SERVER_PORT'] != 80 ) {
+			$uri .= ":{$_SERVER['SERVER_PORT']}";
+		}
+		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+			$uri .= $_SERVER['REQUEST_URI'];
+		}
 
-        return $uri;
-    }
+		return $uri;
+	}
 }
 
-if( !function_exists('check_zip_extension') ) {
-    /**
-     * Zip functions required
-     */
-    function check_zip_extension() {
-        @exec("which unzip", $_, $status);
-        $is_zip = @$status === 0 || class_exists('ZipArchive');
-        if (!$is_zip) Plugin::error("The PHP extension zip is required.");
-    }
+if ( ! function_exists( 'check_zip_extension' ) ) {
+	/**
+	 * Zip functions required
+	 */
+	function check_zip_extension() {
+		@exec( "which unzip", $_, $status );
+		$is_zip = @$status === 0 || class_exists( 'ZipArchive' );
+		if ( ! $is_zip ) {
+			Plugin::error( "The PHP extension zip is required." );
+		}
+	}
 }
 
-if( !function_exists('filesize_to_bytes') ) {
-    function filesize_to_bytes($filesize) {
-        switch (substr($filesize, -1)) {
-            case 'G':
-            case 'g':
-            return (int) $filesize * 1000000000;
-            case 'M':
-            case 'm':
-            return (int) $filesize * 1000000;
-            case 'K':
-            case 'k':
-            return (int) $filesize * 1000;
-            default:
-            return $filesize;
-        }
-    }
+if ( ! function_exists( 'filesize_to_bytes' ) ) {
+	function filesize_to_bytes( $filesize ) {
+		switch ( substr( $filesize, - 1 ) ) {
+			case 'G':
+			case 'g':
+				return (int) $filesize * 1000000000;
+			case 'M':
+			case 'm':
+				return (int) $filesize * 1000000;
+			case 'K':
+			case 'k':
+				return (int) $filesize * 1000;
+			default:
+				return $filesize;
+		}
+	}
 }
 
-if( !function_exists('get_filesize_limit') ) {
-    function get_filesize_limit() {
-        // wp_max_upload_size()
-        $file_limits = array(
-            filesize_to_bytes('10M'),
-            filesize_to_bytes(ini_get('post_max_size')),
-            filesize_to_bytes(ini_get('memory_limit')),
-        );
+if ( ! function_exists( 'get_filesize_limit' ) ) {
+	function get_filesize_limit() {
+		// wp_max_upload_size()
+		$file_limits = array(
+			filesize_to_bytes( '10M' ),
+			filesize_to_bytes( ini_get( 'post_max_size' ) ),
+			filesize_to_bytes( ini_get( 'memory_limit' ) ),
+		);
 
-        @exec("grep ^MemFree: /proc/meminfo", $output, $status);
-        if (@$status === 0 && $output) {
-            $output = preg_split("/\s+/", $output[0]);
-            $file_limits[] = intval($output[1] * 1000 * 0.7);
-        }
+		@exec( "grep ^MemFree: /proc/meminfo", $output, $status );
+		if ( @$status === 0 && $output ) {
+			$output        = preg_split( "/\s+/", $output[0] );
+			$file_limits[] = intval( $output[1] * 1000 * 0.7 );
+		}
 
-        if (FILE_LIMIT) $file_limits[] = filesize_to_bytes(FILE_LIMIT);
-        $file_limit = min($file_limits);
+		if ( FILE_LIMIT ) {
+			$file_limits[] = filesize_to_bytes( FILE_LIMIT );
+		}
+		$file_limit = min( $file_limits );
 
-        return $file_limit;
-    }
+		return $file_limit;
+	}
 }
 
-if( !function_exists('disable_time_limit') ) {
-    function disable_time_limit() {
-        $disabled_functions = explode(',', ini_get('disable_functions'));
-        if (!in_array('set_time_limit', $disabled_functions)) @set_time_limit(0);
-    }
+if ( ! function_exists( 'disable_time_limit' ) ) {
+	function disable_time_limit() {
+		$disabled_functions = explode( ',', ini_get( 'disable_functions' ) );
+		if ( ! in_array( 'set_time_limit', $disabled_functions ) ) {
+			@set_time_limit( 0 );
+		}
+	}
 }
 
-if( !function_exists('check_wp_auth') ) {
-    function check_wp_auth() {
-        global $user_id;
+if ( ! function_exists( 'check_wp_auth' ) ) {
+	function check_wp_auth() {
+		global $user_id;
 
-        if (preg_match("/ Development Server$/", $_SERVER['SERVER_SOFTWARE'])) return;
+		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
+			return;
+		}
 
-        if( is_user_logged_in() ) {
-            $user = wp_get_current_user();
-            if (!$user_id = $user->ID) Plugin::error("Not logged in");
-        }
-        elseif( !empty($_COOKIE[ COOKIENAME ]) ) {
-            $user = wp_validate_auth_cookie($_COOKIE[ COOKIENAME ], 'auth');
-            if (!$user_id = $user) Plugin::error("Invalid cookie");
-        }
+		if ( is_user_logged_in() ) {
+			$user = wp_get_current_user();
+			if ( ! $user_id = $user->ID ) {
+				Plugin::error( "Not logged in" );
+			}
+		} elseif ( ! empty( $_COOKIE[ COOKIENAME ] ) ) {
+			$user = wp_validate_auth_cookie( $_COOKIE[ COOKIENAME ], 'auth' );
+			if ( ! $user_id = $user ) {
+				Plugin::error( "Invalid cookie" );
+			}
+		}
 
-        Plugin::check_user_permissions($user_id);
-    }
+		Plugin::check_user_permissions( $user_id );
+	}
 }
 
-if( !function_exists('esc_cyr') ) {
-    /**
-     * Escape cyrilic chars
-     */
-    function esc_cyr($s, $context = 'url') {
-        if( 'url' == $context ) {
-            $s = strip_tags( (string) $s);
-            $s = str_replace(array("\n", "\r"), " ", $s);
-            $s = preg_replace("/\s+/", ' ', $s);
-        }
+if ( ! function_exists( 'esc_cyr' ) ) {
+	/**
+	 * Escape cyrilic chars
+	 */
+	function esc_cyr( $s, $context = 'url' ) {
+		if ( 'url' == $context ) {
+			$s = strip_tags( (string) $s );
+			$s = str_replace( array( "\n", "\r" ), " ", $s );
+			$s = preg_replace( "/\s+/", ' ', $s );
+		}
 
-        $s = trim($s);
-        $s = function_exists('mb_strtolower') ? mb_strtolower($s) : strtolower($s);
-        $s = strtr($s, array(
-            'а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e',
-            'ж'=>'j','з'=>'z','и'=>'i','й'=>'y','к'=>'k','л'=>'l','м'=>'m',
-            'н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u',
-            'ф'=>'f','х'=>'h','ц'=>'c','ч'=>'ch','ш'=>'sh','щ'=>'shch',
-            'ы'=>'y','э'=>'e','ю'=>'yu','я'=>'ya','ъ'=>'','ь'=>''
-        ) );
+		$s = trim( $s );
+		$s = function_exists( 'mb_strtolower' ) ? mb_strtolower( $s ) : strtolower( $s );
+		$s = strtr( $s, array(
+			'а' => 'a',
+			'б' => 'b',
+			'в' => 'v',
+			'г' => 'g',
+			'д' => 'd',
+			'е' => 'e',
+			'ё' => 'e',
+			'ж' => 'j',
+			'з' => 'z',
+			'и' => 'i',
+			'й' => 'y',
+			'к' => 'k',
+			'л' => 'l',
+			'м' => 'm',
+			'н' => 'n',
+			'о' => 'o',
+			'п' => 'p',
+			'р' => 'r',
+			'с' => 's',
+			'т' => 't',
+			'у' => 'u',
+			'ф' => 'f',
+			'х' => 'h',
+			'ц' => 'c',
+			'ч' => 'ch',
+			'ш' => 'sh',
+			'щ' => 'shch',
+			'ы' => 'y',
+			'э' => 'e',
+			'ю' => 'yu',
+			'я' => 'ya',
+			'ъ' => '',
+			'ь' => ''
+		) );
 
-        if( 'url' == $context ) {
-            $s = preg_replace("/[^0-9a-z-_ ]/i", "", $s);
-            $s = str_replace(" ", "-", $s);
-        }
+		if ( 'url' == $context ) {
+			$s = preg_replace( "/[^0-9a-z-_ ]/i", "", $s );
+			$s = str_replace( " ", "-", $s );
+		}
 
-        return $s;
-    }
+		return $s;
+	}
 }
 
 /**
@@ -257,8 +302,8 @@ if( !function_exists('esc_cyr') ) {
 // }
 
 /**
-* Utilites
-*/
+ * Utilites
+ */
 
 // function ex_post_id_by_meta($key, $value) {
 //     global $wpdb;
@@ -300,8 +345,8 @@ if( !function_exists('esc_cyr') ) {
 
 
 /**
-* Transaction session
-*/
+ * Transaction session
+ */
 
 // function ex_xml_start_element_handler($parser, $name, $attrs) {
 //     global $wc1c_namespace, $wc1c_is_full, $wc1c_names, $wc1c_depth;

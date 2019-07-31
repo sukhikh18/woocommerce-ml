@@ -1,4 +1,4 @@
-jQuery(document).ready(function($) {
+jQuery(document).ready(function ($) {
     'use strict';
 
     // /** @var int */
@@ -18,7 +18,7 @@ jQuery(document).ready(function($) {
 
     if (window.ExhangeProgress) return;
 
-    window.ExhangeProgress = function( args ) {
+    window.ExhangeProgress = function (args) {
         this.error = false;
         this.request = null;
 
@@ -38,124 +38,115 @@ jQuery(document).ready(function($) {
         this.$report = args.$report || $();
         this.$progress = args.$progress || $();
 
-        if( 'function' !== typeof args.onError ) {
-            console.error( 'onError must be function' );
-        }
-        else {
+        if ('function' !== typeof args.onError) {
+            console.error('onError must be function');
+        } else {
             this.onError = args.onError;
         }
 
-        if( 'function' !== typeof args.onEnd ) {
-            console.error( 'onError must be function' );
-        }
-        else {
+        if ('function' !== typeof args.onEnd) {
+            console.error('onError must be function');
+        } else {
             this.onEnd = args.onEnd;
         }
     }
 
     window.ExhangeProgress.prototype = {
-        onError: function() {
+        onError: function () {
             console.error('We have a error!');
         },
-        onEnd: function() {
+        onEnd: function () {
             console.log('Exchange is end!');
         },
 
-        __getRequest: function( data, func ) {
+        __getRequest: function (data, func) {
             var self = this;
 
             data.action = '1c4wp_exchange';
             data.exchange_nonce = ml2e.nonce;
 
-            if( this.error ) return;
+            if (this.error) return;
 
             return $.ajax({
                 url: ml2e.ajax_url,
                 type: 'GET',
                 data: data,
 
-                error: function( response ) {
+                error: function (response) {
                     self.setError();
                 },
 
-                success: function( response ) {
+                success: function (response) {
                     /**
                      * Prepare response message
                      * @type [array]
                      */
-                    var answer   = response.split('\n'),
-                        result   = answer[0].toLowerCase().trim(), // (success|progress|failure),
-                        message  = answer[1],
+                    var answer = response.split('\n'),
+                        result = answer[0].toLowerCase().trim(), // (success|progress|failure),
+                        message = answer[1],
                         extended = answer[2] || '';
-                        // , mysql    = answer[3] || '';
+                    // , mysql    = answer[3] || '';
 
-                    if( 0 === result.indexOf('zip') ) {
-                        if( 'yes' !== result.split('=')[1] ) {
-                            self.setError( 'Zip extension is required!' );
+                    if (0 === result.indexOf('zip')) {
+                        if ('yes' !== result.split('=')[1]) {
+                            self.setError('Zip extension is required!');
                             return false;
                         }
 
                         /** Change file_limit to.. */
                         message = 'Exchange is inited.';
                         result = 'success';
-                    }
-                    else if( 0 !== result.indexOf('success') && 0 !== result.indexOf('progress') ) {
+                    } else if (0 !== result.indexOf('success') && 0 !== result.indexOf('progress')) {
                         /** send response to report too */
-                        self.setError( response );
+                        self.setError(response);
                         // Frontend protection ;D
                         return false;
                     }
 
                     var currentStep = self.getCurrentStep();
 
-                    self.setProgress( currentStep );
-                    self.addReport( message );
+                    self.setProgress(currentStep);
+                    self.addReport(message);
 
-                    if( 'success' == result ) {
+                    if ('success' == result) {
                         self.currentFilename++;
 
-                        if( self.currentFilename && self.getCurrentFilename() ) {
-                            self.__exchange( currentStep );
-                        }
-                        else {
+                        if (self.currentFilename && self.getCurrentFilename()) {
+                            self.__exchange(currentStep);
+                        } else {
                             // @note set next iteration
-                            var nextStep    = self.getNextStep();
-                            if( nextStep ) {
-                                self.__exchange( nextStep );
-                            }
-                            else {
-                                self.setProgress( 100 );
+                            var nextStep = self.getNextStep();
+                            if (nextStep) {
+                                self.__exchange(nextStep);
+                            } else {
+                                self.setProgress(100);
                                 // self.addReport( 'Выгрузка успешно завершена.' );
                                 self.onEnd();
                             }
                         }
-                    }
-
-                    else if( 'progress' === result ) {
-                        self.__exchange( currentStep );
-                    }
-
-                    else {
+                    } else if ('progress' === result) {
+                        self.__exchange(currentStep);
+                    } else {
                         console.log('something wrong, result: ', result);
                     }
                 }
             });
         },
 
-        __exchange: function(step) {
-            if( 'function' !== typeof this[ step ] ) {
+        __exchange: function (step) {
+            if ('function' !== typeof this[step]) {
                 console.error('Step "' + step + '" not exists');
                 return false;
             }
 
-            this[ step ]();
+            this[step]();
         },
 
         // add mesage to textarea
-        addReport: function( msg, extMsg ) {
-            if(!msg) return;
+        addReport: function (msg, extMsg) {
+            if (!msg) return;
 
-            if( extMsg ) {
+            if (extMsg) {
                 msg += '(' + extMsg + ')';
             }
 
@@ -163,10 +154,10 @@ jQuery(document).ready(function($) {
             // this.$report.scrollTop( this.$report[0].scrollHeight );
         },
 
-        setError: function( msg, extMsg ) { // response
+        setError: function (msg, extMsg) { // response
             this.error = {
                 msg: msg || 'Случилась непредвиденая ошибка, попробуйте повторить позже',
-                extMsg : extMsg || '',
+                extMsg: extMsg || '',
             }
 
             /**
@@ -177,7 +168,7 @@ jQuery(document).ready(function($) {
             /**
              * Stay error message to textarea
              */
-            this.addReport( msg, extMsg );
+            this.addReport(msg, extMsg);
 
             /**
              * Fill error color
@@ -187,40 +178,39 @@ jQuery(document).ready(function($) {
             this.onError();
         },
 
-        setProgress: function( int ) {
+        setProgress: function (int) {
             /**
              * Fill success color
              */
-            if( 100 == int ) {
+            if (100 == int) {
                 this.$progress.css('background', '#14B278');
                 this.$progress.css('width', '100%');
                 this.$progress.css('max-width', '100%');
                 return;
-            }
-            else {
+            } else {
                 /**
                  * @todo fixit!
                  */
                 var width = parseFloat(this.$progress.width()) || 0;
-                this.$progress.css('width', (100 / (this.$progress.parent().width() / width)) + 3 + '%' );
-                this.$progress.css('max-width', '99%' );
+                this.$progress.css('width', (100 / (this.$progress.parent().width() / width)) + 3 + '%');
+                this.$progress.css('max-width', '99%');
             }
         },
 
-        getCurrentFilename: function() {
-            return this.filenames[ this.currentFilename ];
+        getCurrentFilename: function () {
+            return this.filenames[this.currentFilename];
         },
 
-        getCurrentStep: function() {
-            return this.steps[ this.currentStep ];
+        getCurrentStep: function () {
+            return this.steps[this.currentStep];
         },
 
-        getNextStep: function() {
+        getNextStep: function () {
             this.currentStep++;
             return this.getCurrentStep();
         },
 
-        checkauth: function() {
+        checkauth: function () {
             console.log('for what?');
             // this.request = this.__getRequest({
             //     'type': 'catalog',
@@ -228,15 +218,15 @@ jQuery(document).ready(function($) {
             // }, this.checkauth);
         },
 
-        init: function() {
+        init: function () {
             this.request = this.__getRequest({
                 'type': 'catalog',
                 'mode': 'init',
-                'version' : this.filenames.length > 4 ? '3.1' : '',
+                'version': this.filenames.length > 4 ? '3.1' : '',
             }, this.init);
         },
 
-        file: function() {
+        file: function () {
             console.log('for what?');
             // this.request = this.__getRequest({
             //     'type': 'catalog',
@@ -245,36 +235,35 @@ jQuery(document).ready(function($) {
             // }, this.file);
         },
 
-        import: function() {
+        import: function () {
             var filename = this.getCurrentFilename();
-            if( filename ) {
+            if (filename) {
                 this.request = this.__getRequest({
                     'type': 'catalog',
                     'mode': 'import',
                     filename: this.getCurrentFilename()
                 }, this.import);
-            }
-            else {
+            } else {
                 this.setError('Проверьте папку /wp-content/uploads/1c-exchange/catalog возможно она пуста.');
             }
         },
 
-        deactivate: function() {
+        deactivate: function () {
             this.request = this.__getRequest({
                 'type': 'catalog',
                 'mode': 'deactivate'
             }, this.deactivate);
         },
 
-        complete: function() {
+        complete: function () {
             this.request = this.__getRequest({
                 'type': 'catalog',
                 'mode': 'complete'
             }, this.complete);
         },
 
-        start: function() {
-            this.__exchange( this.getNextStep() );
+        start: function () {
+            this.__exchange(this.getNextStep());
         },
     }
 });
