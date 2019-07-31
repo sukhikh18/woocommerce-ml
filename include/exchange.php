@@ -177,7 +177,7 @@ function do_exchange() {
 				Plugin::error( 'Archives list unavalible.' );
 			}
 
-			$r = Plugin::unzip( $zip_paths, $path_dir, $remove = true );
+			$r = Plugin::unzip( $zip_paths, $path_dir, false );
 			if ( true !== $r ) {
 				Plugin::error( 'Unzip archive error. ' . print_r( $r, 1 ) );
 			}
@@ -442,10 +442,10 @@ function do_exchange() {
 				$summary = Plugin::get_summary_meta( current( $files ) );
 
 				foreach ( $files as $file ) {
-					// @unlink($file);
-					$pathname = $path_dir . '/' . date( 'Ymd' ) . '_debug/';
-					@mkdir( $pathname );
-					@rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
+					@unlink($file);
+					// $pathname = $path_dir . '/' . date( 'Ymd' ) . '_debug/';
+					// @mkdir( $pathname );
+					// @rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
 				}
 
 				/**
