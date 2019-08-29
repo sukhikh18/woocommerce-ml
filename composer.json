@@ -2,7 +2,6 @@
   "require": {
     "nikolays93/wp-admin-form": "dev-master",
     "nikolays93/wp-admin-page": "dev-master",
-    "nikolays93/wp-admin-table": "dev-master",
     "karakum/commerceml": "dev-master"
   },
   "autoload": {
@@ -18,14 +17,18 @@
     {
       "type": "git",
       "url": "https://github.com/nikolays93/wp-admin-page"
-    },
+    }
+  ],
+  "~require": {
+    "nikolays93/wp-admin-table": "dev-master"
+  },
+  "~repositories": [
     {
       "type": "git",
       "url": "https://github.com/nikolays93/wp-admin-table"
-    },
-    {
-      "type": "git",
-      "url": "https://github.com/nikolays93/commerceml"
     }
-  ]
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "^7"
+  }
 }
