@@ -6,10 +6,9 @@ use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
 use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Creational\Singleton;
 use NikolayS93\Exchange\ORM\Collection;
 use CommerceMLParser\Event;
-
-use CommerceMLParser\Creational\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );
@@ -19,7 +18,7 @@ class Parser {
 	use Singleton;
 
 	/**
-	 * Resourses
+	 * Resources
 	 */
 	private $arCategories = array();
 	private $arDevelopers = array();

@@ -588,4 +588,50 @@ class Update {
 
 		delete_transient( 'wc_term_counts' );
 	}
+
+	static $is_transaction = false;
+
+	static function is_transaction() {
+		return static::$is_transaction;
+	}
+
+	function set_transaction_mode() {
+		global $wpdb;
+
+		disable_time_limit();
+
+		register_shutdown_function( __NAMESPACE__ . '\transaction_shutdown_function' );
+
+		$wpdb->show_errors( false );
+		$wpdb->query( "START TRANSACTION" );
+
+		static::$is_transaction = true;
+		static::check_wpdb_error();
+	}
+
+	function wpdb_stop( $is_commit = false, $no_check = false ) {
+		global $wpdb, $ex_is_transaction;
+
+		if ( ! static::$is_transaction ) {
+			return;
+		}
+		static::$is_transaction = false;
+
+		$sql_query = ! $is_commit ? "ROLLBACK" : "COMMIT";
+		$wpdb->query( $sql_query );
+		if ( ! $no_check ) {
+			Utils::check_wpdb_error();
+		}
+
+		if ( Utils::is_debug_show() ) {
+			echo "\n" . strtolower( $sql_query );
+		}
+	}
+
+	function start_exchange_session() {
+		set_error_handler( __NAMESPACE__ . '\strict_error_handler' );
+		set_exception_handler( __NAMESPACE__ . '\strict_exception_handler' );
+
+		ob_start( __NAMESPACE__ . '\output_callback' );
+	}
 }

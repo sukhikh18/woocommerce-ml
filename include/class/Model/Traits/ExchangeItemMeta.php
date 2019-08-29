@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchange\ORM;
+namespace NikolayS93\Exchange;
 
 trait ExchangeItemMeta {
 	private $meta = array();
