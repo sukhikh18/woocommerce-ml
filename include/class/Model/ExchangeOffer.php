@@ -2,7 +2,7 @@
 
 namespace NikolayS93\Exchange\Model;
 
-use NikolayS93\Exchange\Utils;
+use NikolayS93\Exchange\ORM\Collection;
 
 /**
  * Works with posts, postmeta
@@ -39,7 +39,7 @@ class ExchangeOffer extends ExchangePost {
 	// }
 
 	function get_quantity() {
-		$stock = $this->getMeta( 'stock' );
+		$stock = $this->get_meta( 'stock' );
 		// $quantity = $this->getMeta('quantity');
 
 		// if( is_numeric($stock) && is_numeric($quantity) ) {
@@ -55,27 +55,42 @@ class ExchangeOffer extends ExchangePost {
 		return $stock;
 	}
 
-	function get_stock() {
-		return $this->get_quantity();
-	}
-
 	function set_quantity( $qty ) {
-		$this->setMeta( '_manage_stock', 'yes' );
-		$this->setMeta( '_stock_status', $qty ? 'instock' : 'outofstock' );
-		$this->setMeta( '_stock', $qty );
+		if( null !== $qty ) {
+			$qty = floatval($qty);
+
+			$this->set_meta( '_manage_stock', 'yes' );
+			$this->set_meta( '_stock_status', $qty ? 'instock' : 'outofstock' );
+			$this->set_meta( '_stock', $qty );
+		}
+
+		return $this;
 	}
 
-	function set_stock( $qty ) {
-		$this->set_quantity();
+	/**
+	 * Only one price coast for simple
+	 *
+	 * @param \CommerceMLParser\ORM\Collection $prices
+	 * @return int
+	 */
+	public function get_current_price( $prices ) {
+		$price  = 0;
+		if ( ! $prices->isEmpty() ) {
+			$price = $prices->current()->getPrice();
+		}
+
+		return $price;
 	}
 
 	function get_price() {
-		return $this->getMeta( 'price' );
+		return $this->get_meta( 'price' );
 	}
 
 	function set_price( $price ) {
-		$this->setMeta( '_price', $price );
-		$this->setMeta( '_regular_price', $price );
+		$this->set_meta( '_price', $price );
+		$this->set_meta( '_regular_price', $price );
+
+		return $this;
 	}
 
 	function merge( $args, $product ) {

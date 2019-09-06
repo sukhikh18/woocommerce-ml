@@ -2,11 +2,11 @@
 
 namespace NikolayS93\Exchange\Model;
 
-use NikolayS93\Exchange\Utils;
+use CommerceMLParser\Model\Types\BaseUnit;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 use NikolayS93\Exchange\Parser;
 use NikolayS93\Exchange\Plugin;
-use NikolayS93\Exchange\Model\ExchangeTerm;
-use NikolayS93\Exchange\Model\ExchangeTaxonomy;
+use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\ORM\Collection;
 
 class ExchangeProduct extends ExchangePost {
@@ -14,33 +14,108 @@ class ExchangeProduct extends ExchangePost {
 	 * "Product_cat" type wordpress terms
 	 * @var Collection
 	 */
-	public $product_cat;
+	public $categories;
 
 	/**
 	 * Product properties with link by term (has taxonomy/term)
 	 * @var Collection
 	 */
-	public $properties;
+	public $attrubutes;
 
 	/**
 	 * Single term. Link to developer (prev. created)
 	 * @var Collection
 	 */
-	public $developer;
+	public $developers;
 
 	function __construct( Array $post, $ext = '', $meta = array() ) {
 		parent::__construct( $post, $ext, $meta );
 
-		$this->product_cat = new Collection();
-		$this->properties  = new Collection();
-		$this->developer   = new Collection();
+		$this->categories = new Collection();
+		$this->attrubutes = new Collection();
+		$this->developers = new Collection();
 	}
 
-	function getAttribute( $attrExternal = '' ) {
-		$attribute = $this->properties->offsetGet( $attrExternal );
+	public function fetch() {
+		$el = parent::fetch();
+
+		$el['term_relationships'] = array();
+
+		array_map( function ( Identifiable $item ) use ( &$el ) {
+
+			if ( $this->get_id() && $item->get_id() ) {
+				$el['term_relationships'][] = array(
+					'object_id'        => $this->get_id(),
+					'term_taxonomy_id' => $item->get_id(),
+					'term_order'       => 0,
+				);
+			}
+
+		},
+			$this->categories->fetch(),
+			$this->attrubutes->fetch(),
+			$this->developers->fetch()
+		);
+
+		return $el;
+	}
+
+	function add_category( Category $ExchangeTerm ) {
+		return $this->categories->add( $ExchangeTerm );
+	}
+
+	function add_developer( Developer $ExchangeTerm ) {
+		return $this->developers->add( $ExchangeTerm );
+	}
+
+	function add_attribute( Attribute $ProductAttribute ) {
+		return $this->attrubutes->add( $ProductAttribute );
+	}
+
+	function get_category( $CollectionItemKey = '' ) {
+		$category = $CollectionItemKey ?
+			$this->categories->offsetGet( $CollectionItemKey ) :
+			$this->categories->first();
+
+		return $category;
+	}
+
+	function get_developer( $CollectionItemKey = '' ) {
+		$developer = $CollectionItemKey ?
+			$this->developers->offsetGet( $CollectionItemKey ) :
+			$this->developers->first();
+
+		return $developer;
+	}
+
+	function get_attribute( $CollectionItemKey = '' ) {
+		$attribute = $CollectionItemKey ?
+			$this->attrubutes->offsetGet( $CollectionItemKey ) :
+			$this->attrubutes->first();
 
 		return $attribute;
 	}
+
+	/**
+	 * @param \CommerceMLParser\ORM\Collection $base_unit
+	 */
+	public function get_current_base_unit( $base_unit ) {
+		/** @var BaseUnit */
+		$base_unit_current = $base_unit->current();
+		if ( ! $base_unit_name = $base_unit_current->getNameInterShort() ) {
+			$base_unit_name = $base_unit_current->getNameFull();
+		}
+
+		return $base_unit_name;
+	}
+
+	/**
+	 * @param \CommerceMLParser\ORM\Collection $taxRatesCollection СтавкиНалогов
+	 */
+	public function get_current_tax_rate( $taxRatesCollection ) {
+		return $taxRatesCollection->current()->getRate();
+	}
+
 
 	function updateAttributes() {
 		/**
@@ -66,7 +141,7 @@ class ExchangeProduct extends ExchangePost {
 			/**
 			 * I can write relation if term exists (term as value)
 			 */
-			if ( $property_value instanceof ExchangeTerm ) {
+			if ( $property_value instanceof Category ) {
 				$arAttributes[ $taxonomy ] = array(
 					'name'         => $taxonomy,
 					'value'        => '',
@@ -86,18 +161,18 @@ class ExchangeProduct extends ExchangePost {
 					 * Get all properties from parser
 					 */
 					if ( empty( $allProperties ) ) {
-						$Parser        = Parser::getInstance();
-						$allProperties = $Parser->getProperties();
+						$Parser        = Parser::get_instance();
+						$allProperties = $Parser->get_properties();
 					}
 
 					foreach ( $allProperties as $_property ) {
-						if ( $_property->getSlug() == $taxonomy && ( $_terms = $_property->getTerms() ) ) {
+						if ( $_property->get_slug() == $taxonomy && ( $_terms = $_property->get_terms() ) ) {
 							if ( isset( $_terms[ $external_code ] ) ) {
 								$_term = $_terms[ $external_code ];
 
-								if ( $_term instanceof ExchangeTerm ) {
-									$label = $_property->getName();
-									$property->setValue( $_term->get_name() );
+								if ( $_term instanceof Category ) {
+									$label = $_property->get_name();
+									$property->set_value( $_term->get_name() );
 									break;
 								}
 							}
@@ -107,7 +182,7 @@ class ExchangeProduct extends ExchangePost {
 
 				$arAttributes[ $taxonomy ] = array(
 					'name'         => $label ? $label : $taxonomy,
-					'value'        => $property->getValue(),
+					'value'        => $property->get_value(),
 					'position'     => 10,
 					'is_visible'   => $is_visible,
 					'is_variation' => 0,
@@ -125,7 +200,7 @@ class ExchangeProduct extends ExchangePost {
 		if ( 'product_cat' == $taxonomy ) {
 			$default_term_id = get_option( 'default_' . $taxonomy );
 
-			if ( 'off' === ( $post_relationship = Utils::get( 'post_relationship' ) ) ) {
+			if ( 'off' === ( $post_relationship = Plugin::get( 'post_relationship' ) ) ) {
 				return 0;
 			} elseif ( 'default' == $post_relationship ) {
 				$object_terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'ids' ) );
@@ -137,9 +212,11 @@ class ExchangeProduct extends ExchangePost {
 
 			$is_object_in_term = is_object_in_term( $product_id, $taxonomy, 'uncategorized' );
 			$append            = $is_object_in_term && ! is_wp_error( $is_object_in_term ) ? false : $append;
-		} elseif ( apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) == $taxonomy ) {
+		} elseif ( apply_filters( 'developerTaxonomySlug',
+				\NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) == $taxonomy ) {
 			$result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
-		} elseif ( apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) == $taxonomy ) {
+		} elseif ( apply_filters( 'warehouseTaxonomySlug',
+				\NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) == $taxonomy ) {
 			$result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
 		} // Attributes
 		else {
@@ -147,11 +224,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( is_wp_error( $result ) ) {
-			Utils::addLog( $result, array(
-				'product_id' => $product_id,
-				'taxonomy'   => $taxonomy,
-				'terms'      => $terms,
-			) );
+			Error::set_wp_error( $result, 'Warning' );
 		} else {
 			return sizeof( $result );
 		}
@@ -184,7 +257,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		// @todo think about it
-		// if( !$this->isNew() ) return $count;
+		// if( !$this->is_new() ) return $count;
 
 		/**
 		 * Update product's war-s
@@ -222,7 +295,7 @@ class ExchangeProduct extends ExchangePost {
 		if ( 'off' !== ( $post_attribute = Plugin::get( 'post_attribute' ) ) && ! $this->properties->isEmpty() ) {
 			$terms_id = array();
 
-			/** @var ExchangeAttribute attribute */
+			/** @var Attribute attribute */
 			foreach ( $this->properties as $attribute ) {
 				if ( $taxonomy = $attribute->getSlug() ) {
 					if ( ! isset( $terms_id[ $taxonomy ] ) ) {

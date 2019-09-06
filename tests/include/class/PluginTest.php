@@ -5,6 +5,8 @@
  * @package Newproject.wordpress.plugin/
  */
 
+use NikolayS93\Exchange\Plugin;
+
 if( !class_exists('WP_UnitTestCase') ) {
 	class WP_UnitTestCase extends PHPUnit\Framework\TestCase {
 	}
@@ -19,12 +21,11 @@ class PluginTest extends WP_UnitTestCase {
 	private $Plugin;
 
 	public function setUp() {
-		$this->Plugin = Plugin();
+		$this->Plugin = Plugin::get_instance();
 	}
 
 	public function testInstance() {
-		$this->assertIsObject($this->Plugin);
-		$this->assertEquals( get_class( $this->Plugin ), 'Plugin' );
+		$this->assertInstanceOf( Plugin::class, $this->Plugin );
 	}
 
 	public function testActivate() {
@@ -43,14 +44,14 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function testGet_option_name() {
-		$filter_name = $this->Plugin::PREFIX . 'get_option_name';
+		$filter_name = Plugin::PREFIX . 'get_option_name';
 		$option_name = 'test';
 
-		$this->assertEquals( $this->Plugin::get_option_name(),
-			apply_filters( $filter_name, $this->Plugin::DOMAIN, null ) );
+		$this->assertEquals( $this->Plugin->get_option_name(),
+			apply_filters( $filter_name, Plugin::DOMAIN, null ) );
 
-		$this->assertEquals( $this->Plugin::get_option_name( $option_name ),
-			apply_filters( $filter_name, $this->Plugin::PREFIX . $option_name, $option_name ) );
+		$this->assertEquals( $this->Plugin->get_option_name( $option_name ),
+			apply_filters( $filter_name, Plugin::PREFIX . $option_name, $option_name ) );
 	}
 
 	public function testGet_permissions() {
@@ -69,9 +70,9 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function testGet_url() {
-		$filter_name = $this->Plugin::PREFIX . 'get_plugin_url';
+		$filter_name = Plugin::PREFIX . 'get_plugin_url';
 		$plugins_url = plugins_url();
-		$plugin_url  = $plugins_url . '/' . basename( $this->Plugin::DIR );
+		$plugin_url  = $plugins_url . '/' . basename( $this->Plugin->get_dir() );
 
 		$path         = '/test/';
 		$path2        = 'test/';
@@ -85,26 +86,32 @@ class PluginTest extends WP_UnitTestCase {
 
 	public function testGet_template() {
 		$template = 'admin/template/menu-page';
-		$tpl      = $this->Plugin->get_dir() . "/$template";
+		$tpl      = $this->Plugin->get_dir() . "$template";
 
 		$this->assertFalse( $this->Plugin->get_template( 'fail/template/path' ) );
 		$this->assertEquals( $this->Plugin->get_template( $template ), $tpl . '.php' );
 		$this->assertEquals( $this->Plugin->get_template( '/' . $template . '.php' ), $tpl . '.php' );
 	}
 
-	public function test_get_setting() {
+	private function resetOptions() {
+		delete_option( $this->Plugin->get_option_name() );
+		delete_option( $this->Plugin->get_option_name('context') );
+	}
+
+	public function testGet_setting() {
+		$this->testSet_setting();
+
 		$this->assertEquals( $this->Plugin->get_setting('test', false), 1 );
 		$this->assertEquals( $this->Plugin->get_setting('test', false, 'context'), 2 );
 		$this->assertEquals( $this->Plugin->get_setting('test2', false), 3 );
-		// Reset options
-		delete_option( $this->Plugin->get_option_name() );
-		delete_option( $this->Plugin->get_option_name('context') );
+		$this->resetOptions();
+
 		$this->assertFalse( $this->Plugin->get_setting('test', false) );
 		$this->assertNull( $this->Plugin->get_setting('test', null, 'context') );
 		$this->assertTrue( $this->Plugin->get_setting('test2', true) );
 	}
 
-	public function test_set_setting() {
+	public function testSet_setting() {
 		$this->assertTrue( $this->Plugin->set_setting('test', 1) );
 		$this->assertFalse( $this->Plugin->set_setting('test', 1) );
 		$this->assertTrue( $this->Plugin->set_setting('test', 2, 'context') );

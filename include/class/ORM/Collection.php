@@ -3,8 +3,10 @@
 namespace NikolayS93\Exchange\ORM;
 
 use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 
 class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
+
 	/**
 	 * @var array $items
 	 */
@@ -15,10 +17,10 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	 *
 	 * @param array $items
 	 *
-	 * @return \CommerceMLParser\ORM\Collection
+	 * @return Collection
 	 */
 	public function __construct( $items = array() ) {
-		$this->add( $items );
+		return $this->add( $items );
 	}
 
 	/**
@@ -75,10 +77,16 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	}
 
 	/**
+	 * @param \Closure $p
+	 *
 	 * @return self
 	 */
 	public function filter( \Closure $p ) {
 		return new static( array_filter( $this->items, $p ) );
+	}
+
+	public function walk( \Closure $p ) {
+		return new static( array_walk( $this->items, $p ) );
 	}
 
 	/**
@@ -95,7 +103,10 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 			}
 		} else {
 			if ( $item instanceof ExternalCode ) {
-				$this->items[ $item->getExternal() ] = $item;
+				$this->items[ $item->get_external() ] = $item;
+			}
+			elseif ( $item instanceof Identifiable && $item_id = $item->get_id() ) {
+				$this->items[ $item_id ] = $item;
 			} else {
 				$this->items[] = $item;
 			}
@@ -138,6 +149,17 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 		return $this;
 	}
 
+	public function slice( $offset, $length ) {
+		if ( is_array( $this->items ) || $this->items instanceof \Traversable ) {
+			$this->items = array_slice( $this->items, $offset, $length );
+
+			return $this->count();
+		} else {
+			// @TODO
+			return $this;
+		}
+	}
+
 	/**
 	 * @param object[]|object $items
 	 *
@@ -155,7 +177,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 		$item = $items;
 
 		if ( ( $positions = $this->has( $item ) ) !== false ) {
-			array_splice( $this->items, $position, 1 );
+			array_splice( $this->items, $positions, 1 );
 		}
 
 		return $this;
@@ -224,21 +246,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	 * {@inheritDoc}
 	 */
 	public function count() {
-		return count( $this->items );
-	}
-
-	/**
-	 * Получить элемент по индексу
-	 *
-	 * @param $offset
-	 *
-	 * @return mixed
-	 */
-	public function get( $offset ) {
-		if ( isset( $this->items[ $offset ] ) ) {
-			return $this->items[ $offset ];
-		}
-
-		return null;
+		return count($this->items);
 	}
 }

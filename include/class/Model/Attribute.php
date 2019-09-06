@@ -2,18 +2,20 @@
 
 namespace NikolayS93\Exchange\Model;
 
-use NikolayS93\Exchange\Utils;
+use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
+use NikolayS93\Exchange\Model\Interfaces\Taxonomy;
+use NikolayS93\Exchange\Model\Interfaces\Value;
+
 use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\esc_cyr;
+use const NikolayS93\Exchange\EXTERNAL_CODE_KEY;
 
 /**
  * Works with woocommerce_attribute_taxonomies
  */
-class ExchangeAttribute implements Interfaces\ExternalCode {
-	const EXT_ID = '_ext_ID';
-
-	static function getExtID() {
-		return apply_filters( 'ExchangeTerm::getExtID', self::EXT_ID );
-	}
+class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
 
 	/**
 	 * @todo
@@ -34,45 +36,33 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 	private $ext;
 
 	/**
-	 * @var array List of ExchangeTerm
+	 * @var Collection of ExchangeTerm
 	 */
 	private $terms;
 
-	// private $taxonomymeta; ?
+	function __set( $name, $value ) {
+		// TODO: Implement __set() method.
+	}
+
+	public static function sanitize_slug( $str ) {
+		if ( 0 !== strpos( $str, 'pa_' ) ) {
+			return wc_attribute_taxonomy_name( $str );
+		} else {
+			return wc_sanitize_taxonomy_name( $str );
+		}
+	}
 
 	function __construct( $args = array(), $ext = '' ) {
-		foreach ( get_object_vars( (object) $args ) as $k => $arg ) {
-			if ( property_exists( $this, $k ) ) {
-				$this->$k = $arg;
-			}
+		$this->ext = $ext;
+
+		foreach ( (array) $args as $k => $arg ) {
+			$this->$k = $arg;
 		}
 
-		if ( $this->attribute_name ) {
-			if ( 0 !== strpos( $this->attribute_name, 'pa_' ) ) {
-				$this->attribute_name = 'pa_' . wc_sanitize_taxonomy_name( $this->attribute_name );
-			}
-		} else {
-			$this->attribute_name = wc_attribute_taxonomy_name( \NikolayS93\Exchange\esc_cyr( $this->attribute_label ) );
-		}
+		$name = esc_cyr( $this->attribute_name ? $this->attribute_name : $this->attribute_label );
+		$this->set_slug( $name );
 
-		if ( $ext ) {
-			$this->ext = $ext;
-		}
-		$this->resetTerms();
-	}
-
-	function resetTerms() {
-		$this->terms = new Collection();
-	}
-
-	public function getTerms() {
-		return $this->terms;
-	}
-
-	function addTerm( $term ) {
-		$term->setTaxonomy( $this->attribute_name );
-
-		$this->terms->add( $term );
+		$this->reset_terms();
 	}
 
 	/**
@@ -91,39 +81,50 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 		return $attribute;
 	}
 
-	public function getSlug() {
+	public function get_slug() {
 		return $this->attribute_name;
 	}
 
-	public function getName() {
+	public function set_slug( $slug ) {
+		$this->attribute_name = static::sanitize_slug( $slug );
+	}
+
+	public function get_name() {
 		return $this->attribute_label;
 	}
 
-	public function getValue() {
-		return $this->attribute_value;
-	}
-
-	public function setValue( $value ) {
-		if ( $value instanceof ExchangeTerm ) {
-			$this->attribute_value = $value;
-		} else {
-			/** @var Collection */
-			$terms = $this->getTerms();
-
-			$this->attribute_value = ( $relationTerm = $terms->offsetGet( $value ) ) ? $relationTerm : (string) $value;
-		}
-
-		$this->resetTerms();
+	public function get_type() {
+		return $this->attribute_type;
 	}
 
 	/**
-	 * For demonstration
+	 * @param Category $term
 	 */
-	public function sliceTerms() {
-		$sliced = new Collection( $this->terms->first() );
-		$sliced->add( $this->terms->last() );
+	public function add_term( $term ) {
+		$term->set_taxonomy( $this->attribute_name );
 
-		$this->terms = $sliced;
+		$this->terms->add( $term );
+	}
+
+	public function get_terms() {
+		return $this->terms;
+	}
+
+	public function reset_terms() {
+		$this->terms = new Collection();
+	}
+
+	public function get_value() {
+		return $this->attribute_value;
+	}
+
+	public function set_value( $value ) {
+		if ( $value instanceof Category ) {
+			$this->attribute_value = $value;
+		} else {
+			$this->attribute_value = ( $relationTerm = $this->get_terms()->offsetGet( $value ) )
+				? $relationTerm : (string) $value;
+		}
 	}
 
 	public function get_id() {
@@ -134,46 +135,49 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 		$this->id = (int) $id;
 	}
 
-	function getExternal() {
+	static function get_external_key() {
+		return apply_filters( 'ExchangeAttribute::get_external_key', EXTERNAL_CODE_KEY );
+	}
+
+	public function get_external() {
 		return $this->ext;
 	}
 
-	function setExternal( $ext ) {
-		$this->ext = (String) $ext;
+	public function get_raw_external() {
 	}
 
-	function getType() {
-		return $this->attribute_type;
+	public function set_external( $ext ) {
+		$this->ext = (String) $ext;
 	}
 
 	static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''
 	{
-		/** @global wpdb wordpress database object */
+		/** @global \wpdb wordpress database object */
 		global $wpdb;
 
 		/** @var boolean get data for items who not has term_id */
 		// $orphaned_only = true;
 
-		/** @var List of external code items list in database attribute context (%s='%s') */
+		/** @var array List of external code items list in database attribute context (%s='%s') */
 		$taxExternals  = array();
 		$termExternals = array();
 
-		/** @var $obAttributeTaxonomy ExchangeAttribute */
+		/** @var $obAttributeTaxonomy Attribute */
 		foreach ( $obAttributeTaxonomies as $obAttributeTaxonomy ) {
 			/**
 			 * Get taxonomy (attribute)
 			 */
 			if ( ! $obAttributeTaxonomy->get_id() ) {
-				$taxExternals[] = "`meta_value` = '" . $obAttributeTaxonomy->getExternal() . "'";
+				$taxExternals[] = "`meta_value` = '" . $obAttributeTaxonomy->get_external() . "'";
 			}
 
 			/**
 			 * Get terms (attribute values)
-			 * @var ExchangeTerm $term
+			 * @var Category $term
 			 * @todo maybe add parents?
 			 */
-			foreach ( $obAttributeTaxonomy->getTerms() as $obExchangeTerm ) {
-				$termExternals[] = "`meta_value` = '" . $obExchangeTerm->getExternal() . "'";
+			foreach ( $obAttributeTaxonomy->get_terms() as $obExchangeTerm ) {
+				$termExternals[] = "`meta_value` = '" . $obExchangeTerm->get_external() . "'";
 			}
 		}
 
@@ -184,7 +188,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			$exists_query = "
                 SELECT meta_id, tax_id, meta_key, meta_value
                 FROM {$wpdb->prefix}woocommerce_attribute_taxonomymeta
-                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                WHERE `meta_key` = '" . self::get_external_key() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $taxExternals ) ) . ")";
 
 			$results = $wpdb->get_results( $exists_query );
@@ -205,7 +209,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                WHERE `meta_key` = '" . Category::getExtID() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $termExternals ) ) . ")";
 
 			$results = $wpdb->get_results( $exists_query );
@@ -223,16 +227,16 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			/**
 			 * Get taxonomy (attribute)
 			 */
-			if ( ! empty( $taxExists[ $obAttributeTaxonomy->getExternal() ] ) ) {
-				$obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->getExternal() ]->tax_id );
+			if ( ! empty( $taxExists[ $obAttributeTaxonomy->get_external() ] ) ) {
+				$obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->get_external() ]->tax_id );
 			}
 
 			/**
 			 * Get terms (attribute values)
-			 * @var ExchangeTerm $term
+			 * @var Category $term
 			 */
-			foreach ( $obAttributeTaxonomy->getTerms() as &$obExchangeTerm ) {
-				$ext = $obExchangeTerm->getExternal();
+			foreach ( $obAttributeTaxonomy->get_terms() as &$obExchangeTerm ) {
+				$ext = $obExchangeTerm->get_external();
 
 				if ( ! empty( $exists[ $ext ] ) ) {
 					$obExchangeTerm->set_id( $exists[ $ext ]->term_id );

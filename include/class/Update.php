@@ -2,388 +2,116 @@
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchange\Utils;
-use NikolayS93\Exchange\Model\TermModel;
-use NikolayS93\Exchange\Model\ProductModel;
+use CommerceMLParser\Model\Property;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\Developer;
+use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\Interfaces\Term;
+use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchange\ORM\Collection;
 
-use NikolayS93\Exchange\Model\ExchangeTerm;
-use NikolayS93\Exchange\Model\ExchangeAttribute;
-use NikolayS93\Exchange\Model\ExchangePost;
 
 class Update {
+
+	public $offset;
+
+	/** @var $progress int Offset from */
+	public $progress;
 
 	static function get_sql_placeholder( $structure ) {
 		$values = array();
 		foreach ( $structure as $column => $format ) {
 			$values[] = "'$format'";
 		}
-
 		$query = '(' . implode( ",", $values ) . ')';
-
 		return $query;
 	}
-
 	static function get_sql_structure( $structure ) {
 		return '(' . implode( ', ', array_keys( $structure ) ) . ')';
 	}
-
 	static function get_sql_duplicate( $structure ) {
 		$values = array();
 		foreach ( $structure as $column => $format ) {
 			$values[] = "$column = VALUES($column)";
 		}
-
 		$query = implode( ",\n", $values ) . ';';
-
 		return $query;
 	}
-
 	static function get_sql_update( $bd_name, $structure, $insert, $placeholders, $duplicate ) {
 		global $wpdb;
-
 		$query = "INSERT INTO $bd_name $structure VALUES " . implode( ', ', $placeholders );
 		$query .= " ON DUPLICATE KEY UPDATE " . $duplicate;
-
 		return $wpdb->prepare( $query, $insert );
 	}
 
-	public static function posts( &$products ) {
-		global $wpdb, $user_id; //, $site_url
-		// $site_url = get_site_url();
+	function __construct() {
+		$this->offset = apply_filters( PLUGIN::PREFIX . 'update_count_offset', array(
+			'product' => 500,
+			'offer'   => 500,
+			'rest'    => 1001,
+			'price'   => 1001,
+		) );
 
-		// Define empty result
-		$results = array(
-			'create' => 0,
-			'update' => 0,
-		);
-
-		// If data is empty
-		if ( empty( $products ) ) {
-			return $results;
-		}
-
-		// Current date for update modify
-		$date_now   = current_time( 'mysql' );
-		$gmdate_now = gmdate( 'Y-m-d H:i:s' );
-
-		// If not disabled option
-		if ( 'off' !== ( $post_mode = Plugin::get( 'post_mode' ) ) ) {
-			// Generate DUPLICATE KEY UPDATE structure
-			$posts_structure = ExchangePost::get_structure( 'posts' );
-
-			$structure       = static::get_sql_structure( $posts_structure );
-			$duplicate       = static::get_sql_duplicate( $posts_structure );
-			$sql_placeholder = static::get_sql_placeholder( $posts_structure );
-
-			// define empty data for fill
-			$insert = array();
-			$filler = array();
-
-			/**
-			 * Prepare data
-			 * @var $product NikolayS93\Exchange\Model\ExchangePost
-			 */
-			foreach ( $products as &$product ) {
-				$product->prepare();
-				$p = $product->getObject();
-
-				if ( ! $product->get_id() ) {
-					/** if is update only */
-					if ( 'update' === $post_mode ) {
-						continue;
-					}
-
-					$results['create'] ++;
-				} else {
-					$results['update'] ++;
-				}
-
-				// Is date null set now
-				if ( ! (int) preg_replace( '/[^0-9]/', '', $p->post_date ) ) {
-					$p->post_date = $date_now;
-				}
-				if ( ! (int) preg_replace( '/[^0-9]/', '', $p->post_date_gmt ) ) {
-					$p->post_date_gmt = $gmdate_now;
-				}
-
-				array_push( $insert,
-					$p->ID,
-					$p->post_author,
-					$p->post_date,
-					$p->post_date_gmt,
-					$p->post_content,
-					$p->post_title,
-					$p->post_excerpt,
-					$p->post_status,
-					$p->comment_status,
-					$p->ping_status,
-					$p->post_password,
-					$p->post_name,
-					$p->to_ping,
-					$p->pinged,
-					$p->post_modified = $date_now,
-					$p->post_modified_gmt = $gmdate_now,
-					$p->post_content_filtered,
-					$p->post_parent,
-					$p->guid,
-					$p->menu_order,
-					$p->post_type,
-					$p->post_mime_type,
-					$p->comment_count
-				);
-
-				array_push( $filler, $sql_placeholder );
-			}
-
-			/**
-			 * Execute: sql update (DUPLICATE KEY) posts
-			 */
-			if ( sizeof( $insert ) && sizeof( $filler ) ) {
-				$query = static::get_sql_update( $wpdb->posts, $structure, $insert, $filler, $duplicate );
-				$wpdb->query( $query );
-			}
-		}
-
-		// must be
-		$updated = array();
-		foreach ( $products as $product ) {
-			if ( $post_id = $product->get_id() ) {
-				$updated[] = $post_id;
-			}
-		}
-
-		$wpdb->query( "UPDATE $wpdb->posts
-            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
-            WHERE ID in (" . implode( ",", $updated ) . ")" );
-
-		return $results;
-	}
-
-	public static function postmeta( $products ) {
-		$results = array(
-			'update' => 0,
-		);
-
-		$skip_post_meta_value = Plugin::get( 'skip_post_meta_value', false );
-		$skip_post_meta_sku   = Plugin::get( 'skip_post_meta_sku', false );
-		$skip_post_meta_unit  = Plugin::get( 'skip_post_meta_unit', false );
-		$skip_post_meta_tax   = Plugin::get( 'skip_post_meta_tax', false );
-
-		foreach ( $products as $product ) {
-			if ( $skip_post_meta_value && ! $product->isNew() ) {
-				continue;
-			}
-
-			/**
-			 * @todo @fixed think how to get inserted meta
-			 * We fillExists oraphned before postmeta update
-			 * @todo check this
-			 */
-			if ( ! $post_id = $product->get_id() ) {
-				continue;
-			}
-
-			/**
-			 * Get list of all meta by product
-			 * ["_sku"], ["_unit"], ["_tax"], ["{$custom}"],
-			 */
-			$productMeta = $product->getProductMeta();
-
-			if ( ! $product->isNew() ) {
-				if ( $skip_post_meta_sku ) {
-					unset( $productMeta["_sku"] );
-				}
-				if ( $skip_post_meta_unit ) {
-					unset( $productMeta["_unit"] );
-				}
-				if ( $skip_post_meta_tax ) {
-					unset( $productMeta["_tax"] );
-				}
-			}
-
-			foreach ( $productMeta as $mkey => $mvalue ) {
-				update_post_meta( $post_id, $mkey, trim( $mvalue ) );
-				$results['update'] ++;
-			}
-		}
-
-		return $results;
+		$this->progress = intval( Plugin()->get_setting( 'progress', 0, 'status' ) );
 	}
 
 	/**
-	 * @param array  &$terms as $rawExt => ExchangeTerm
+	 * Set inner plug-in mode
+	 * @note Set empty mode for reset
+	 *
+	 * @param $mode
+	 * @param array $args
+	 *
+	 * @return bool
 	 */
-	public static function terms( &$terms ) {
-		global $wpdb, $user_id;
+	function set_mode( $mode, $args = array() ) {
+		$args = wp_parse_args( $args, array(
+			'mode'     => $mode,
+			'progress' => (int) $this->progress,
+		) );
 
-		$updated = array();
-
-		foreach ( $terms as &$term ) {
-			$term->prepare();
-
-			/**
-			 * @var Int WP_Term->term_id
-			 */
-			$term_id = $term->get_id();
-
-			/**
-			 * @var WP_Term
-			 */
-			$obTerm = $term->getTerm();
-
-			/**
-			 * @var array
-			 */
-			$arTerm = (array) $obTerm;
-
-			/**
-			 * @todo Check why need double iteration for parents
-			 * @note do not update exists terms
-			 * @note So, i think, we can write author's user_id and do not touch if is manual edited by adminisrator
-			 */
-
-			if ( 'product_cat' == $arTerm['taxonomy'] ) {
-				if ( 'off' === ( $category_mode = Plugin::get( 'category_mode' ) ) ) {
-					continue;
-				}
-				if ( 'create' == $category_mode && $term_id ) {
-					continue;
-				}
-				if ( 'update' == $category_mode && ! $term_id ) {
-					continue;
-				}
-
-				if ( $term_id ) {
-					if ( ! Plugin::get( 'cat_name' ) ) {
-						unset( $arTerm['name'] );
-					}
-					if ( ! Plugin::get( 'cat_desc' ) ) {
-						unset( $arTerm['description'] );
-					}
-				}
-
-				if ( Plugin::get( 'skip_parent' ) ) {
-					unset( $arTerm['parent'] );
-				}
-			} elseif ( apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ) == $arTerm['taxonomy'] ) {
-				if ( 'off' === ( $developer_mode = Plugin::get( 'developer_mode' ) ) ) {
-					continue;
-				}
-				if ( 'create' == $developer_mode && $term_id ) {
-					continue;
-				}
-				if ( 'update' == $developer_mode && ! $term_id ) {
-					continue;
-				}
-
-				if ( $term_id ) {
-					if ( ! Plugin::get( 'dev_name' ) ) {
-						unset( $arTerm['name'] );
-					}
-					if ( ! Plugin::get( 'dev_desc' ) ) {
-						unset( $arTerm['description'] );
-					}
-				}
-			} elseif ( apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG ) == $arTerm['taxonomy'] ) {
-				if ( 'off' === ( $warehouse_mode = Plugin::get( 'warehouse_mode' ) ) ) {
-					continue;
-				}
-				if ( 'create' == $warehouse_mode && $term_id ) {
-					continue;
-				}
-				if ( 'update' == $warehouse_mode && ! $term_id ) {
-					continue;
-				}
-
-				if ( $term_id ) {
-					if ( ! Plugin::get( 'wh_name' ) ) {
-						unset( $arTerm['name'] );
-					}
-					if ( ! Plugin::get( 'wh_desc' ) ) {
-						unset( $arTerm['description'] );
-					}
-				}
-			} // attributes
-			else {
-				if ( 'off' === ( $attribute_mode = Plugin::get( 'attribute_mode' ) ) ) {
-					continue;
-				}
-				if ( 'create' == $attribute_mode && $term_id ) {
-					continue;
-				}
-				if ( 'update' == $attribute_mode && ! $term_id ) {
-					continue;
-				}
-
-				if ( $term_id ) {
-					if ( ! Plugin::get( 'pa_name' ) ) {
-						unset( $arTerm['name'] );
-					}
-					if ( ! Plugin::get( 'pa_desc' ) ) {
-						unset( $arTerm['description'] );
-					}
-				}
-			}
-
-			if ( $term_id ) {
-				$result = wp_update_term( $term_id, $arTerm['taxonomy'], $arTerm );
-			} else {
-				$result = wp_insert_term( $arTerm['name'], $arTerm['taxonomy'], $arTerm );
-			}
-
-			if ( ! is_wp_error( $result ) ) {
-				$term->set_id( $result['term_id'] );
-				$updated[ $result['term_id'] ] = $term;
-
-				foreach ( $terms as &$oTerm ) {
-					if ( $term->getExternal() === $oTerm->getParentExternal() ) {
-						$oTerm->set_parent_id( $term->get_id() );
-					}
-				}
-			} else {
-				Utils::addLog( $result, $arTerm );
-			}
-		}
-
-		return $updated;
+		return Plugin()->set_setting( $args, null, 'status' );
 	}
 
-	public static function termmeta( $terms ) {
-		global $wpdb;
+	public function update_terms( Parser $Parser ) {
 
-		$insert = array();
-		$phs    = array();
+		$categories = $Parser->get_categories();
+		$attributes = $Parser->get_properties();
+		$developers = $Parser->get_developers();
+		$warehouses = $Parser->get_warehouses();
 
-		$meta_structure = ExchangeTerm::get_structure( 'termmeta' );
-
-		$structure       = static::get_sql_structure( $meta_structure );
-		$duplicate       = static::get_sql_duplicate( $meta_structure );
-		$sql_placeholder = static::get_sql_placeholder( $meta_structure );
-
-		foreach ( $terms as $term ) {
-			if ( ! $term->get_id() ) { // Utils::addLog( new WP_Error() );
-				continue;
+		$attributeValues = array();
+		/** @var Attribute $attribute */
+		foreach ( $attributes as $attribute ) {
+			/** Collection to simple array */
+			foreach ( $attribute->get_terms() as $term ) {
+				$attributeValues[] = $term;
 			}
-
-			array_push( $insert, $term->meta_id, $term->get_id(), $term->getExtID(), $term->getExternal() );
-			array_push( $phs, $sql_placeholder );
 		}
 
-		$updated_rows = 0;
-		if ( ! empty( $insert ) && ! empty( $phs ) ) {
-			$query        = static::get_sql_update( $wpdb->termmeta, $structure, $insert, $phs, $duplicate );
-			$updated_rows = $wpdb->query( $query );
-		}
+		Update::terms( $categories );
+		Update::term_meta( $categories );
 
-		return $updated_rows;
+		Update::terms( $developers );
+		Update::term_meta( $developers );
+
+		Update::terms( $warehouses );
+		Update::term_meta( $warehouses );
+
+		Update::properties( $attributes );
+		Update::terms( new Collection($attributeValues) );
+		Update::term_meta( $attributeValues );
 	}
 
-	public static function properties( &$properties = array() ) {
+	public static function update_properties( &$properties = array() ) {
 		global $wpdb;
+
+		$Plugin = Plugin();
 
 		$retry = false;
 
-		if ( 'off' === ( $attribute_mode = Plugin::get( 'attribute_mode' ) ) ) {
+		if ( 'off' === ( $attribute_mode = $Plugin->get_setting( 'attribute_mode' ) ) ) {
 			return $retry;
 		}
 
@@ -394,16 +122,13 @@ class Update {
 			 * Register Property's Taxonomies;
 			 */
 			if ( 'select' == $property->getType() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
-				/**
-				 * @var Array
-				 */
 				$external  = $property->getExternal();
 				$attribute = $property->fetch();
 
 				$result = wc_create_attribute( $attribute );
 
 				if ( is_wp_error( $result ) ) {
-					Utils::addLog( $result, $attribute );
+					Error::set_message("Тэг xml во временном потоке не обнаружен.", "Notice");
 				}
 
 				$attribute_id = intval( $result );
@@ -416,13 +141,13 @@ class Update {
 							array(
 								'meta_id'    => null,
 								'tax_id'     => $attribute_id,
-								'meta_key'   => ExchangeTerm::getExtID(),
+								'meta_key'   => EXTERNAL_CODE_KEY,
 								'meta_value' => $external,
 							),
 							array( '%s', '%d', '%s', '%s' )
 						);
 					} else {
-						Utils::addLog( new \WP_Error( 'error', __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) ) );
+						Error::set_message( __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) );
 					}
 
 					$retry = true;
@@ -447,81 +172,140 @@ class Update {
 		return $retry;
 	}
 
+	public function update_products( Parser $Parser ) {
+
+		global $wpdb, $user_id;
+
+		$Plugin = Plugin();
+
+		// Define empty result
+		$results = array(
+			'create'      => 0,
+			'update'      => 0,
+			'meta_update' => 0,
+		);
+
+		/** @var Collection $products */
+		$products      = $Parser->get_products();
+		$productsCount = $products->count();
+
+		/** @recursive update if is $productsCount > $offset */
+		if ( $productsCount <= $this->progress ) {
+
+			// Slice products who offset out
+			$newProductsCount = $products->slice( $this->progress, $this->offset['product'] );
+
+			// Count products will be updated (new array count this != $productsCount)
+			$this->progress += $newProductsCount;
+
+			// Set mode for go away or retry
+			$this->set_mode( $this->progress < $productsCount ? 'relationships' : '' );
+
+			// If not disabled option
+			if ( 'off' !== ( $post_mode = $Plugin->get_setting( 'post_mode' ) ) ) {
+				Transaction()->set_transaction_mode();
+
+				/** @var \NikolayS93\Exchange\Model\ExchangePost $product */
+				foreach ( $products as $product ) {
+					$product->prepare();
+
+					if ( ! $product->get_id() ) {
+						/** if is update only */
+						if ( 'update' === $post_mode ) {
+							continue;
+						}
+
+						if ( $post_id = $product->create() ) {
+							$product->set_id( $post_id );
+							$results['create'] ++;
+						}
+					} else {
+						/** if is create only */
+						if ( 'create' === $post_mode ) {
+							continue;
+						}
+
+						if ( $product->update() ) {
+							$results['update'] ++;
+						}
+					}
+				}
+			}
+
+			/**
+			 * Update product meta
+			 */
+			$skip_post_meta = array(
+				'value' => $Plugin->get_setting( 'skip_post_meta_value', false ),
+				'sku'   => $Plugin->get_setting( 'skip_post_meta_sku', false ),
+				'unit'  => $Plugin->get_setting( 'skip_post_meta_unit', false ),
+				'tax'   => $Plugin->get_setting( 'skip_post_meta_tax', false ),
+			);
+
+			foreach ( $products as $product ) {
+				if ( $skip_post_meta['value'] && ! $is_new = $product->is_new() ) {
+					continue;
+				}
+
+				if ( ! $post_id = $product->get_id() ) {
+					continue;
+				}
+
+				/**
+				 * Get list of all meta by product
+				 * ["_sku"], ["_unit"], ["_tax"], ["{$custom}"],
+				 */
+				$productMeta = $product->get_product_meta();
+				array_map( function ( $k, $v ) use ( &$results, $post_id, $is_new, $skip_post_meta ) {
+					$value = trim( $v );
+
+					if ( '_sku' == $k && $skip_post_meta['sku'] ) {
+						return $value;
+					}
+
+					if ( '_unit' == $k && $skip_post_meta['unit'] ) {
+						return $value;
+					}
+
+					if ( '_tax' == $k && $skip_post_meta['tax'] ) {
+						return $value;
+					}
+
+					if ( update_post_meta( $post_id, $k, $value ) ) {
+						$results['meta_update'] ++;
+					}
+
+					return $value;
+				}, array_keys( $productMeta ), $productMeta );
+			}
+
+			$status   = array();
+			$status[] = "$this->progress из $productsCount записей товаров обработано.";
+			$status[] = $results['create'] . " товаров добавлено.";
+			$status[] = $results['update'] . " товаров обновлено.";
+			$status[] = $results['meta_update'] . " произвольных записей товаров обновлено.";
+
+			$msg = implode( ' -- ', $status );
+
+			exit( "progress\n$msg" );
+		}
+	}
+
 	/**
 	 * @todo write it for mltile offers
 	 */
-	public static function offers( Array &$offers ) {
+	public static function update_offers( Array &$offers ) {
 		return array(
 			'create' => 0,
 			'update' => 0,
 		);
 	}
 
-	public static function offerPostMetas( Array &$offers ) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
-	{
-		global $wpdb, $user_id;
-
-		$result = array(
-			'update' => 0,
-		);
-
-		/** @var offer ExchangeOffer */
-		foreach ( $offers as $offer ) {
-			// if ($offer->isNew())
-			if ( ! $post_id = $offer->get_id() ) {
-				continue;
-			}
-
-			$properties = array();
-
-			// its on post only?
-			if ( $unit = $offer->getMeta( 'unit' ) ) {
-				$properties['_unit'] = $unit;
-			}
-
-			if ( 'off' !== Plugin::get( 'offer_price', false ) ) {
-				if ( $price = $offer->getMeta( 'price' ) ) {
-					$properties['_regular_price'] = $price;
-					$properties['_price']         = $price;
-				}
-			}
-
-			if ( 'off' !== Plugin::get( 'offer_qty', false ) ) {
-				$qty = $offer->get_quantity();
-
-				$properties['_manage_stock'] = 'yes';
-				$properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
-				$properties['_stock']        = $qty;
-
-				if ( $stock_wh = $offer->getMeta( 'stock_wh' ) ) {
-					$properties['_stock_wh'] = $stock_wh;
-				}
-			}
-
-			if ( 'off' !== Plugin::get( 'offer_weight', false ) && $weight = $offer->getMeta( 'weight' ) ) {
-				$properties['_weight'] = $weight;
-			}
-
-			// Типы цен
-			// if( $exOffer->prices ) {
-			//     $properties['_prices'] = $exOffer->prices;
-			// }
-
-			foreach ( $properties as $property_key => $property ) {
-				$result['update'] ++;
-				update_post_meta( $post_id, $property_key, $property );
-				// wp_cache_delete( $post_id, "{$property_key}_meta" );
-			}
-		}
-
-		return $result['update'];
-	}
-
 	/***************************************************************************
 	 * Update relationships
 	 */
 	public static function relationships( Array $posts, $args = array() ) {
-		/** @global wpdb $wpdb built in wordpress db object */
+		/** @global \wpdb $wpdb built in wordpress db object */
 		global $wpdb;
 
 		$updated = 0;
@@ -542,30 +326,6 @@ class Update {
 
 		return $updated;
 	}
-
-	// public static function warehouses_ext()
-	// {
-	//     $xmls = array(
-	//         'primary'    => get_theme_mod( 'primary_XML_ID', '0' ),
-	//         'secondary'  => get_theme_mod( 'secondary_XML_ID', '0' ),
-	//         'company_3' => get_theme_mod( 'company_3_XML_ID', '0' ),
-	//         'company_4' => get_theme_mod( 'company_4_XML_ID', '0' ),
-	//         'company_5' => get_theme_mod( 'company_5_XML_ID', '0' ),
-	//     );
-
-	//     // $xmls = array_flip($xmls);
-	//     // unset( $xmls[0] );
-
-	//     // $wh_count = 0;
-	//     // foreach ($warehouses as $wh_key => &$warehouse) {
-	//     //     if( isset( $xmls[ $wh_key ] ) ) {
-	//     //         $warehouse[ 'contact' ] = $xmls[ $wh_key ];
-	//     //         $wh_count++;
-	//     //     }
-	//     // }
-
-	//     // return $wh_count;
-	// }
 
 	public static function update_term_counts() {
 		global $wpdb;
@@ -589,49 +349,113 @@ class Update {
 		delete_transient( 'wc_term_counts' );
 	}
 
-	static $is_transaction = false;
+	/**
+	 * @param Collection $termsCollection
+	 */
+	private static function terms( &$termsCollection ) {
+		$updated = 0;
+		/** @var \NikolayS93\Exchange\Model\Abstracts\Term $term */
+		$closure = function($term, $offset) use (&$updated) {
+			if( $term->prepare() ) {
+				$updated += (int) $term->update();
+			}
+		};
 
-	static function is_transaction() {
-		return static::$is_transaction;
+		$termsCollection->walk($closure);
+
+		return $updated;
 	}
 
-	function set_transaction_mode() {
+	private static function term_meta( $terms ) {
 		global $wpdb;
 
-		disable_time_limit();
+		$insert = array();
+		$phs    = array();
 
-		register_shutdown_function( __NAMESPACE__ . '\transaction_shutdown_function' );
+		$meta_structure = Category::get_structure( 'term_meta' );
 
-		$wpdb->show_errors( false );
-		$wpdb->query( "START TRANSACTION" );
+		$structure       = static::get_sql_structure( $meta_structure );
+		$duplicate       = static::get_sql_duplicate( $meta_structure );
+		$sql_placeholder = static::get_sql_placeholder( $meta_structure );
 
-		static::$is_transaction = true;
-		static::check_wpdb_error();
+		foreach ( $terms as $term ) {
+			if ( ! $term->get_id() ) {
+				continue;
+			}
+
+			array_push( $insert, $term->meta_id, $term->get_id(), $term->getExtID(), $term->getExternal() );
+			array_push( $phs, $sql_placeholder );
+		}
+
+		$updated_rows = 0;
+		if ( ! empty( $insert ) && ! empty( $phs ) ) {
+			$query        = static::get_sql_update( $wpdb->termmeta, $structure, $insert, $phs, $duplicate );
+			$updated_rows = $wpdb->query( $query );
+		}
+
+		return $updated_rows;
 	}
 
-	function wpdb_stop( $is_commit = false, $no_check = false ) {
-		global $wpdb, $ex_is_transaction;
+	// $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
+	private static function offer_post_meta( Array &$offers )
+	{
+		global $wpdb, $user_id;
 
-		if ( ! static::$is_transaction ) {
-			return;
+		$Plugin = Plugin();
+
+		$result = array(
+			'update' => 0,
+		);
+
+		/** @var ExchangeOffer $offer */
+		foreach ( $offers as $offer ) {
+			// if ($offer->is_new())
+			if ( ! $post_id = $offer->get_id() ) {
+				continue;
+			}
+
+			$properties = array();
+
+			// its on post only?
+			if ( $unit = $offer->getMeta( 'unit' ) ) {
+				$properties['_unit'] = $unit;
+			}
+
+			if ( 'off' !== $Plugin->get_setting( 'offer_price', false ) ) {
+				if ( $price = $offer->getMeta( 'price' ) ) {
+					$properties['_regular_price'] = $price;
+					$properties['_price']         = $price;
+				}
+			}
+
+			if ( 'off' !== $Plugin->get_setting( 'offer_qty', false ) ) {
+				$qty = $offer->get_quantity();
+
+				$properties['_manage_stock'] = 'yes';
+				$properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
+				$properties['_stock']        = $qty;
+
+				if ( $stock_wh = $offer->getMeta( 'stock_wh' ) ) {
+					$properties['_stock_wh'] = $stock_wh;
+				}
+			}
+
+			if ( 'off' !== $Plugin->get_setting( 'offer_weight', false ) && $weight = $offer->getMeta( 'weight' ) ) {
+				$properties['_weight'] = $weight;
+			}
+
+			// Типы цен
+			// if( $exOffer->prices ) {
+			//     $properties['_prices'] = $exOffer->prices;
+			// }
+
+			foreach ( $properties as $property_key => $property ) {
+				$result['update'] ++;
+				update_post_meta( $post_id, $property_key, $property );
+				// wp_cache_delete( $post_id, "{$property_key}_meta" );
+			}
 		}
-		static::$is_transaction = false;
 
-		$sql_query = ! $is_commit ? "ROLLBACK" : "COMMIT";
-		$wpdb->query( $sql_query );
-		if ( ! $no_check ) {
-			Utils::check_wpdb_error();
-		}
-
-		if ( Utils::is_debug_show() ) {
-			echo "\n" . strtolower( $sql_query );
-		}
-	}
-
-	function start_exchange_session() {
-		set_error_handler( __NAMESPACE__ . '\strict_error_handler' );
-		set_exception_handler( __NAMESPACE__ . '\strict_exception_handler' );
-
-		ob_start( __NAMESPACE__ . '\output_callback' );
+		return $result['update'];
 	}
 }

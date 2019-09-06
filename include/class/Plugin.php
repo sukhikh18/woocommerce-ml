@@ -19,26 +19,12 @@ class Plugin {
 	const PREFIX = 'plugin_';
 
 	/**
-	 * Path to plugin directory
-	 */
-	private $dir;
-
-	/**
 	 * The capability required to use this plugin.
 	 * Please don't change this directly. Use the "regenerate_thumbs_cap" filter instead.
 	 *
 	 * @var string
 	 */
 	private $permissions = 'manage_options';
-
-	public static function activate() {
-	}
-
-	public static function deactivate() {
-	}
-
-	public static function uninstall() {
-	}
 
 	/**
 	 * Get option name for a options in the Wordpress database
@@ -58,11 +44,11 @@ class Plugin {
 	}
 
 	public function get_dir( $path = '' ) {
-		return $this->dir . '/' . trim( $path, DIRECTORY_SEPARATOR );
+		return PLUGIN_DIR . ltrim( $path, DIRECTORY_SEPARATOR );
 	}
 
 	public function get_file( $dir_path, $filename ) {
-		return $this->get_dir( $dir_path ) . '/' . trim( $filename, DIRECTORY_SEPARATOR );
+		return $this->get_dir( $dir_path ) . trim( $filename, DIRECTORY_SEPARATOR );
 	}
 
 	/**
@@ -163,21 +149,14 @@ class Plugin {
 	}
 
 	/**
-	 * Register all of the needed hooks and actions.
-	 *
-	 * @param $dir
+	 * Setup plugin.
 	 */
-	public function __init( $dir ) {
-		$this->dir = $dir;
-
+	public function __init() {
 		// Allow people to change what capability is required to use this plugin.
 		$this->permissions = apply_filters( self::PREFIX . 'permissions', $this->permissions );
 
 		// load plugin languages
 		load_plugin_textdomain( self::DOMAIN, false,
 			basename( self::get_dir() ) . '/languages/' );
-
-		$Register = new Register( $this );
-		$Register->register_plugin_page();
 	}
 }
