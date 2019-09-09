@@ -85,8 +85,8 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 		return new static( array_filter( $this->items, $p ) );
 	}
 
-	public function walk( \Closure $p ) {
-		return new static( array_walk( $this->items, $p ) );
+	public function walk( \Closure $p, $userdata = array() ) {
+		return new static( array_walk( $this->items, $p, $userdata ) );
 	}
 
 	/**

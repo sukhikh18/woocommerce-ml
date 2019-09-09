@@ -3,7 +3,7 @@
 namespace NikolayS93\Exchange;
 
 
-use NikolayS93\Excnahge\Traits\Singleton;
+use NikolayS93\Exchange\Traits\Singleton;
 
 class Transaction {
 

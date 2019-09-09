@@ -17,5 +17,36 @@
 * Дописать особенности этого плагина
 * Не работает пометка удаления в новых версиях 1C УТ
 
+```
+ORM
+    - Collection
+
+Utilites
+    - Error
+    - Request
+    - Transaction
+
+Register
+    - Plugin
+    - Register
+
+Actions
+    - Parser
+    - REST
+    - Update
+
+Model
+    - Term (a)
+        - Category
+        - Developer
+        - Warehouse
+        - Attribute value
+    - Attribute
+    - Post (a?)
+        - Offer
+        - Product
+
+```
+
 _Developed by me with support of the company: [SEO18](//seo18.ru)_
  

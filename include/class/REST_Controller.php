@@ -38,39 +38,6 @@ class REST_Controller {
 		$this->permissions = apply_filters( Plugin::PREFIX . 'rest_permissions', $this->permissions );
 	}
 
-	private function before_start() {
-		if ( ! headers_sent() ) {
-			header( "Content-Type: text/plain; charset=" . XML_CHARSET );
-		}
-
-		Error::set_strict_mode();
-
-		/**
-		 * CGI fix
-		 */
-		if ( ! $_GET && isset( $_SERVER['REQUEST_URI'] ) ) {
-			$query = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
-			parse_str( $query, $_GET );
-		}
-
-		check_wp_auth();
-
-		/**
-		 * Check required arguments
-		 */
-		if ( ! $type = Request::get_type() ) {
-			Error::set_message( "No type" );
-		}
-
-		if ( 'catalog' != $type ) {
-			Error::set_message( "Type no support" );
-		}
-
-		if ( ! Request::get_mode() ) {
-			Error::set_message( "No mode" );
-		}
-	}
-
 	function register_routes() {
 		register_rest_route( $this->namespace, '/status/', array(
 			array(
@@ -180,8 +147,6 @@ class REST_Controller {
 	 * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
 	 */
 	public function init() {
-		$this->before_start();
-
 		/** Zip required (if no - must die) */
 		check_zip_extension();
 
@@ -212,7 +177,6 @@ class REST_Controller {
 	 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
 	 */
 	public function query() {
-		$this->before_start();
 	}
 
 	/**
@@ -225,7 +189,6 @@ class REST_Controller {
 	 * @return string 'success'
 	 */
 	public function file() {
-		$this->before_start();
 		/** @var \NikolayS93\Exchange\Plugin $Plugin */
 		$Plugin = Plugin();
 
@@ -401,8 +364,6 @@ class REST_Controller {
 	 * @return 'progress|success|failure'
 	 */
 	public function import() {
-		$this->before_start();
-
 		if ( ! $filename = Request::get_filename() ) {
 			Error::set_message( "Filename is empty" );
 		}
@@ -437,8 +398,6 @@ class REST_Controller {
 	 * @since  3.0
 	 */
 	public function deactivate() {
-		$this->before_start();
-
 		/**
 		 * Чистим и пересчитываем количество записей в терминах
 		 */
@@ -594,8 +553,6 @@ class REST_Controller {
 	 * @since  3.0
 	 */
 	public function complete() {
-		$this->before_start();
-
 		/**
 		 * Insert count the number of records in a category
 		 * /

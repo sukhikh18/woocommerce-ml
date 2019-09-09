@@ -63,7 +63,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 		$this->warehouses = new Collection();
 	}
 
-	function prepare() {
+	function prepare( $mode = '' ) {
 	}
 
 	function fetch() {

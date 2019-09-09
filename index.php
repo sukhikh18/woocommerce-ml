@@ -90,6 +90,10 @@ function Plugin() {
 	return Plugin::get_instance();
 }
 
+function Transaction() {
+    return Transaction::get_instance();
+}
+
 /**
  * Initialize this plugin once all other plugins have finished loading.
  */
@@ -116,7 +120,7 @@ add_action( 'plugins_loaded', function () {
 }, 20 );
 
 function rest_api_init() {
-	$this->rest_api = new Plugin_REST_Controller();
+	$this->rest_api = new REST_Controller();
 	$this->rest_api->register_routes();
 //		$this->rest_api->register_filters();
 }
