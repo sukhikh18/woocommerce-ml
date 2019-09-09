@@ -104,74 +104,6 @@ class Update {
 		Update::term_meta( $attributeValues );
 	}
 
-	public static function update_properties( &$properties = array() ) {
-		global $wpdb;
-
-		$Plugin = Plugin();
-
-		$retry = false;
-
-		if ( 'off' === ( $attribute_mode = $Plugin->get_setting( 'attribute_mode' ) ) ) {
-			return $retry;
-		}
-
-		foreach ( $properties as $propSlug => $property ) {
-			$slug = $property->getSlug();
-
-			/**
-			 * Register Property's Taxonomies;
-			 */
-			if ( 'select' == $property->getType() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
-				$external  = $property->getExternal();
-				$attribute = $property->fetch();
-
-				$result = wc_create_attribute( $attribute );
-
-				if ( is_wp_error( $result ) ) {
-					Error::set_message("Тэг xml во временном потоке не обнаружен.", "Notice");
-				}
-
-				$attribute_id = intval( $result );
-				if ( 0 < $attribute_id ) {
-					if ( $external ) {
-						$property->set_id( $attribute_id );
-
-						$insert = $wpdb->insert(
-							$wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
-							array(
-								'meta_id'    => null,
-								'tax_id'     => $attribute_id,
-								'meta_key'   => EXTERNAL_CODE_KEY,
-								'meta_value' => $external,
-							),
-							array( '%s', '%d', '%s', '%s' )
-						);
-					} else {
-						Error::set_message( __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) );
-					}
-
-					$retry = true;
-				}
-
-				/**
-				 * @var bool
-				 * Почему то термины не вставляются сразу же после вставки таксономии (proccess_add_attribute)
-				 * Нужно будет пройтись еще раз и вставить термины.
-				 */
-				$retry = true;
-			}
-
-			if ( ! taxonomy_exists( $slug ) ) {
-				/**
-				 * For exists imitation
-				 */
-				register_taxonomy( $slug, 'product' );
-			}
-		}
-
-		return $retry;
-	}
-
 	public function update_products( Parser $Parser ) {
 
 		global $wpdb, $user_id;
@@ -294,7 +226,7 @@ class Update {
 	/**
 	 * @todo write it for mltile offers
 	 */
-	public static function update_offers( Array &$offers ) {
+	public function update_offers( Array &$offers ) {
 		return array(
 			'create' => 0,
 			'update' => 0,
@@ -394,6 +326,74 @@ class Update {
 		}
 
 		return $updated_rows;
+	}
+
+	private static function properties( &$properties = array() ) {
+		global $wpdb;
+
+		$Plugin = Plugin();
+
+		$retry = false;
+
+		if ( 'off' === ( $attribute_mode = $Plugin->get_setting( 'attribute_mode' ) ) ) {
+			return $retry;
+		}
+
+		foreach ( $properties as $propSlug => $property ) {
+			$slug = $property->getSlug();
+
+			/**
+			 * Register Property's Taxonomies;
+			 */
+			if ( 'select' == $property->getType() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
+				$external  = $property->getExternal();
+				$attribute = $property->fetch();
+
+				$result = wc_create_attribute( $attribute );
+
+				if ( is_wp_error( $result ) ) {
+					Error::set_message("Тэг xml во временном потоке не обнаружен.", "Notice");
+				}
+
+				$attribute_id = intval( $result );
+				if ( 0 < $attribute_id ) {
+					if ( $external ) {
+						$property->set_id( $attribute_id );
+
+						$insert = $wpdb->insert(
+							$wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
+							array(
+								'meta_id'    => null,
+								'tax_id'     => $attribute_id,
+								'meta_key'   => EXTERNAL_CODE_KEY,
+								'meta_value' => $external,
+							),
+							array( '%s', '%d', '%s', '%s' )
+						);
+					} else {
+						Error::set_message( __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) );
+					}
+
+					$retry = true;
+				}
+
+				/**
+				 * @var bool
+				 * Почему то термины не вставляются сразу же после вставки таксономии (proccess_add_attribute)
+				 * Нужно будет пройтись еще раз и вставить термины.
+				 */
+				$retry = true;
+			}
+
+			if ( ! taxonomy_exists( $slug ) ) {
+				/**
+				 * For exists imitation
+				 */
+				register_taxonomy( $slug, 'product' );
+			}
+		}
+
+		return $retry;
 	}
 
 	// $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')

@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Excnahge\Traits;
+namespace NikolayS93\Exchange\Traits;
 
 use ReflectionClass;
 use RuntimeException;

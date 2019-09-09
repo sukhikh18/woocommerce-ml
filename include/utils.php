@@ -64,8 +64,8 @@ if ( ! function_exists( 'check_wp_auth' ) ) {
 	}
 }
 
-if ( ! function_exists( 'esc_external' ) ) {
-	function esc_external( $ext ) {
+if ( ! function_exists( 'esc_post_external' ) ) {
+	function esc_post_external( $ext ) {
 		if ( 0 === stripos( $ext, 'XML/' ) ) {
 			$ext = substr( $ext, 4 );
 		}

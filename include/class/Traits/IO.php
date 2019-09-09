@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Excnahge\Traits;
+namespace NikolayS93\Exchange\Traits;
 
 use NikolayS93\Exchange\Error;
 use NikolayS93\Exchange\Plugin;
@@ -141,7 +141,7 @@ trait IO {
 	 *
 	 * @return String|true    error message | all right
 	 */
-	function unzip( $paths, $dir, $rm = false ) {
+	static function unzip( $paths, $dir, $rm = false ) {
 		// if (!$paths) sprintf("No have a paths");
 
 		// распаковывает но возвращает статус 0
