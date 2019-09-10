@@ -4,15 +4,16 @@ namespace NikolayS93\Exchange;
 
 use CommerceMLParser\Model\Property;
 use CommerceMLParser\Model\Types\PropertyValue;
+use NikolayS93\Exchange\Model\AttributeValue;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Developer;
 use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\Model\ExchangeOffer;
 use NikolayS93\Exchange\Model\Warehouse;
-use NikolayS93\Excnahge\Traits\Singleton;
 use NikolayS93\Exchange\ORM\Collection;
 use CommerceMLParser\Event;
+use NikolayS93\Exchange\Traits\Singleton;
 
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,6 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Parser {
 
 	use Singleton;
+
+	private $files;
 
 	/** @var \CommerceMLParser\Parser */
 	private $CommerceParser;
@@ -46,7 +49,8 @@ class Parser {
 	private $requisites_as_properties;
 	private $requisites_exclude;
 
-	function __init() {
+	function __init( $files = array() ) {
+	    $this->files = $files;
 		$this->CommerceParser = \CommerceMLParser\Parser::getInstance();
 
 		$this->arCategories = new Collection();
@@ -55,9 +59,6 @@ class Parser {
 		$this->arProperties = new Collection();
 		$this->arProducts   = new Collection();
 		$this->arOffers     = new Collection();
-
-		// $values['hotsale'] = 'a35a3bd2-d12a-11e7-a4f2-0025904bff5d';
-		// $values['newer']   = 'b0eff642-d12a-11e7-a4f2-0025904bff5d';
 
 		$this->properties_as_requisites = (array) apply_filters( PLUGIN::PREFIX . 'ParsePropertiesAsRequisites', array(
 			'hotsale' => 'a35a3bd2-d12a-11e7-a4f2-0025904bff5d',
@@ -151,51 +152,69 @@ class Parser {
 			array( $this, 'parse_offers_event' ) );
 	}
 
-	public function add_all_listener() {
-		$this->add_category_listener();
-		$this->add_warehouse_listener();
-		$this->add_developer_listener();
-		$this->add_property_listener();
-		$this->add_product_listener();
-		$this->add_offer_listener();
-	}
-
-	/**
-	 * @param array $files
-	 */
-	function parse( $files = array() ) {
+	function parse() {
 		array_map( function ( $file ) {
 			if ( ! is_readable( $file ) ) {
 				Error::set_message( sprintf( __( 'File %s is not readable.' ), $file ), "Warning", 1 );
 			}
 
 			$this->CommerceParser->parse( $file );
-		}, $files );
+		}, $this->files );
 
 //		$this->prepareOffers();
 	}
 
 	public function get_categories() {
+        if( !$this->arCategories->count() ) {
+            $this->add_category_listener();
+            $this->parse();
+        }
+
 		return $this->arCategories;
 	}
 
 	public function get_developers() {
+        if( !$this->arDevelopers->count() ) {
+            $this->add_developer_listener();
+            $this->parse();
+        }
+
 		return $this->arDevelopers;
 	}
 
 	public function get_warehouses() {
+        if( !$this->arWarehouses->count() ) {
+            $this->add_warehouse_listener();
+            $this->parse();
+        }
+
 		return $this->arWarehouses;
 	}
 
 	public function get_properties() {
+        if( !$this->arProperties->count() ) {
+            $this->add_property_listener();
+            $this->parse();
+        }
+
 		return $this->arProperties;
 	}
 
 	public function get_products() {
+	    if( !$this->arProducts->count() ) {
+            $this->add_product_listener();
+            $this->parse();
+        }
+
 		return $this->arProducts;
 	}
 
 	public function get_offers() {
+	    if( !$this->arOffers->count() ) {
+            $this->add_offer_listener();
+            $this->parse();
+        }
+
 		return $this->arOffers;
 	}
 
@@ -307,7 +326,7 @@ class Parser {
 	}
 
 	function parse_products_event( Event\ProductEvent $productEvent ) {
-		/** @var \CommerceMLParser\Model\Product */
+		/** @var \CommerceMLParser\Model\Product $product */
 		$product = $productEvent->getProduct();
 
 		$product_id      = $product->getId();
@@ -581,51 +600,53 @@ class Parser {
 			if ( $meta = $ExchangeProduct->get_meta( $taxonomy_name ) ) {
 				// If this taxonomy not exists
 				if ( empty( $this->arProperties[ $taxonomy_slug ] ) ) {
+				    $attribute = new Attribute( array(
+                        'attribute_label' => $taxonomy_name,
+                        'attribute_name'  => $taxonomy_slug,
+                    ), $taxonomy_slug );
+
 					// Need create for collect terms
-					$this->arProperties->add( new Attribute( array(
-						'attribute_label' => $taxonomy_name,
-						'attribute_name'  => $taxonomy_slug,
-					), $taxonomy_slug ) );
+					$this->arProperties->add( $attribute );
 				}
+				else {
+                    /**
+                     * Next work with created/exists taxonomy
+                     * @var Attribute
+                     */
+                    $attribute = $this->arProperties->offsetGet( $taxonomy_slug );
+                }
 
-				/**
-				 * Next work with created/exists taxonomy
-				 * @var Attribute
-				 */
-				$taxonomy = $this->arProperties->offsetGet( $taxonomy_slug );
-
-				/** @var Attribute */
-				$attr = new Attribute( ! is_array( $meta ) ? array( 'name' => $meta ) : $meta );
+				$attribute_value = new AttributeValue( ! is_array( $meta ) ? array( 'name' => $meta ) : $meta );
 
 				/**
 				 * Unique external
 				 */
-				$ext_slug = $taxonomy->get_slug();
+				$ext_slug = $attribute->get_slug();
 				if ( 0 !== strpos( $ext_slug, 'pa_' ) ) {
 					$ext_slug = 'pa_' . $ext_slug;
 				}
 
-				$attr->set_external( $ext_slug . '/' . $attr->get_slug() );
+				$attribute_value->set_external( $ext_slug . '/' . $attribute_value->get_slug() );
 
-				$term_slug = $taxonomy->get_external() . '-' . $attr->get_slug();
+				$term_slug = $attribute->get_external() . '-' . $attribute_value->get_slug();
 
 				/**
 				 * Unique slug (may be equal slugs on other taxonomy)
 				 */
-				$attr->set_slug( $term_slug );
+				$attribute_value->set_slug( $term_slug );
 
 				/**
 				 * Collect in taxonomy
 				 * @note correct taxonomy in term by attribute
 				 */
-				$taxonomy->addTerm( $attr );
+				$attribute->add_term( $attribute_value );
 
 				/**
 				 * Set product relative
 				 *
 				 * @param Object property name with list of terms
 				 */
-				// $ExchangeProduct->add_attribute( $taxonomy, $attr->getExternal() );
+				$ExchangeProduct->add_attribute( $attribute );
 			}
 //
 			/**

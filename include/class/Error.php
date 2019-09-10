@@ -99,6 +99,10 @@ class Error {
 	 * Except all notices\warnings\errors
 	 */
 	public static function set_strict_mode() {
+        if ( ! headers_sent() ) {
+            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
+        }
+
 		set_error_handler( array( __CLASS__, 'strict_error_handler' ) );
 		set_exception_handler( array( __CLASS__, 'strict_exception_handler' ) );
 	}

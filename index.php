@@ -45,11 +45,13 @@ if ( ! defined( 'EXCHANGE_START_TIMESTAMP' ) ) {
 /**
  * Work with charset
  */
-if ( ! defined( 'EXCHANGE_XML_CHARSET' ) ) {
-	define( 'EXCHANGE_XML_CHARSET', 'UTF-8' );
+if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
+	define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
 require_once ABSPATH . "wp-admin/includes/plugin.php";
+require PLUGIN_DIR . 'include/utils.php';
+
 if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) {
 	include PLUGIN_DIR . 'include/class/Traits/Singleton.php';
 	include PLUGIN_DIR . 'include/class/Traits/IO.php';
@@ -90,6 +92,9 @@ function Plugin() {
 	return Plugin::get_instance();
 }
 
+/**
+ * @return Transaction
+ */
 function Transaction() {
     return Transaction::get_instance();
 }
@@ -162,7 +167,40 @@ function template_redirect() {
 	}
 
 	if ( $value == 'exchange' ) {
-		do_action( '1c4wp_exchange' );
+
+//        Error::set_strict_mode();
+
+        /**
+         * CGI fix
+         */
+        if ( ! $_GET && isset( $_SERVER['REQUEST_URI'] ) ) {
+            $query = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
+            parse_str( $query, $_GET );
+        }
+
+	    $REST = new REST_Controller();
+
+	    switch ( Request::get_mode() ) {
+            case "checkauth":
+                Update::get_instance();
+                $REST->checkauth();
+                break;
+
+            case "init":
+                $REST->init();
+                break;
+
+            case "file":
+                Update::get_instance();
+                $REST->file();
+                break;
+
+            case "import":
+                $REST->import();
+                break;
+        }
+
+        die();
 	}
 	// elseif ($value == 'clean') {
 	//     // require_once PLUGIN_DIR . "/include/clean.php";
@@ -229,135 +267,3 @@ add_action( 'restrict_manage_posts', function ( $post_type ) {
 		<?php
 	}
 }, 10, 1 );
-
-function strict_error_handler( $errno, $errstr, $errfile, $errline, $errcontext ) {
-	if ( 0 === error_reporting() ) {
-		return false;
-	}
-
-	switch ( $errno ) {
-		case E_NOTICE:
-		case E_USER_NOTICE:
-			$type = "Notice";
-			break;
-		case E_WARNING:
-		case E_USER_WARNING:
-			$type = "Warning";
-			break;
-		case E_ERROR:
-		case E_USER_ERROR:
-			$type = "Fatal Error";
-			break;
-		default:
-			$type = "Unknown Error";
-			break;
-	}
-
-	$message = sprintf( "%s in %s on line %d", $errstr, $errfile, $errline );
-	Utils::error( $message, "PHP $type" );
-}
-
-function strict_exception_handler( $exception ) {
-	$message = sprintf( "%s in %s on line %d", $exception->getMessage(), $exception->getFile(), $exception->getLine() );
-	Utils::error( $message, "Exception" );
-}
-
-function output_callback( $buffer ) {
-	global $ex_is_error;
-
-	if ( ! headers_sent() ) {
-		$is_xml       = @$_GET['mode'] == 'query';
-		$content_type = ! $is_xml || $ex_is_error ? 'text/plain' : 'text/xml';
-		header( "Content-Type: $content_type; charset=" . XML_CHARSET );
-	}
-
-	$buffer = ( XML_CHARSET == 'UTF-8' ) ? "\xEF\xBB\xBF$buffer" : mb_convert_encoding( $buffer, XML_CHARSET, 'UTF-8' );
-
-	return $buffer;
-}
-
-function transaction_shutdown_function() {
-	$error = error_get_last();
-
-	$is_commit = ! isset( $error['type'] ) || $error['type'] > E_PARSE;
-
-	Utils::wpdb_stop( $is_commit );
-}
-
-function do_exchange() {
-	/**
-	 * @global $wpdb
-	 */
-	global $wpdb;
-
-	/**
-	 * Start buffer in strict mode
-	 */
-	Plugin::start_exchange_session();
-
-	/**
-	 * Check required arguments
-	 */
-	if ( ! $type = Plugin::get_type() ) {
-		Plugin::error( "No type" );
-	}
-
-	if ( ! $mode = Plugin::get_mode() ) {
-		Plugin::error( "No mode" );
-	}
-
-	if ( 'catalog' != $type ) {
-		Plugin::error( "Type no support" );
-	}
-
-	/**
-	 * CGI fix
-	 */
-	if ( ! $_GET && isset( $_SERVER['REQUEST_URI'] ) ) {
-		$query = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
-		parse_str( $query, $_GET );
-	}
-
-	/**
-	 * @url http://v8.1c.ru/edi/edi_stnd/131/
-	 *
-	 * A. Начало сеанса (Авторизация)
-	 * Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
-	 * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
-	 *
-	 * A. Начало сеанса
-	 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
-	 * @return 'success\nCookie\nCookie_value'
-	 */
-	if ( 'checkauth' == $mode ) {
-		foreach ( array( 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $server_key ) {
-			if ( ! isset( $_SERVER[ $server_key ] ) ) {
-				continue;
-			}
-
-			list( , $auth_value ) = explode( ' ', $_SERVER[ $server_key ], 2 );
-			$auth_value = base64_decode( $auth_value );
-			list( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) = explode( ':', $auth_value );
-
-			break;
-		}
-
-		if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
-			Plugin::error( "No authentication credentials" );
-		}
-
-		$user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
-		if ( is_wp_error( $user ) ) {
-			Plugin::wp_error( $user );
-		}
-		Plugin::check_user_permissions( $user );
-
-		$expiration  = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false );
-		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
-
-		exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
-	}
-
-	check_wp_auth();
-
-}

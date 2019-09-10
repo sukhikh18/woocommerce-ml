@@ -32,7 +32,7 @@ class Request {
 	 */
 	private static function get_allowed_modes() {
 		$allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes',
-			array( 'checkauth', 'init', 'import', 'deactivate', 'complete' ) );
+			array( 'checkauth', 'init', 'file', 'import', 'deactivate', 'complete' ) );
 
 		return $allowed;
 	}
@@ -51,7 +51,7 @@ class Request {
 
 	static function get_full_request_uri() {
 		$uri = 'http';
-		if ( @$_SERVER['HTTPS'] == 'on' ) {
+		if ( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on' ) {
 			$uri .= 's';
 		}
 		$uri .= "://{$_SERVER['SERVER_NAME']}";

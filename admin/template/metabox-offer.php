@@ -1,8 +1,8 @@
 <?php
 
-use NikolayS93\WPAdminPage\Metabox;
-use NikolayS93\WPAdminForm\Form as Form;
+namespace NikolayS93\Exchange;
 
+use NikolayS93\WPAdminForm\Form as Form;
 
 $data = array(
 	// array(

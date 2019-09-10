@@ -28,44 +28,8 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
 	}
 }
 
-if ( ! function_exists( 'check_user_permissions' ) ) {
-	function check_user_permissions( $user ) {
-		if ( ! user_can( $user, 'shop_manager' ) && ! user_can( $user, 'administrator' ) ) {
-			Error::set_message( "No {$user} user permissions" );
-
-			return false;
-		}
-
-		return true;
-	}
-}
-
-if ( ! function_exists( 'check_wp_auth' ) ) {
-	function check_wp_auth() {
-		global $user_id;
-
-		if ( is_user_logged_in() ) {
-			$user = wp_get_current_user();
-
-			if ( ! $user_id = $user->ID ) {
-				Error::set_message( "Not logged in" );
-			}
-		} elseif ( ! empty( $_COOKIE[ COOKIE_NAME ] ) ) {
-			$user = wp_validate_auth_cookie( $_COOKIE[ COOKIE_NAME ], 'auth' );
-
-			if ( ! $user_id = $user ) {
-				Error::set_message( "Invalid cookie" );
-			}
-		}
-
-		if ( ! check_user_permissions( $user_id ) ) {
-			Error::set_message( "No {$user} user permissions" );
-		}
-	}
-}
-
-if ( ! function_exists( 'esc_post_external' ) ) {
-	function esc_post_external( $ext ) {
+if ( ! function_exists( 'esc_external' ) ) {
+	function esc_external( $ext ) {
 		if ( 0 === stripos( $ext, 'XML/' ) ) {
 			$ext = substr( $ext, 4 );
 		}

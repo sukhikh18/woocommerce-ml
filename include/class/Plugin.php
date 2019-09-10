@@ -11,6 +11,8 @@ class Plugin {
 	use Singleton;
 	use IO;
 
+	const VERSION = '0.3';
+
 	/**
 	 * Uniq plugin slug name
 	 */

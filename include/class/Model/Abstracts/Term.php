@@ -9,8 +9,7 @@ use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Traits\ItemMeta;
 use function NikolayS93\Exchange\esc_cyr;
-use function NikolayS93\Exchange\esc_post_external;
-use function NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\esc_external;
 
 abstract class Term {
 
@@ -174,7 +173,7 @@ abstract class Term {
 	}
 
 	function get_raw_external() {
-		return esc_post_external( $this->get_external() );
+		return esc_external( $this->get_external() );
 	}
 
 

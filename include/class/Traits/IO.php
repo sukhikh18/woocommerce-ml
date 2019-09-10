@@ -80,6 +80,7 @@ trait IO {
 
 		// Get all folder objects
 		$dir     = $this->get_exchange_dir( $namespace );
+
 		$objects = new \RecursiveIteratorIterator(
 			new \RecursiveDirectoryIterator( $dir ),
 			\RecursiveIteratorIterator::SELF_FIRST

@@ -8,6 +8,8 @@ use NikolayS93\WPAdminPage\Metabox;
 
 class Register {
 
+    const WAREHOUSE_SLUG = 'Warehouse';
+
 	/**
 	 * Call this method before activate plugin
 	 */
@@ -28,6 +30,10 @@ class Register {
 	public static function uninstall() {
 	}
 
+	public static function get_warehouse_taxonomy_slug() {
+	    return self::WAREHOUSE_SLUG;
+    }
+
 	/**
 	 * Register new admin menu item
 	 *
@@ -42,7 +48,7 @@ class Register {
 			array(
 				'parent'      => 'woocommerce',
 				'menu'        => __( '1C Exchange', Plugin::DOMAIN ),
-				'permissions' => 'manage_options',
+				'permissions' => $Plugin->get_permissions(),
 				'columns'     => 2,
 				// 'validate'    => array($this, 'validate_options'),
 			)

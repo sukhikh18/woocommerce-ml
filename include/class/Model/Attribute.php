@@ -98,7 +98,7 @@ class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
 	}
 
 	/**
-	 * @param Category $term
+	 * @param AttributeValue $term
 	 */
 	public function add_term( $term ) {
 		$term->set_taxonomy( $this->attribute_name );

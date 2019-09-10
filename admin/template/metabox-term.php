@@ -2,7 +2,6 @@
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\WPAdminPage\Metabox;
 use NikolayS93\WPAdminForm\Form as Form;
 
 $cats = array(
@@ -147,7 +146,7 @@ $adv = array(
 		'id'      => 'post_relationship',
 		'type'    => 'select',
 		'label'   => 'Привязка к категории',
-		'desc'    => __( 'What\'s do action if is category not exists', DOMAIN ),
+		'desc'    => __( 'What\'s do action if is category not exists', Plugin::DOMAIN ),
 		'options' => array(
 			''        => 'Try set relative category',
 			'default' => 'Put to default category',
@@ -159,7 +158,7 @@ $adv = array(
 		'id'      => 'post_attribute',
 		'type'    => 'select',
 		'label'   => 'Привязка к аттрибуту',
-		'desc'    => __( 'What\'s do action if is attribute not exists', DOMAIN ),
+		'desc'    => __( 'What\'s do action if is attribute not exists', Plugin::DOMAIN ),
 		'options' => array(
 			''     => 'Skip',
 			'text' => 'Set string (not taxonomy)',
@@ -213,5 +212,6 @@ $adv = array(
         </div>
     </div>
 	<?php
-submit_button( 'Сохранить', 'primary right', 'save_changes' );
-echo '<div class="clear"></div>';
+
+    submit_button( 'Сохранить', 'primary right', 'save_changes' );
+    echo '<div class="clear"></div>';
