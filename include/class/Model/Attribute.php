@@ -136,7 +136,7 @@ class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
 	}
 
 	static function get_external_key() {
-		return apply_filters( 'ExchangeAttribute::get_external_key', EXTERNAL_CODE_KEY );
+		return apply_filters( 'ExchangeAttribute::get_external_key', EXCHANGE_EXTERNAL_CODE_KEY );
 	}
 
 	public function get_external() {

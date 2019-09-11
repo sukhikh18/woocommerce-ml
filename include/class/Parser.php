@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Parser {
 
-	use Singleton;
+//	use Singleton;
 
 	private $files;
 
@@ -49,7 +49,7 @@ class Parser {
 	private $requisites_as_properties;
 	private $requisites_exclude;
 
-	function __init( $files = array() ) {
+	function __construct( $files = array() ) {
 	    $this->files = $files;
 		$this->CommerceParser = \CommerceMLParser\Parser::getInstance();
 
@@ -116,7 +116,7 @@ class Parser {
 		$this->CommerceParser->addListener( "CategoryEvent",
 			array( $this, 'parse_categories_event' ) );
 
-		if ( $this->requisites_as_categories ) {
+		if ( !empty($this->requisites_as_categories) ) {
 			$this->add_product_listener();
 		}
 	}
@@ -124,7 +124,7 @@ class Parser {
 	public function add_developer_listener() {
 		$this->add_product_listener();
 
-		if ( $this->requisites_as_developers ) {
+		if ( !empty($this->requisites_as_developers) ) {
 			$this->add_product_listener();
 		}
 	}
@@ -133,7 +133,7 @@ class Parser {
 		$this->CommerceParser->addListener( "WarehouseEvent",
 			array( $this, 'parse_warehouses_event' ) );
 
-		if ( $this->requisites_as_warehouses ) {
+		if ( !empty($this->requisites_as_warehouses) ) {
 			$this->add_product_listener();
 		}
 	}
@@ -142,7 +142,7 @@ class Parser {
 		$this->CommerceParser->addListener( "PropertyEvent",
 			array( $this, 'parse_properties_event' ) );
 
-		if ( $this->requisites_as_properties ) {
+		if ( !empty($this->requisites_as_properties) ) {
 			$this->add_product_listener();
 		}
 	}

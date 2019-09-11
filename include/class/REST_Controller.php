@@ -5,6 +5,7 @@ namespace NikolayS93\Exchange;
 use NikolayS93\Exchange\Model\ExchangeOffer;
 use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\ORM\Collection;
+use WP_REST_Server;
 
 class REST_Controller {
 
@@ -37,72 +38,52 @@ class REST_Controller {
         $this->permissions = apply_filters( Plugin::PREFIX . 'rest_permissions', $this->permissions );
     }
 
-    public function get_permissions() {
-        return $this->permissions;
-    }
-
-    public function has_permissions( $user ) {
-        foreach ( $this->get_permissions() as $permission ) {
-            if ( user_can( $user, $permission ) ) {
-                return true;
-            }
+    function do_exchange() {
+        if ( ! headers_sent() ) {
+            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
         }
 
-        return false;
-    }
+        Error::set_strict_mode();
 
-    function register_routes() {
-        register_rest_route( $this->namespace, '/status/', array(
-            array(
-                'methods'             => \WP_REST_Server::READABLE,
-                'callback'            => array( $this, 'status' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
+        // CGI fix
+        if ( ! $_GET && isset( $_SERVER['REQUEST_URI'] ) ) {
+            $query = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
+            parse_str( $query, $_GET );
+        }
 
-        register_rest_route( $this->namespace, '/init/', array(
-            array(
-                'methods'             => \WP_REST_Server::READABLE,
-                'callback'            => array( $this, 'init' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
+        if ( ! ( $type = Request::get_type() ) || ! in_array( $type, array( 'catalog' ) ) ) {
+            Error::set_message( "Type no support" );
+        }
 
-        register_rest_route( $this->namespace, '/file/', array(
-            array(
-                'methods'             => \WP_REST_Server::EDITABLE,
-                'callback'            => array( $this, 'file' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
+        if ( ! $mode = Request::get_mode() ) {
+            Error::set_message( "Mode no support" );
+        }
 
-        register_rest_route( $this->namespace, '/import/', array(
-            array(
-                'methods'             => \WP_REST_Server::READABLE,
-                'callback'            => array( $this, 'import' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
+        global $user_id;
 
-        register_rest_route( $this->namespace, '/deactivate/', array(
-            array(
-                'methods'             => \WP_REST_Server::READABLE,
-                'callback'            => array( $this, 'deactivate' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
+        if ( 'checkauth' === $mode ) {
+            $this->checkauth();
+        }
 
-        register_rest_route( $this->namespace, '/complete/', array(
-            array(
-                'methods'             => \WP_REST_Server::READABLE,
-                'callback'            => array( $this, 'complete' ),
-                'permission_callback' => array( $this, 'has_permissions' ),
-            ),
-        ) );
-    }
+        if ( is_user_logged_in() ) {
+            $user         = wp_get_current_user();
+            $user_id      = $user->ID;
+            $method_error = "Not logged in";
+        } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
+            $user_id      = $user = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
+            $method_error = "Invalid cookie";
+        }
 
-    public function status() {
-        the_statistic_table();
+        if ( ! $user_id ) {
+            Error::set_message( $method_error );
+        }
+
+        if ( ! $this->has_permissions( $user_id ) ) {
+            Error::set_message( sprintf( "User %s not has permissions",
+                get_user_meta( $user_id, 'nickname', true ) ) );
+        }
+
+        call_user_func( array( $this, $mode ) );
     }
 
     /**
@@ -155,12 +136,31 @@ class REST_Controller {
     }
 
     /**
+     * @param int|\WP_User $user User ID or object.
+     *
+     * @return bool
+     */
+    public function has_permissions( $user ) {
+        foreach ( $this->get_permissions() as $permission ) {
+            if ( user_can( $user, $permission ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function get_permissions() {
+        return $this->permissions;
+    }
+
+    /**
      * B. Запрос параметров от сайта
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=init
      * B. Уточнение параметров сеанса
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=init
      *
-     * @return
+     * @exit
      * zip=yes|no - Сервер поддерживает Zip
      * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
      */
@@ -193,69 +193,65 @@ class REST_Controller {
     }
 
     /**
-     * C. Получение файла обмена с сайта
-     * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
-     */
-    public function query() {
-    }
-
-    /**
      * C. Выгрузка на сайт файлов обмена
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=file&filename=<имя файла>
      * D. Отправка файла обмена на сайт
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
      *
      * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковывает его)
-     * @return string 'success'
+     * @exit string 'success'
      */
     public function file() {
-        /** @var \NikolayS93\Exchange\Plugin $Plugin */
-        $Plugin = Plugin();
-
-        $filename = Request::get_filename();
-        $path_dir = $Plugin->get_exchange_dir( Request::get_type() );
-
-        if ( ! empty( $filename ) ) {
-            $path      = $path_dir . '/' . ltrim( $filename, "./\\" );
-            $temp_path = "$path~";
-
-            $input_file = fopen( "php://input", 'r' );
-            $temp_file  = fopen( $temp_path, 'w' );
-            stream_copy_to_stream( $input_file, $temp_file );
-
-            if ( is_file( $path ) ) {
-                $temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
-                if ( strpos( $temp_header, "<?xml " ) !== false ) {
-                    unlink( $path );
-                    Error::set_message( "Тэг xml во временном потоке не обнаружен.", "Notice" );
-                }
-            }
-
-            $temp_file = fopen( $temp_path, 'r' );
-            $file      = fopen( $path, 'a' );
-            stream_copy_to_stream( $temp_file, $file );
-            fclose( $temp_file );
-            unlink( $temp_path );
-
-
-            if ( 0 == filesize( $path ) ) {
-                Error::set_message( sprintf( "File %s is empty", $path ) );
-            }
-        } else {
+        if ( ! $filename = Request::get_filename() ) {
             Error::set_message( "Filename is empty" );
         }
 
-        $zip_paths = glob( "$path_dir/*.zip" );
-        if ( empty( $zip_paths ) ) {
-            Error::set_message( 'Archives list unavailable.' );
+        $Plugin    = Plugin();
+        $path_dir  = $Plugin->get_exchange_dir( Request::get_type() );
+        $path      = $path_dir . '/' . ltrim( $filename, "./\\" );
+        $temp_path = "$path~";
+
+        $input_file = fopen( "php://input", 'r' );
+        $temp_file  = fopen( $temp_path, 'w' );
+        stream_copy_to_stream( $input_file, $temp_file );
+
+        if ( is_file( $path ) ) {
+            $temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
+            if ( strpos( $temp_header, "<?xml " ) !== false ) {
+                unlink( $path );
+                Error::set_message( "Тэг xml во временном потоке не обнаружен.", "Notice" );
+            }
         }
 
-        $r = Plugin::unzip( $zip_paths, $path_dir, false );
-        if ( true !== $r ) {
-            Error::set_message( 'Unzip archive error. ' . print_r( $r, 1 ) );
+        $temp_file = fopen( $temp_path, 'r' );
+        $file      = fopen( $path, 'a' );
+        stream_copy_to_stream( $temp_file, $file );
+        fclose( $temp_file );
+        unlink( $temp_path );
+
+        $is_error = false;
+        if ( 0 == filesize( $path ) ) {
+            $is_error = true;
+            Error::set_message( sprintf( "File %s is empty", $path ), "Filesystem error", true, true );
+            fclose( $file );
+            unlink( $path );
+        } else {
+//        $zip_paths = glob( "$path_dir/*.zip" );
+//        if ( empty( $zip_paths ) ) {
+//            $is_error = Error::set_message( 'Archives list unavailable.', "Filesystem error", true );
+//        }
+            $r = unzip( $path, $path_dir, false );
+            if ( true !== $r ) {
+                $is_error = Error::set_message( 'Could not unzip file. ' . print_r( $r, 1 ), "Filesystem error", true,
+                    true );
+                fclose( $file );
+                // @todo move to untrusted folder
+            }
         }
 
-        if ( 'catalog' == Request::get_type() ) {
+        if ( $is_error ) {
+            Error::show_last_error();
+        } elseif ( 'catalog' == Request::get_type() ) {
             exit( "success\nФайл принят." );
         }
     }
@@ -277,7 +273,7 @@ class REST_Controller {
             Error::set_message( 'Files not found.' );
         }
 
-        $Parser = Parser::get_instance();
+        $Parser = new Parser( $files );
         $Update = Update::get_instance();
 
         var_dump( $Parser->get_products() );
@@ -484,5 +480,66 @@ class REST_Controller {
         update_option( 'exchange_last-update', current_time( 'mysql' ) );
 
         exit( "success\nВыгрузка данных завершена" );
+    }
+
+    function register_routes() {
+        register_rest_route( $this->namespace, '/status/', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'status' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+
+        register_rest_route( $this->namespace, '/init/', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'init' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+
+        register_rest_route( $this->namespace, '/file/', array(
+            array(
+                'methods'             => WP_REST_Server::EDITABLE,
+                'callback'            => array( $this, 'file' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+
+        register_rest_route( $this->namespace, '/import/', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'import' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+
+        register_rest_route( $this->namespace, '/deactivate/', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'deactivate' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+
+        register_rest_route( $this->namespace, '/complete/', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'complete' ),
+                'permission_callback' => array( $this, 'has_permissions' ),
+            ),
+        ) );
+    }
+
+    public function status() {
+        the_statistic_table();
+    }
+
+    /**
+     * C. Получение файла обмена с сайта
+     * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
+     */
+    public function query() {
     }
 }

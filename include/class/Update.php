@@ -72,43 +72,6 @@ class Update {
             'update' => 0,
             'meta'   => 0,
         );
-
-        if ( 'checkauth' != Request::get_mode() ) {
-            global $user_id;
-
-            if ( is_user_logged_in() ) {
-                $user = wp_get_current_user();
-
-                if ( ! $user_id = $user->ID ) {
-                    Error::set_message( "Not logged in" );
-                }
-            } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
-                $user = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
-
-                if ( ! $user_id = $user ) {
-                    Error::set_message( "Invalid cookie" );
-                }
-            }
-
-//			if ( ! check_user_permissions( $user_id ) ) {
-//				Error::set_message( "No {$user} user permissions" );
-//			}
-
-            /**
-             * Check required arguments
-             */
-            if ( ! $type = Request::get_type() ) {
-                Error::set_message( "No type" );
-            }
-
-            if ( 'catalog' != $type ) {
-                Error::set_message( "Type no support" );
-            }
-
-            if ( ! Request::get_mode() ) {
-                Error::set_message( "Mode no support" );
-            }
-        }
     }
 
     /**

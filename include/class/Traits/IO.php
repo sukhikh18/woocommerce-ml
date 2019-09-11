@@ -134,48 +134,4 @@ trait IO {
 
 		return false;
 	}
-
-	/**
-	 * @param array $paths for ex. glob("$fld/*.zip")
-	 * @param String $dir for ex. EX_DATA_DIR . '/catalog'
-	 * @param Boolean $rm is remove after unpack
-	 *
-	 * @return String|true    error message | all right
-	 */
-	static function unzip( $paths, $dir, $rm = false ) {
-		// if (!$paths) sprintf("No have a paths");
-
-		// распаковывает но возвращает статус 0
-		// $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));
-		// @exec($command, $_, $status);
-
-		// if (@$status !== 0) {
-		foreach ( $paths as $zip_path ) {
-			$zip    = new \ZipArchive();
-			$result = $zip->open( $zip_path );
-			if ( $result !== true ) {
-				return sprintf( "Failed open archive %s with error code %d", $zip_path, $result );
-			}
-
-			$zip->extractTo( $dir ) or static::error( sprintf( "Failed to extract from archive %s", $zip_path ) );
-			$zip->close() or static::error( sprintf( "Failed to close archive %s", $zip_path ) );
-		}
-
-		if ( $rm ) {
-			$remove_errors = array();
-
-			foreach ( $paths as $zip_path ) {
-				if ( ! @unlink( $zip_path ) ) {
-					$remove_errors[] = sprintf( "Failed to unlink file %s", $zip_path );
-				}
-			}
-
-			if ( ! empty( $remove_errors ) ) {
-				return implode( "\n", $remove_errors );
-			}
-		}
-
-		return true;
-		// }
-	}
 }

@@ -18,6 +18,7 @@ if( !class_exists('WP_UnitTestCase') ) {
  */
 class PluginTest extends WP_UnitTestCase {
 
+    /** @var \NikolayS93\Exchange\Plugin  */
 	private $Plugin;
 
 	public function setUp() {

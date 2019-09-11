@@ -28,6 +28,49 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
 	}
 }
 
+/**
+ * @param array|string $paths for ex. glob("$fld/*.zip")
+ * @param String $dir for ex. EX_DATA_DIR . '/catalog'
+ * @param Boolean $rm is remove after unpack
+ *
+ * @return String|true    error message | all right
+ */
+function unzip( $paths, $dir, $rm = false ) {
+    // распаковывает но возвращает статус 0
+    // $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));
+    // @exec($command, $_, $status);
+    $paths = is_string( $paths ) ? array($paths) : (array) $paths;
+
+    // if (@$status !== 0) {
+    foreach ( $paths as $zip_path ) {
+        $zip    = new \ZipArchive();
+        $result = $zip->open( $zip_path );
+        if ( $result !== true ) {
+            return sprintf( "Failed open archive %s with error code %d", $zip_path, $result );
+        }
+
+        $zip->extractTo( $dir ) or Error::set_message( sprintf( "Failed to extract from archive %s", $zip_path ) );
+        $zip->close() or Error::set_message( sprintf( "Failed to close archive %s", $zip_path ) );
+    }
+
+    if ( $rm ) {
+        $remove_errors = array();
+
+        foreach ( $paths as $zip_path ) {
+            if ( ! @unlink( $zip_path ) ) {
+                $remove_errors[] = sprintf( "Failed to unlink file %s", $zip_path );
+            }
+        }
+
+        if ( ! empty( $remove_errors ) ) {
+            return implode( "\n", $remove_errors );
+        }
+    }
+
+    return true;
+    // }
+}
+
 if ( ! function_exists( 'esc_external' ) ) {
 	function esc_external( $ext ) {
 		if ( 0 === stripos( $ext, 'XML/' ) ) {
