@@ -14,15 +14,15 @@ class Request {
 			$value = sanitize_text_field( $_REQUEST[ $k ] );
 		}
 
-		return apply_filters( 'get_request__' . $k, $value );
+		return $value;
 	}
 
 	static function get_filename() {
-		return static::save_get_request( 'filename' );
+		return (string) static::save_get_request( 'filename' );
 	}
 
 	static function get_type() {
-		return static::save_get_request( 'type' );
+		return (string) static::save_get_request( 'type' );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class Request {
 		$allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes',
 			array( 'checkauth', 'init', 'file', 'import', 'deactivate', 'complete' ) );
 
-		return $allowed;
+		return (array) $allowed;
 	}
 
 	public static function get_mode() {

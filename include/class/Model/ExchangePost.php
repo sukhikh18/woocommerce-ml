@@ -315,7 +315,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 		if ( ! empty( $this->properties ) ) {
 			/** @var Attribute $property */
 			foreach ( $this->properties as $property ) {
-				foreach ( $property->get_terms() as $ex_term ) {
+				foreach ( $property->get_values() as $ex_term ) {
 					if ( $orphaned_only && $ex_term->get_id() ) {
 						continue;
 					}
@@ -386,7 +386,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 				/** @var Attribute $property */
 				foreach ( $this->properties as &$property ) {
 					if ( $property instanceof Attribute ) {
-						foreach ( $property->get_terms() as &$term ) {
+						foreach ( $property->get_values() as &$term ) {
 							$ext = $term->get_external();
 							if ( ! empty( $arTerms[ $ext ] ) ) {
 								$term->set_id( $arTerms[ $ext ] );

@@ -238,9 +238,9 @@ add_action( 'restrict_manage_posts', function ( $post_type ) {
     }
 }, 10, 1 );
 
-add_filter('Term::set_name', function($name, $obj) {
-    return preg_replace( "/(^[0-9|_.)(]+)[\w]/si", "", $name);
-}, 10, 2);
+//add_filter('Term::set_name', function($name, $obj) {
+//    return preg_replace( "/(^[0-9\/_|+ .-]+)[\w]/si", "", $name);
+//}, 10, 2);
 
 add_filter('Term::set_slug', function($slug, $obj) {
     return esc_cyr( (string) $slug, false );

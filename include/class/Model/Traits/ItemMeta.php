@@ -2,6 +2,8 @@
 
 namespace NikolayS93\Exchange\Model\Traits;
 
+use NikolayS93\Exchange\Error;
+
 trait ItemMeta {
 	private $meta = array();
 
@@ -28,15 +30,13 @@ trait ItemMeta {
 	}
 
 	function set_meta( $key, $value = '' ) {
-		if ( ! $key || !is_array($key) && !$value ) {
-			return;
-		}
-
-		if ( !is_array( $key ) ) {
-			$this->meta[ (string) $key ] = trim($value);
-		} else {
+		if ( is_array( $key ) ) {
 			foreach ( $key as $meta_key => $meta_value ) {
-				$this->set_meta($meta_key, $meta_value);
+				$this->set_meta( $meta_key, $meta_value );
+			}
+		} else {
+			if ( $key && $value ) {
+				$this->meta[ trim( $key ) ] = is_array( $value ) ? array_filter( $value, 'trim' ) : trim( $value );
 			}
 		}
 	}

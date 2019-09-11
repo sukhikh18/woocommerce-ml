@@ -14,6 +14,10 @@ class AttributeValue extends Term {
 		return '';
 	}
 
+	static function get_external_key() {
+		return apply_filters( 'AttributeValue::get_external_key', EXCHANGE_EXTERNAL_CODE_KEY );
+	}
+
 	function prepare() {
 		$Plugin = Plugin::get_instance();
 		/** @var Int $term_id WP_Term->term_id */

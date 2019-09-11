@@ -55,12 +55,14 @@ abstract class Term {
 
     public function esc_id( $term_id ) {
         if ( $term_id instanceof \WP_Term ) {
-            return (int) $term_id->term_id;
-        } elseif ( is_array( $term_id ) ) {
-            return (int) $term_id['term_id'];
+            $id = $term_id->term_id;
+        } elseif ( is_array( $term_id ) && !empty($term_id['term_id']) ) {
+            $id = $term_id['term_id'];
         } else {
-            return (int) $term_id;
+            $id = $term_id;
         }
+
+        return absint($id);
     }
 
     public function set_id( $term_id ) {
@@ -184,11 +186,6 @@ abstract class Term {
             $result = wp_update_term( $term_id, $this->get_taxonomy(), $this->get_term()->to_array() );
         } else {
             $result = wp_insert_term( $this->get_name(), $this->get_taxonomy(), $this->get_term()->to_array() );
-        }
-
-        if( !$this->get_name() ) {
-            var_dump($this);
-            die();
         }
 
         if ( ! is_wp_error( $result ) ) {

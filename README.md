@@ -64,5 +64,47 @@ Model
 
 ```
 
+#### How to work /exchange/ page
+```
+template_redirect > REST_Controller->do_exchange()
+
+do_exchange() {
+    // Switch mode between
+    $this->checkauth()
+
+    $this->init() {
+        exit( "zip=yes\nfile_limit=\d" );
+    }
+
+    $this->file() {
+        // Save posted file
+        // Unzip getting file
+        // @todo Move to backup
+    }
+
+    $this->import() {
+        $Update->update_terms() {
+            $Parser
+                ->watch_terms()
+                ->parse();
+
+            $categories = $Parser->get_categories()->fill_exists();
+            $developers = $Parser->get_developers()->fill_exists();
+            $warehouses = $Parser->get_warehouses()->fill_exists();
+    
+            Update::terms( $categories, $developers, $warehouses );
+            Update::term_meta( $categories, $developers, $warehouses );
+        }
+
+        $Update->update_products( $Parser );
+        $Update->update_offers( $Parser );
+        $Update->update_products_relationships( $Parser );
+		$Update->update_offers_relationships( $Parser );
+    }
+    
+    $this->deactivate()
+    $this->complete()
+}
+```
 _Developed by me with support of the company: [SEO18](//seo18.ru)_
  

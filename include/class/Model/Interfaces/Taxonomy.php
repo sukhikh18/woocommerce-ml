@@ -5,9 +5,9 @@ namespace NikolayS93\Exchange\Model\Interfaces;
 
 
 interface Taxonomy {
-	function add_term( $term );
+	function add_value( $term );
 
-	function get_terms();
+	function get_values();
 
-	function reset_terms();
+	function reset_values();
 }
