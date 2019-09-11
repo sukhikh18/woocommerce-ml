@@ -73,8 +73,8 @@ function unzip( $paths, $dir, $rm = false ) {
 
 if ( ! function_exists( 'esc_external' ) ) {
 	function esc_external( $ext ) {
-		if ( 0 === stripos( $ext, 'XML/' ) ) {
-			$ext = substr( $ext, 4 );
+		if ( false !== $pos = stripos( $ext, '/' ) ) {
+			$ext = substr( $ext, $pos );
 		}
 
 		return $ext;

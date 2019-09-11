@@ -10,6 +10,5 @@ interface ExternalCode {
 	function get_raw_external();
 
 	function set_external( $ext );
-
-	static function fillExistsFromDB( &$objects );
+//	static function fillExistsFromDB( &$objects );
 }

@@ -3,6 +3,7 @@
 namespace NikolayS93\Exchange;
 
 use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\ORM\CollectionTerms;
 use NikolayS93\Exchange\Traits\Singleton;
 use NikolayS93\Exchange\ORM\Collection;
 use NikolayS93\Exchange\Model\Interfaces\Term;
@@ -377,19 +378,14 @@ class Update {
 
     public function update_terms( Parser $Parser ) {
 
-        $categories = $Parser->get_categories();
-        $attributes = $Parser->get_properties();
-        $developers = $Parser->get_developers();
-        $warehouses = $Parser->get_warehouses();
+        $Parser
+            ->watch_terms()
+            ->parse();
 
-        $attributeValues = array();
-        /** @var Attribute $attribute */
-        foreach ( $attributes as $attribute ) {
-            /** Collection to simple array */
-            foreach ( $attribute->get_terms() as $term ) {
-                $attributeValues[] = $term;
-            }
-        }
+
+        $categories = $Parser->get_categories()->fill_exists();
+        $developers = $Parser->get_developers()->fill_exists();
+        $warehouses = $Parser->get_warehouses()->fill_exists();
 
         Update::terms( $categories );
         Update::term_meta( $categories );
@@ -400,8 +396,20 @@ class Update {
         Update::terms( $warehouses );
         Update::term_meta( $warehouses );
 
+        $attributes = $Parser->get_properties();
+
+        $attributeValues = array();
+        /** @var Attribute $attribute */
+        foreach ( $attributes as $attribute ) {
+            /** Collection to simple array */
+            foreach ( $attribute->get_terms() as $term ) {
+                $attributeValues[] = $term;
+            }
+        }
+
         Update::properties( $attributes );
-        Update::terms( new Collection( $attributeValues ) );
+        $values = new Collection( $attributeValues );
+        Update::terms( $values );
         Update::term_meta( $attributeValues );
     }
 
@@ -434,12 +442,13 @@ class Update {
         $duplicate       = static::get_sql_duplicate( $meta_structure );
         $sql_placeholder = static::get_sql_placeholder( $meta_structure );
 
+        /** @var Model\Abstracts\Term $term */
         foreach ( $terms as $term ) {
             if ( ! $term->get_id() ) {
                 continue;
             }
 
-            array_push( $insert, $term->meta_id, $term->get_id(), $term->getExtID(), $term->getExternal() );
+            array_push( $insert, $term->meta_id, $term->get_id(), $term->get_external_key(), $term->get_external() );
             array_push( $phs, $sql_placeholder );
         }
 
@@ -464,13 +473,13 @@ class Update {
         }
 
         foreach ( $properties as $propSlug => $property ) {
-            $slug = $property->getSlug();
+            $slug = $property->get_slug();
 
             /**
              * Register Property's Taxonomies;
              */
-            if ( 'select' == $property->getType() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
-                $external  = $property->getExternal();
+            if ( 'select' == $property->get_type() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
+                $external  = $property->get_external();
                 $attribute = $property->fetch();
 
                 $result = wc_create_attribute( $attribute );

@@ -8,6 +8,7 @@ use NikolayS93\Exchange\Error;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Traits\ItemMeta;
+use NikolayS93\Exchange\ORM\Collection;
 use function NikolayS93\Exchange\esc_cyr;
 use function NikolayS93\Exchange\esc_external;
 
@@ -38,13 +39,13 @@ abstract class Term {
             'parent_ext' => '',
         ) );
 
-        $this->set_id( $term['term_id'] );
-        $this->set_name( $term['name'] );
-        $this->set_slug( $term['slug'] );
-        $this->set_taxonomy( $this->get_taxonomy_name() );
-        $this->set_description( $term['description'] );
+        $this->set_id( $term['term_id'] )
+             ->set_name( $term['name'] )
+             ->set_slug( $term['slug'] )
+             ->set_taxonomy( $this->get_taxonomy_name() )
+             ->set_description( $term['description'] )
+             ->set_external( $external ? $external : $term['external'] );
 
-        $this->set_external( $external ? $external : $term['external'] );
         if ( $this instanceof HasParent ) {
             $this->set_parent_external( $term['parent_ext'] );
         }
@@ -67,12 +68,14 @@ abstract class Term {
         $this->term_taxonomy['term_id'] =
         $this->term_taxonomy['term_taxonomy_id'] = // @todo check its true?
             $this->esc_id( $term_id );
+
+        return $this;
     }
 
     public function set_name( $name ) {
-        if ( $name ) {
-            $this->term['name'] = preg_replace( "/(^[\0-9/|_.*]+\. )/", "", (string) $name );
-        }
+        $this->term['name'] = trim( apply_filters( 'Term::set_name', $name, $this ) );
+
+        return $this;
     }
 
     public function set_slug( $slug ) {
@@ -80,17 +83,23 @@ abstract class Term {
             $slug = $this->term['name'];
         }
 
-        $this->term['slug'] = sanitize_title( esc_cyr( (string) $slug, false ) );
+        $this->term['slug'] = sanitize_title( apply_filters( 'Term::set_slug', $slug, $this ) );
+
+        return $this;
     }
 
     public function set_taxonomy( $tax ) {
         $this->term_taxonomy['taxonomy'] = $tax;
+
+        return $this;
     }
 
     abstract function get_taxonomy_name();
 
     public function set_description( $desc ) {
-        return $this->term_taxonomy['description'] = (string) $desc;
+        $this->term_taxonomy['description'] = (string) $desc;
+
+        return $this;
     }
 
     function set_external( $ext ) {
@@ -99,6 +108,8 @@ abstract class Term {
         }
 
         $this->set_meta( static::get_external_key(), $ext );
+
+        return $this;
     }
 
     static function get_external_key() {
@@ -134,87 +145,6 @@ abstract class Term {
         }
 
         return false;
-    }
-
-    static public function fillExistsFromDB( &$terms ) // , $taxonomy = ''
-    {
-        /** @global \wpdb $wpdb wordpress database object */
-        global $wpdb;
-
-        /**
-         * @var boolean get data for items who not has term_id
-         * @todo
-         */
-        $orphaned_only = true;
-
-        /** @var array $externals List of external code items list in database attribute context (%s='%s') */
-        $externals = array();
-
-        /** @var array list of objects exists from posts db */
-        $_exists = array();
-        $exists  = array();
-
-        /**
-         * @var  $rawExternalCode
-         * @var  $term
-         */
-        foreach ( $terms as $rawExternalCode => $term ) {
-            $_external   = $term->get_external();
-            $_p_external = $term->get_parent_external();
-
-            if ( ! $term->get_id() ) {
-                $externals[] = "`meta_value` = '" . $_external . "'";
-            }
-
-            if ( $_p_external && $_external != $_p_external && ! $term->get_parent_id() ) {
-                $externals[] = "`meta_value` = '" . $_p_external . "'";
-            }
-        }
-
-        $externals = array_unique( array_filter( $externals ) );
-
-        /**
-         * Get from database
-         */
-        if ( ! empty( $externals ) ) {
-            $exists_query = "
-                SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
-                FROM $wpdb->termmeta tm
-                INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '" . Category::get_external_key() . "'
-                    AND (" . implode( " \t\n OR ", $externals ) . ")";
-
-            $_exists = $wpdb->get_results( $exists_query );
-        }
-
-        /**
-         * Resort for convenience
-         */
-        foreach ( $_exists as $exist ) {
-            $exists[ $exist->meta_value ] = $exist;
-        }
-        unset( $_exists );
-
-        $needRepeat = false;
-        foreach ( $terms as &$term ) {
-            $ext = $term->getExternal();
-
-            if ( ! empty( $exists[ $ext ] ) ) {
-                $term->set_id( $exists[ $ext ]->term_id );
-                $term->meta_id = $exists[ $ext ]->meta_id;
-            }
-
-            $parent_ext = $term->getParentExternal();
-            if ( $parent_ext ) {
-                if ( ! empty( $exists[ $parent_ext ] ) ) {
-                    $term->set_parent_id( $exists[ $parent_ext ]->term_id );
-                } else {
-                    $needRepeat = true;
-                }
-            }
-        }
-
-        return $needRepeat;
     }
 
     abstract function prepare();
@@ -256,6 +186,11 @@ abstract class Term {
             $result = wp_insert_term( $this->get_name(), $this->get_taxonomy(), $this->get_term()->to_array() );
         }
 
+        if( !$this->get_name() ) {
+            var_dump($this);
+            die();
+        }
+
         if ( ! is_wp_error( $result ) ) {
             $this->set_id( $result['term_id'] );
 //			if( $this instanceof HasParent ) {
@@ -267,7 +202,8 @@ abstract class Term {
 //			}
             return true;
         } else {
-            Error::set_wp_error( $result, null, 'Warning' );
+            Error::set_wp_error( $result, null, 'Warning', true );
+            Error::set_message( print_r( $this, 1 ), 'Description', true );
         }
 
         return false;
@@ -290,10 +226,10 @@ abstract class Term {
     }
 
     function get_raw_external() {
-        return esc_external( $this->get_external() );
+        return esc_external( $this->get_meta( static::get_external_key() ) );
     }
 
     function get_external() {
-        return $this->get_meta( static::get_external_key() );
+        return $this->get_taxonomy() . '/' . $this->get_raw_external();
     }
 }

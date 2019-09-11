@@ -25,7 +25,7 @@ if ( ! defined( __NAMESPACE__ . '\PLUGIN_DIR' ) ) {
 }
 
 if ( ! defined( 'EXCHANGE_EXTERNAL_CODE_KEY' ) ) {
-    define( 'EXCHANGE_EXTERNAL_CODE_KEY', 'EXT' );
+    define( 'EXCHANGE_EXTERNAL_CODE_KEY', '_ext_ID' );
 }
 
 /**
@@ -237,3 +237,11 @@ add_action( 'restrict_manage_posts', function ( $post_type ) {
         <?php
     }
 }, 10, 1 );
+
+add_filter('Term::set_name', function($name, $obj) {
+    return preg_replace( "/(^[0-9|_.)(]+)[\w]/si", "", $name);
+}, 10, 2);
+
+add_filter('Term::set_slug', function($slug, $obj) {
+    return esc_cyr( (string) $slug, false );
+}, 10, 2);

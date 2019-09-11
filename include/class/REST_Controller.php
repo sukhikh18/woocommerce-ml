@@ -39,9 +39,9 @@ class REST_Controller {
     }
 
     function do_exchange() {
-        if ( ! headers_sent() ) {
-            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
-        }
+//        if ( ! headers_sent() ) {
+//            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
+//        }
 
         Error::set_strict_mode();
 
@@ -276,18 +276,18 @@ class REST_Controller {
         $Parser = new Parser( $files );
         $Update = Update::get_instance();
 
-        var_dump( $Parser->get_products() );
-//		$Parser->fill_exists();
-
         Transaction()->set_transaction_mode();
 
-        if ( 'relationships' != Request::get_mode() ) {
-            $this->update_terms( $Parser );
-            $this->update_products( $Parser );
-            $this->update_offers( $Parser );
+
+        if( !in_array(Request::get_mode(), array('posts', 'relationships')) ) {
+            $Update->update_terms( $Parser );
+        }
+        else if ( 'relationships' != Request::get_mode() ) {
+            $Update->update_products( $Parser );
+            $Update->update_offers( $Parser );
         } else {
-            $this->update_products_relationships( $Parser );
-            $this->update_offers_relationships( $Parser );
+            $Update->update_products_relationships( $Parser );
+            $Update->update_offers_relationships( $Parser );
         }
 
         exit( "success" ); // \n$mode

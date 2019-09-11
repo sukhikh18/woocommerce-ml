@@ -127,15 +127,12 @@ class ExchangeProduct extends ExchangePost {
 			return;
 		}
 
-		/**
-		 * @var $property Relationship
-		 */
 		foreach ( $this->properties as $property ) {
-			$label          = $property->getName();
-			$external_code  = $property->getExternal();
-			$property_value = $property->getValue();
-			$taxonomy       = $property->getSlug();
-			$type           = $property->getType();
+			$label          = $property->get_name();
+			$external_code  = $property->get_external();
+			$property_value = $property->get_value();
+			$taxonomy       = $property->get_slug();
+			$type           = $property->get_type();
 			$is_visible     = 0;
 
 			/**
@@ -224,7 +221,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( is_wp_error( $result ) ) {
-			Error::set_wp_error( $result, 'Warning' );
+			Error::set_wp_error( $result, 'Warning', true );
 		} else {
 			return sizeof( $result );
 		}

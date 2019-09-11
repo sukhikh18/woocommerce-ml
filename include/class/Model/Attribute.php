@@ -207,9 +207,9 @@ class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
 		if ( ! empty( $termExternals ) ) {
 			$exists_query = "
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
-                FROM $wpdb->termmeta tm
-                INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '" . Category::getExtID() . "'
+                FROM $wpdb->prefix{termmeta} tm
+                INNER JOIN $wpdb->prefix{terms} t ON tm.term_id = t.term_id
+                WHERE `meta_key` = '" . Category::get_external_key() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $termExternals ) ) . ")";
 
 			$results = $wpdb->get_results( $exists_query );

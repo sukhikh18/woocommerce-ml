@@ -7,7 +7,6 @@ use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 use NikolayS93\Exchange\Model\Interfaces\Term;
 use NikolayS93\Exchange\Model\Abstracts\Term as ATerm;
-use NikolayS93\Exchange\Model\Traits\ItemMeta;
 use NikolayS93\Exchange\Plugin;
 
 /**
@@ -18,22 +17,6 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 	public $meta_id;
 	/** @var string parent external code */
 	private $parent_ext;
-
-	function get_parent_external() {
-		return $this->parent_ext;
-	}
-
-	function set_parent_external( $ext ) {
-		return $this->parent_ext = (string) $ext;
-	}
-
-	public function get_parent_id() {
-		return isset( $this->term_taxonomy['parent'] ) ? (int) $this->term_taxonomy['parent'] : 0;
-	}
-
-	public function set_parent_id( $term_id ) {
-		return $this->term_taxonomy['parent'] = (int) $term_id;
-	}
 
 	function get_taxonomy_name() {
 		return apply_filters(Plugin::PREFIX . 'Category::get_taxonomy_name', 'product_cat');
@@ -69,4 +52,20 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 
 		return false;
 	}
+
+    function get_parent_external() {
+        return $this->parent_ext;
+    }
+
+    function set_parent_external( $ext ) {
+        return $this->parent_ext = (string) $ext;
+    }
+
+    public function get_parent_id() {
+        return isset( $this->term_taxonomy['parent'] ) ? (int) $this->term_taxonomy['parent'] : 0;
+    }
+
+    public function set_parent_id( $term_id ) {
+        return $this->term_taxonomy['parent'] = (int) $term_id;
+    }
 }

@@ -2,7 +2,9 @@
 
 namespace NikolayS93\Exchange\ORM;
 
+use NikolayS93\Exchange\Model\Abstracts\Term;
 use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 
 class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {

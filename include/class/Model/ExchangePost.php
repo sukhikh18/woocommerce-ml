@@ -343,7 +343,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 			$exsists_terms_query = "
                 SELECT term_id, meta_key, meta_value
-                FROM $wpdb->termmeta
+                FROM {$wpdb->prefix}term_meta
                 WHERE meta_key = '" . Category::get_external_key() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $arSqlExternals ) ) . ")";
 
