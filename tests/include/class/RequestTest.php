@@ -36,10 +36,6 @@ class RequestTest extends WP_UnitTestCase {
 		$_REQUEST['type'] = 'test3';
 
 		$this->assertSame('test3', Request::get_type());
-
-		$_REQUEST['type'] = array('test4');
-
-		$this->assertSame('Array', Request::get_type());
 	}
 
 	public function testGet_allowed_modes() {
