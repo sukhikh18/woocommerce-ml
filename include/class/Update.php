@@ -395,7 +395,7 @@ class Update {
 		Update::term_meta( $warehouses );
 
 //        $attributes = $Parser->get_properties()->fill_exists();
-//	    $attributeValues = $attributes->get_all_values();
+//	      $attributeValues = $attributes->get_all_values();
 
 //        Update::properties( $attributes );
 //        Update::terms( $attributeValues );

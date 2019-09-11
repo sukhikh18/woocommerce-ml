@@ -27,13 +27,13 @@ abstract class Term {
             'term_id'    => 0,
             'slug'       => '',
             'name'       => '',
-            'term_group' => '',
-
-            'term_taxonomy_id' => 0,
-            'taxonomy'         => '',
+//            'term_group' => '',
+//
+//            'term_taxonomy_id' => 0,
+//            'taxonomy'         => '',
             'description'      => '', // 1c 8.2 not has a cat description?
-            'parent'           => 0,
-            'count'            => 0,
+//            'parent'           => 0,
+//            'count'            => 0,
 
             'external'   => '',
             'parent_ext' => '',
@@ -75,9 +75,13 @@ abstract class Term {
     }
 
     public function set_name( $name ) {
-        $this->term['name'] = trim( apply_filters( 'Term::set_name', $name, $this ) );
+	    $this->term['name'] = trim( apply_filters( 'Term::set_name', $name, $this ) );
 
         return $this;
+    }
+
+    public function unset_name() {
+	    unset($this->term['name']);
     }
 
     public function set_slug( $slug ) {
@@ -103,6 +107,10 @@ abstract class Term {
 
         return $this;
     }
+
+	public function unset_description() {
+		unset($this->term_taxonomy['description']);
+	}
 
     function set_external( $ext ) {
         if ( empty( $ext ) ) {
@@ -182,14 +190,17 @@ abstract class Term {
     }
 
     function update() {
+    	$term = $this->get_term_array();
+
         if ( $term_id = $this->get_id() ) {
-            $result = wp_update_term( $term_id, $this->get_taxonomy(), $this->get_term()->to_array() );
+            $result = wp_update_term( $term_id, $this->get_taxonomy(), $term );
         } else {
-            $result = wp_insert_term( $this->get_name(), $this->get_taxonomy(), $this->get_term()->to_array() );
+            $result = wp_insert_term( $this->get_name(), $this->get_taxonomy(), $term );
         }
 
         if ( ! is_wp_error( $result ) ) {
             $this->set_id( $result['term_id'] );
+// @todo
 //			if( $this instanceof HasParent ) {
 //				foreach ( $termsCollection as &$oTerm ) {
 //					if ( $term->getExternal() === $oTerm->getParentExternal() ) {
@@ -214,8 +225,12 @@ abstract class Term {
         return $this->term_taxonomy['taxonomy'];
     }
 
+	function get_term_array() {
+		return array_merge( $this->term, $this->term_taxonomy );
+    }
+
     function get_term() {
-        return new \WP_Term( (object) array_merge( $this->term, $this->term_taxonomy ) );
+        return new \WP_Term( (object) $this->get_term_array() );
     }
 
     public function get_name() {

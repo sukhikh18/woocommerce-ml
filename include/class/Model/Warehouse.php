@@ -23,13 +23,13 @@ class Warehouse extends Term {
 			switch ( $Plugin->get_setting( 'wh_name' ) ) {
 				case false:
 					if ( $term_id ) {
-						$this->set_name( '' );
+						$this->unset_name();
 					}
 					break;
 			}
 
 			if( !$this->check_mode($term_id, $Plugin->get_setting( 'wh_desc' )) ) {
-				$this->set_description( '' );
+				$this->unset_description();
 			}
 
 			return true;

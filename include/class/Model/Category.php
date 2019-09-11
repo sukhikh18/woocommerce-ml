@@ -19,7 +19,7 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 	private $parent_ext;
 
 	function get_taxonomy_name() {
-		return apply_filters(Plugin::PREFIX . 'Category::get_taxonomy_name', 'product_cat');
+		return apply_filters( Plugin::PREFIX . 'Category::get_taxonomy_name', 'product_cat' );
 	}
 
 	function prepare() {
@@ -32,18 +32,18 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 			switch ( $Plugin->get_setting( 'cat_name' ) ) {
 				case false:
 					if ( $term_id ) {
-						$this->set_name( '' );
+						$this->unset_name();
 					}
 					break;
 			}
 
-			if( !$this->check_mode($term_id, $Plugin->get_setting( 'cat_desc' )) ) {
-				$this->set_description( '' );
+			if ( ! $this->check_mode( $term_id, $Plugin->get_setting( 'cat_desc' ) ) ) {
+				$this->unset_description();
 			}
 
-			if( $this instanceof HasParent ) {
-				if( !$this->check_mode($term_id, $Plugin->get_setting( 'skip_parent' )) ) {
-					$this->set_parent_id( 0 );
+			if ( $this instanceof HasParent ) {
+				if ( ! $this->check_mode( $term_id, $Plugin->get_setting( 'skip_parent' ) ) ) {
+					$this->unset_parent_id();
 				}
 			}
 
@@ -53,19 +53,23 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 		return false;
 	}
 
-    function get_parent_external() {
-        return $this->parent_ext;
-    }
+	function get_parent_external() {
+		return $this->parent_ext;
+	}
 
-    function set_parent_external( $ext ) {
-        return $this->parent_ext = (string) $ext;
-    }
+	function set_parent_external( $ext ) {
+		return $this->parent_ext = (string) $ext;
+	}
 
-    public function get_parent_id() {
-        return isset( $this->term_taxonomy['parent'] ) ? (int) $this->term_taxonomy['parent'] : 0;
-    }
+	public function get_parent_id() {
+		return isset( $this->term_taxonomy['parent'] ) ? (int) $this->term_taxonomy['parent'] : 0;
+	}
 
-    public function set_parent_id( $term_id ) {
-        return $this->term_taxonomy['parent'] = (int) $term_id;
-    }
+	public function set_parent_id( $term_id ) {
+		return $this->term_taxonomy['parent'] = (int) $term_id;
+	}
+
+	public function unset_parent_id() {
+		unset( $this->term_taxonomy['parent'] );
+	}
 }

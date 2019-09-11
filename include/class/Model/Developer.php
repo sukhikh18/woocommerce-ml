@@ -23,13 +23,13 @@ class Developer extends Term {
 			switch ( $Plugin->get_setting( 'dev_name' ) ) {
 				case false:
 					if ( $term_id ) {
-						$this->set_name( '' );
+						$this->unset_name();
 					}
 					break;
 			}
 
-			if( !$this->check_mode($term_id, $Plugin->get_setting( 'dev_desc' )) ) {
-				$this->set_description( '' );
+			if ( ! $this->check_mode( $term_id, $Plugin->get_setting( 'dev_desc' ) ) ) {
+				$this->unset_description();
 			}
 
 			return true;
