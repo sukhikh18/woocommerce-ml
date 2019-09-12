@@ -16,6 +16,9 @@ class Register {
 	public static function activate() {
 		self::set_mime_type_indexes();
 		self::create_taxonomy_meta_table();
+
+        file_put_contents(Plugin()->get_exchange_dir() . "/.htaccess", "Deny from all");
+        file_put_contents(Plugin()->get_exchange_dir() . "/index.html", '');
 	}
 
 	/**
