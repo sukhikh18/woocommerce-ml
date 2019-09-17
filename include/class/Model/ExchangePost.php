@@ -393,7 +393,10 @@ class ExchangePost implements Identifiable, ExternalCode {
 							}
 						}
 					} else {
-						Error::set_message( 'property: ' . print_r( $property, 1 ) . ' not has attribute instance.' );
+						// exit with error
+						Error()
+							->add_message('Property not has attribute instance', 'Error', true)
+							->add_message( $property, 'Target' );
 					}
 				}
 			}

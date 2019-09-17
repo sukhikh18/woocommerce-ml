@@ -221,7 +221,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( is_wp_error( $result ) ) {
-			Error::set_wp_error( $result, 'Warning', true );
+			Error()->add_message( $result, 'Warning', true );
 		} else {
 			return sizeof( $result );
 		}

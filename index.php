@@ -93,6 +93,13 @@ function Plugin() {
 }
 
 /**
+ * @return Error
+ */
+function Error() {
+    return Error::get_instance();
+}
+
+/**
  * @return Transaction
  */
 function Transaction() {

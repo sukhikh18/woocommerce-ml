@@ -177,7 +177,7 @@ class Parser {
 	function parse() {
 		array_map( function ( $file ) {
 			if ( ! is_readable( $file ) ) {
-				Error::set_message( sprintf( __( 'File %s is not readable.' ), $file ), "Warning", 1 );
+				Error()->add_message( sprintf( __( 'File %s is not readable.' ), $file ), "Warning", true );
 			}
 
 			$this->CommerceParser->parse( $file );

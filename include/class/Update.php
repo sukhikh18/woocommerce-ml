@@ -474,7 +474,11 @@ class Update {
 				$result = wc_create_attribute( $attribute );
 
 				if ( is_wp_error( $result ) ) {
-					Error::set_message( "Тэг xml во временном потоке не обнаружен.", "Notice" );
+					Error()
+						->add_message( $result, "Warning", true )
+						->add_message( $attribute, "Target", true );
+
+					continue;
 				}
 
 				$attribute_id = intval( $result );
@@ -493,7 +497,9 @@ class Update {
 							array( '%s', '%d', '%s', '%s' )
 						);
 					} else {
-						Error::set_message( __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) );
+						Error()
+							->add_message( "Empty attr insert or attr external", "Warning", true )
+							->add_message( $attribute, "Target", true );
 					}
 
 					$retry = true;

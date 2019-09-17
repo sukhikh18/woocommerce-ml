@@ -210,8 +210,9 @@ abstract class Term {
 //			}
             return true;
         } else {
-            Error::set_wp_error( $result, null, 'Warning', true );
-            Error::set_message( print_r( $this, 1 ), 'Description', true );
+            Error()
+                ->add_message($result, 'Warning', true)
+                ->add_message(print_r( $this, 1 ), 'Target', true);
         }
 
         return false;

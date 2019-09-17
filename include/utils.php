@@ -23,7 +23,7 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
 		@exec( "which unzip", $_, $status );
 
 		if ( ! 0 === @$status || ! class_exists( 'ZipArchive' ) ) {
-			Error::set_message( "The PHP extension zip is required." );
+            Error()->add_message( "The PHP extension zip is required." );
 		}
 	}
 }
@@ -35,40 +35,37 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
  *
  * @return String|true    error message | all right
  */
-function unzip( $paths, $dir, $rm = false ) {
+function unzip( $zip_path, $dir ) {
     // распаковывает но возвращает статус 0
     // $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));
     // @exec($command, $_, $status);
-    $paths = is_string( $paths ) ? array($paths) : (array) $paths;
 
     // if (@$status !== 0) {
-    foreach ( $paths as $zip_path ) {
-        $zip    = new \ZipArchive();
-        $result = $zip->open( $zip_path );
-        if ( $result !== true ) {
-            return sprintf( "Failed open archive %s with error code %d", $zip_path, $result );
-        }
-
-        $zip->extractTo( $dir ) or Error::set_message( sprintf( "Failed to extract from archive %s", $zip_path ) );
-        $zip->close() or Error::set_message( sprintf( "Failed to close archive %s", $zip_path ) );
+    $zip    = new \ZipArchive();
+    $result = $zip->open( $zip_path );
+    if ( $result !== true ) {
+        return sprintf( "Failed open archive %s with error code %d", $zip_path, $result );
     }
 
-    if ( $rm ) {
-        $remove_errors = array();
+    $zip->extractTo( $dir ) or Error()->add_message( sprintf( "Failed to extract from archive %s", $zip_path ) );
+    $zip->close() or Error()->add_message( sprintf( "Failed to close archive %s", $zip_path ) );
+    // }
 
-        foreach ( $paths as $zip_path ) {
-            if ( ! @unlink( $zip_path ) ) {
-                $remove_errors[] = sprintf( "Failed to unlink file %s", $zip_path );
-            }
-        }
-
-        if ( ! empty( $remove_errors ) ) {
-            return implode( "\n", $remove_errors );
-        }
+    if ( is_debug() ) {
+        $Plugin = Plugin();
+        $file   = Request::get_file();
+        // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
+        $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
+        @mkdir( $path );
+        @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
+    } else {
+        @unlink( $zip_path );
+//            if ( ! @unlink( $path ) ) {
+//                $remove_errors[] = sprintf( "Failed to unlink file %s", $path );
+//            }
     }
 
     return true;
-    // }
 }
 
 if ( ! function_exists( 'esc_external' ) ) {

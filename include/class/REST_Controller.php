@@ -125,15 +125,13 @@ class REST_Controller {
         }
 
         if ( ! ( $type = Request::get_type() ) || ! in_array( $type, array( 'catalog' ) ) ) {
-            Error::set_message( "Type no support" );
+            Error()->add_message( "Type no support" );
         }
 
         if ( ! $mode = Request::get_mode() ) {
-            Error::set_message( "Mode no support" );
+            Error()->add_message( "Mode no support" );
         }
 
-        $this->file( Plugin()->get_exchange_dir() . '/import0_1.zip' );
-        exit();
         global $user_id;
 
         if ( 'checkauth' === $mode ) {
@@ -152,11 +150,11 @@ class REST_Controller {
         }
 
         if ( ! $user_id ) {
-            Error::set_message( $method_error );
+            Error()->add_message( $method_error );
         }
 
         if ( ! $this->has_permissions( $user_id ) ) {
-            Error::set_message( sprintf( "User %s not has permissions",
+            Error()->add_message( sprintf( "User %s not has permissions",
                 get_user_meta( $user_id, 'nickname', true ) ) );
         }
 
@@ -189,19 +187,19 @@ class REST_Controller {
             }
 
             if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
-                Error::set_message( "No authentication credentials" );
+                Error()->add_message( "No authentication credentials" );
             }
 
             $user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
             if ( is_wp_error( $user ) ) {
-                Error::set_message( $user );
+                Error()->add_message( $user );
             }
         } else {
             $user = wp_get_current_user();
         }
 
         if ( ! $this->has_permissions( $user ) ) {
-            Error::set_message( sprintf( "No %s user permissions",
+            Error()->add_message( sprintf( "No %s user permissions",
                 get_user_meta( $user->ID, 'nickname', true ) ) );
         }
 
@@ -250,73 +248,60 @@ class REST_Controller {
         exit( "zip=yes\nfile_limit=" . wp_max_upload_size() );
     }
 
+//    protected function put_requested_file( $requested, $path ) {
+//        $temp_path = "$path~";
+//
+//        // Open raw stream and create temporary file
+//        $input_file = fopen( $requested, 'r' );
+//        $temp_file  = fopen( $temp_path, 'w' );
+//        stream_copy_to_stream( $input_file, $temp_file );
+//
+//        // if file with no xml data is exists remove it
+//        if ( is_file( $path ) ) {
+//            $temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
+//            if ( strpos( $temp_header, "<?xml " ) !== false ) {
+//                unlink( $path );
+//            }
+//        }
+//        $file = fopen( $path, 'a' );
+//        stream_copy_to_stream( $temp_file, $file );
+//        fclose( $temp_file );
+//        unlink( $temp_path );
+//
+//        return $file;
+//    }
+
+    protected function unzip() {
+
+    }
+
     /**
      * C. Выгрузка на сайт файлов обмена
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=file&filename=<имя файла>
      * D. Отправка файла обмена на сайт
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
      *
-     * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковывает его)
+     * Загрузка CommerceML2 файла или его части в виде POST. (Пишет поток в файл и распаковывает его)
      * @exit string 'success'
      */
-    public function file( $watch = "php://input" ) {
-        if ( ! $filename = Request::get_filename() ) {
-            Error::set_message( "Filename is empty" );
-        }
+    public function file( $requested = "php://input" ) {
+        $Plugin = Plugin();
+        $file   = Request::get_file();
+        // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
+        $path_dir = $Plugin->get_exchange_dir( Request::get_type() );
+        $path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
 
-        $Plugin    = Plugin();
-        $path_dir  = $Plugin->get_exchange_dir( Request::get_type() );
-        $path      = $path_dir . '/' . ltrim( $filename, "./\\" );
-        $temp_path = "$path~";
+        // $resource = $this->put_requested_file( $requested, $path );
+        $from     = fopen( $requested, 'r' );
+        $resource = fopen( $path, 'a' );
+        stream_copy_to_stream( $from, $resource );
+        fclose( $from );
+        fclose( $resource );
 
-        if ( ! is_dir( $path_dir ) ) {
-            mkdir( $path_dir, 0777, true ) or
-            Error::set_message(sprintf( "Failed to create directories for file %s ", $filename ) );
-        }
+        unzip( $path, $path_dir );
 
-        // Open raw stream and create temporary file
-        $input_file = fopen( $watch, 'r' );
-        $temp_file  = fopen( $temp_path, 'w' );
-        stream_copy_to_stream( $input_file, $temp_file );
-
-        // if file with no xml data is exists remove it
-        if ( is_file( $path ) ) {
-            $temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
-            if ( strpos( $temp_header, "<?xml " ) !== false ) {
-                unlink( $path );
-            }
-        }
-
-        $temp_file = fopen( $temp_path, 'r' );
-        $file      = fopen( $path, 'a' );
-        stream_copy_to_stream( $temp_file, $file );
-        fclose( $temp_file );
-        unlink( $temp_path );
-
-        $is_error = false;
-        if ( 0 == filesize( $path ) ) {
-            $is_error = true;
-            Error::set_message( sprintf( "File %s is empty", $path ), "Filesystem error", true, true );
-            fclose( $file );
-            unlink( $path );
-        } else {
-//        $zip_paths = glob( "$path_dir/*.zip" );
-//        if ( empty( $zip_paths ) ) {
-//            $is_error = Error::set_message( 'Archives list unavailable.', "Filesystem error", true );
-//        }
-            $r = unzip( $path, $path_dir, false );
-            if ( true !== $r ) {
-                $is_error = Error::set_message( 'Could not unzip file. ' . print_r( $r, 1 ), "Filesystem error", true,
-                    true );
-                fclose( $file );
-                // @todo move to untrusted folder
-            }
-        }
-
-        if ( $is_error ) {
-            Error::show_last_error();
-        } elseif ( 'catalog' == Request::get_type() ) {
-            exit( "success\nФайл принят." );
+        if ( 'catalog' == Request::get_type() ) {
+            exit( "success\n" );
         }
     }
 
@@ -333,15 +318,13 @@ class REST_Controller {
      * @return 'progress|success|failure'
      */
     public function import() {
-        if ( ! $filename = Request::get_filename() ) {
-            Error::set_message( "Filename is empty" );
-        }
+        $file = Request::get_file();
 
         /**
          * Parse
          */
-        if ( ! $files = Plugin()->get_exchange_files( $filename ) ) {
-            Error::set_message( 'Files not found.' );
+        if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
+            Error()->add_message( 'Files not found.' );
         }
 
         $Parser = new Parser( $files );
@@ -392,13 +375,6 @@ class REST_Controller {
              * @var array { version: float, is_full: bool }
              */
             $summary = Plugin::get_summary_meta( current( $files ) );
-
-            foreach ( $files as $file ) {
-                @unlink( $file );
-                // $pathname = $path_dir . '/' . date( 'Ymd' ) . '_debug/';
-                // @mkdir( $pathname );
-                // @rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
-            }
 
             /**
              * Need deactivate deposits products

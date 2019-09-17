@@ -3,72 +3,60 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\Exchange\Traits\Singleton;
 
 class Error {
 
+    use Singleton;
+
+    /**
+     * @var \WP_Error
+     */
+    private $WP_Error;
+
     public static $errors = array();
 
-    /**
-     * Check error from global database manager
-     */
-    public static function check_wpdb_error() {
-        global $wpdb;
-
-        if ( ! $wpdb->last_error ) {
-            return;
-        }
-
-        self::set_message( sprintf(
-            "%s for query \"%s\"",
-            $wpdb->last_error,
-            $wpdb->last_query
-        ), "DB Error", true );
-
-        Transaction()->wpdb_stop( false, true );
-        exit;
+    protected function __init() {
+        $this->WP_Error = new \WP_Error();
     }
 
-    private static function show_message($message, $no_exit = false) {
-        echo "$message\n";
-
-        if ( is_debug() ) {
-            echo "\n";
-            debug_print_backtrace();
-
-            $arInfo = array(
-                "Request URI"       => Request::get_full_request_uri(),
-                "Server API"        => PHP_SAPI,
-                "Memory limit"      => ini_get( 'memory_limit' ),
-                "Maximum POST size" => ini_get( 'post_max_size' ),
-                "PHP version"       => PHP_VERSION,
-                "WordPress version" => get_bloginfo( 'version' ),
-                "Plugin version"    => Plugin::VERSION,
-            );
-
-            echo "\n";
-            array_walk( $arInfo, function ( $info_val, $info_key ) {
-                echo "$info_key: $info_val\n";
-            } );
-        }
-
-        if ( ! $no_exit ) {
-            Transaction()->wpdb_stop();
-            exit;
-        }
+    public function get_messages( $code = '' ) {
+        return $this->WP_Error->get_error_messages( $code );
     }
 
-    /**
-     * @param string $message
-     * @param string $type
-     * @param bool $no_exit
-     */
-    public static function set_message( $message, $type = "Error", $no_exit = false, $not_show = false) {
+    public function show_messages( $code = '' ) {
+        array_map( function ( $message ) use ( $code ) {
+            echo sprintf( "%s: %s\n", $code, strip_tags( $message ) );
+        }, $this->get_messages( $code ) );
+
+        echo "\n";
+        debug_print_backtrace();
+
+        $arInfo = array(
+            "Request URI"       => Request::get_full_request_uri(),
+            "Server API"        => PHP_SAPI,
+            "Memory limit"      => ini_get( 'memory_limit' ),
+            "Maximum POST size" => ini_get( 'post_max_size' ),
+            "PHP version"       => PHP_VERSION,
+            "WordPress version" => get_bloginfo( 'version' ),
+            "Plugin version"    => Plugin::VERSION,
+        );
+
+        echo "\n";
+        array_walk( $arInfo, function ( $info_val, $info_key ) {
+            echo "$info_key: $info_val\n";
+        } );
+    }
+
+    public function add_message( $message, $code = 'Error', $no_exit = false ) {
         if ( $message instanceof \WP_Error ) {
-            return static::set_wp_error( $message, null, 'WP Error', $no_exit );
+            array_map( function ( $message ) use ( $code ) {
+                $this->add_message( $message, $code );
+            }, $this->WP_Error->get_error_messages( $code ) );
         }
-
-        // failure\n think about
-        $message = "$type: $message";
+        elseif( is_object($message) ) {
+            $message = print_r($message, 1);
+        }
 
         // set dot if last space
         $last_char = substr( $message, - 1 );
@@ -76,37 +64,19 @@ class Error {
             $message .= '.';
         }
 
-        array_push(static::$errors, $message);
         error_log( $message );
+        $this->WP_Error->add( $code, $message );
 
-        if( !$not_show ) {
-            static::show_message($message, $no_exit);
-        }
-
-        return true;
-    }
-
-    public static function show_last_error() {
-        static::show_message(end(static::$errors), false);
-    }
-
-    /**
-     * @param \WP_Error $wp_error
-     * @param null $only_error_code
-     */
-    static function set_wp_error( $wp_error, $only_error_code = null, $type = "WP Error", $no_exit = false ) {
-        $messages = array();
-        foreach ( $wp_error->get_error_codes() as $error_code ) {
-            if ( $only_error_code && $error_code != $only_error_code ) {
-                continue;
+        if ( ! $no_exit ) {
+            if ( is_debug() ) {
+                $this->show_messages( $code );
             }
 
-            $wp_error_messages = implode( ", ", $wp_error->get_error_messages( $error_code ) );
-            $wp_error_messages = strip_tags( $wp_error_messages );
-            $messages[]        = sprintf( "%s: %s", $error_code, $wp_error_messages );
+            Transaction()->wpdb_stop();
+            exit;
         }
 
-        return static::set_message( implode( "; ", $messages ), $type, $no_exit );
+        return $this;
     }
 
     /**
@@ -141,9 +111,7 @@ class Error {
         }
 
         $message = sprintf( "%s in %s on line %d", $errstr, $errfile, $errline );
-        static::set_message( $message, "PHP $type" );
-
-        return true;
+        Error()->add_message( $message, "PHP $type" );
     }
 
     /**
@@ -157,6 +125,6 @@ class Error {
             $exception->getLine()
         );
 
-        static::set_message( $message, "Exception" );
+        Error()->add_message( $message, "Exception" );
     }
 }

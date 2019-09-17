@@ -2,9 +2,8 @@
 
 namespace NikolayS93\Exchange\Traits;
 
-use NikolayS93\Exchange\Error;
-use NikolayS93\Exchange\Plugin;
 use const NikolayS93\Exchange\PLUGIN_DIR;
+use function NikolayS93\Exchange\Error;
 
 trait IO {
 
@@ -43,11 +42,10 @@ trait IO {
 	 */
 	public function try_make_dir( $dir = '' ) {
 		if ( ! is_dir( $dir ) ) {
-			@mkdir( $dir, 0777, true ) or Error::set_message( printf(
-				__( "<strong>%s</strong>: Sorry but <strong>%s</strong> not has write permissions", static::DOMAIN ),
-				__( "Fatal error", static::DOMAIN ),
+			@mkdir( $dir, 0777, true ) or Error()->add_message( printf(
+				__( "Sorry but %s not has write permissions", static::DOMAIN ),
 				$dir
-			) );
+			), "Error" );
 
 			return true;
 		}
@@ -56,10 +54,9 @@ trait IO {
 	}
 
 	public function check_writable( $dir ) {
-		if ( ! is_dir( $dir ) && ! is_writable( $dir ) ) {
-			Error::set_message( printf(
-				__( "<strong>%s</strong>: Sorry but <strong>%s</strong> not found. Direcory is writable?", DOMAIN ),
-				__( "Fatal error", Plugin::DOMAIN ),
+		if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+			Error()->add_message( printf(
+				__( "Sorry but %s not found. Direcory is writable?", static::DOMAIN ),
 				$dir
 			) );
 		}
