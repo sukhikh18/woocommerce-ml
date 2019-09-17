@@ -111,6 +111,9 @@ class REST_Controller {
         the_statistic_table();
     }
 
+    /**
+     * @url http://v8.1c.ru/edi/edi_stnd/131/
+     */
     function do_exchange() {
         if ( ! headers_sent() ) {
             header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
@@ -137,33 +140,32 @@ class REST_Controller {
         if ( 'checkauth' === $mode ) {
             $this->checkauth();
         }
+        else {
+            if ( is_user_logged_in() ) {
+                $user         = wp_get_current_user();
+                $user_id      = $user->ID;
+                $method_error = "Not logged in";
+            } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
+                $user_id      = $user = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
+                $method_error = __("Invalid cookie", Plugin::DOMAIN);
+            } else {
+                $method_error = __("User not identified", Plugin::DOMAIN);
+            }
 
-        if ( is_user_logged_in() ) {
-            $user         = wp_get_current_user();
-            $user_id      = $user->ID;
-            $method_error = "Not logged in";
-        } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
-            $user_id      = $user = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
-            $method_error = "Invalid cookie";
-        } else {
-            $method_error = "User not identified";
+            if ( ! $user_id ) {
+                Error()->add_message( $method_error );
+            }
+
+            if ( ! $this->has_permissions( $user_id ) ) {
+                Error()->add_message( sprintf( "User %s not has permissions",
+                    get_user_meta( $user_id, 'nickname', true ) ) );
+            }
+
+            call_user_func( array( $this, $mode ) );
         }
-
-        if ( ! $user_id ) {
-            Error()->add_message( $method_error );
-        }
-
-        if ( ! $this->has_permissions( $user_id ) ) {
-            Error()->add_message( sprintf( "User %s not has permissions",
-                get_user_meta( $user_id, 'nickname', true ) ) );
-        }
-
-        call_user_func( array( $this, $mode ) );
     }
 
     /**
-     * @url http://v8.1c.ru/edi/edi_stnd/131/
-     *
      * A. Начало сеанса (Авторизация)
      * Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
      * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
@@ -324,7 +326,7 @@ class REST_Controller {
          * Parse
          */
         if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
-            Error()->add_message( 'Files not found.' );
+            Error()->add_message( __('File %s not found.', $file['path']) );
         }
 
         $Parser = new Parser( $files );
@@ -332,9 +334,9 @@ class REST_Controller {
 
         Transaction()->set_transaction_mode();
 
-        if ( ! in_array( Request::get_mode(), array( 'posts', 'relationships' ) ) ) {
+        if ( ! in_array( Request::get_mode(), array( 'import_posts', 'import_relationships' ) ) ) {
             $Update->update_terms( $Parser );
-        } elseif ( 'relationships' != Request::get_mode() ) {
+        } elseif ( 'import_relationships' != Request::get_mode() ) {
             $Update->update_products( $Parser );
             $Update->update_offers( $Parser );
         } else {

@@ -53,15 +53,17 @@ class Error {
             array_map( function ( $message ) use ( $code ) {
                 $this->add_message( $message, $code );
             }, $this->WP_Error->get_error_messages( $code ) );
+            return $this;
         }
         elseif( is_object($message) ) {
             $message = print_r($message, 1);
         }
-
-        // set dot if last space
-        $last_char = substr( $message, - 1 );
-        if ( ! in_array( $last_char, array( '.', '!', '?' ) ) ) {
-            $message .= '.';
+        else {
+            // set dot if last space
+            $last_char = substr( $message, - 1 );
+            if ( ! in_array( $last_char, array( '.', '!', '?' ) ) ) {
+                $message .= '.';
+            }
         }
 
         error_log( $message );

@@ -118,7 +118,7 @@ class Update {
 			$this->progress += $newProductsCount;
 
 			// Set mode for go away or retry
-			$this->set_mode( $this->progress < $productsCount ? 'relationships' : '' );
+			$this->set_mode( $this->progress < $productsCount ? 'import_relationships' : '' );
 
 			// If not disabled option
 			if ( 'off' !== ( $post_mode = $Plugin->get_setting( 'post_mode' ) ) ) {
@@ -284,7 +284,7 @@ class Update {
 			} /** Go away */
 			else {
 				if ( 0 === strpos( $filename, 'offers' ) ) {
-					$this->set_mode( 'relationships' );
+					$this->set_mode( 'import_relationships' );
 				} else {
 					$answer = 'success';
 					$this->set_mode( '' );
@@ -335,7 +335,7 @@ class Update {
 
 			/** Require retry */
 			if ( $this->progress < $products_count ) {
-				$this->set_mode( 'relationships' );
+				$this->set_mode( 'import_relationships' );
 				exit( "progress\n$msg" );
 			}
 		}
@@ -362,7 +362,7 @@ class Update {
 
 			/** Require retry */
 			if ( $this->progress < $offersCount ) {
-				$this->set_mode( 'relationships' );
+				$this->set_mode( 'import_relationships' );
 				exit( "progress\n$msg" );
 			}
 

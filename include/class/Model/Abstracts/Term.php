@@ -4,13 +4,11 @@
 namespace NikolayS93\Exchange\Model\Abstracts;
 
 
-use NikolayS93\Exchange\Error;
-use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Traits\ItemMeta;
-use NikolayS93\Exchange\ORM\Collection;
 use function NikolayS93\Exchange\esc_cyr;
 use function NikolayS93\Exchange\esc_external;
+use function NikolayS93\Exchange\Error;
 
 abstract class Term {
 

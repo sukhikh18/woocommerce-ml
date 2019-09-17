@@ -22,11 +22,11 @@ class REST_ControllerTest extends WP_UnitTestCase {
         $_REQUEST['mode'] = 'file';
         $_REQUEST['filename'] = 'test.zip';
 
-        $Plugin = Plugin::get_instance();
-        $exchange_dir = $Plugin->get_exchange_dir( Request::get_type() );
         $REST = new REST_Controller();
         $REST->file( PLUGIN_DIR . 'tests/fixtures/import0_1.zip' );
 
+        $Plugin = Plugin::get_instance();
+        $exchange_dir = $Plugin->get_exchange_dir( Request::get_type() );
         $this->assertTrue( is_file($exchange_dir . '/import0_1.xml') );
     }
 }
