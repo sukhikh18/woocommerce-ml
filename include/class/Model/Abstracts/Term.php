@@ -17,6 +17,56 @@ abstract class Term {
     protected $term;
     protected $term_taxonomy;
 
+    abstract function prepare();
+    abstract function get_taxonomy_name();
+
+    static function get_structure( $key ) {
+        $structure = array(
+            'terms'         => array(
+                'term_id'    => '%d',
+                'name'       => '%s',
+                'slug'       => '%s',
+                'term_group' => '%d',
+            ),
+            'term_taxonomy' => array(
+                'term_taxonomy_id' => '%d',
+                'term_id'          => '%d',
+                'taxonomy'         => '%s',
+                'description'      => '%s',
+                'parent'           => '%d',
+                'count'            => '%d',
+            ),
+            'term_meta'     => array(
+                'meta_id'    => '%d',
+                'term_id'    => '%d',
+                'meta_key'   => '%s',
+                'meta_value' => '%s',
+            )
+        );
+
+        if ( isset( $structure[ $key ] ) ) {
+            return $structure[ $key ];
+        }
+
+        return false;
+    }
+
+    static function get_external_key() {
+        return apply_filters( 'ExchangeTerm::get_external_key', EXCHANGE_EXTERNAL_CODE_KEY );
+    }
+
+    public function esc_id( $term_id ) {
+        if ( $term_id instanceof \WP_Term ) {
+            $id = $term_id->term_id;
+        } elseif ( is_array( $term_id ) && !empty($term_id['term_id']) ) {
+            $id = $term_id['term_id'];
+        } else {
+            $id = $term_id;
+        }
+
+        return absint($id);
+    }
+
     /**
      * @todo clear this
      */
@@ -51,16 +101,54 @@ abstract class Term {
         $this->set_meta( $meta );
     }
 
-    public function esc_id( $term_id ) {
-        if ( $term_id instanceof \WP_Term ) {
-            $id = $term_id->term_id;
-        } elseif ( is_array( $term_id ) && !empty($term_id['term_id']) ) {
-            $id = $term_id['term_id'];
-        } else {
-            $id = $term_id;
+    public function get_raw_external() {
+        return esc_external( $this->get_meta( static::get_external_key() ) );
+    }
+
+    public function get_external() {
+        return $this->get_taxonomy() . '/' . $this->get_raw_external();
+    }
+
+    public function get_id() {
+        return isset( $this->term['term_id'] ) ? (int) $this->term['term_id'] : '';
+    }
+
+    public function get_slug() {
+        return isset( $this->term['slug'] ) ? (string) $this->term['slug'] : '';
+    }
+
+    public function get_taxonomy() {
+        return $this->term_taxonomy['taxonomy'];
+    }
+
+    public function get_name() {
+        return isset( $this->term['name'] ) ? (string) $this->term['name'] : '';
+    }
+
+    public function get_description() {
+        return isset( $this->term_taxonomy['description'] ) ? (string) $this->term_taxonomy['description'] : '';
+    }
+
+    public function get_count() {
+        return isset( $this->term_taxonomy['count'] ) ? (string) $this->term_taxonomy['count'] : '';
+    }
+
+    public function get_term_array() {
+        return array_merge( $this->term, $this->term_taxonomy );
+    }
+
+    public function get_term() {
+        return new \WP_Term( (object) $this->get_term_array() );
+    }
+
+    public function set_external( $ext ) {
+        if ( empty( $ext ) ) {
+            $ext = esc_cyr( $this->term['slug'] );
         }
 
-        return absint($id);
+        $this->set_meta( static::get_external_key(), $ext );
+
+        return $this;
     }
 
     public function set_id( $term_id ) {
@@ -72,14 +160,10 @@ abstract class Term {
         return $this;
     }
 
-    public function set_name( $name ) {
-	    $this->term['name'] = trim( apply_filters( 'Term::set_name', $name, $this ) );
+    public function set_taxonomy( $tax ) {
+        $this->term_taxonomy['taxonomy'] = $tax;
 
         return $this;
-    }
-
-    public function unset_name() {
-	    unset($this->term['name']);
     }
 
     public function set_slug( $slug ) {
@@ -92,13 +176,11 @@ abstract class Term {
         return $this;
     }
 
-    public function set_taxonomy( $tax ) {
-        $this->term_taxonomy['taxonomy'] = $tax;
+    public function set_name( $name ) {
+        $this->term['name'] = trim( apply_filters( 'Term::set_name', $name, $this ) );
 
         return $this;
     }
-
-    abstract function get_taxonomy_name();
 
     public function set_description( $desc ) {
         $this->term_taxonomy['description'] = (string) $desc;
@@ -106,88 +188,15 @@ abstract class Term {
         return $this;
     }
 
-	public function unset_description() {
-		unset($this->term_taxonomy['description']);
-	}
-
-    function set_external( $ext ) {
-        if ( empty( $ext ) ) {
-            $ext = esc_cyr( $this->term['slug'] );
-        }
-
-        $this->set_meta( static::get_external_key(), $ext );
-
-        return $this;
+    public function unset_name() {
+        unset($this->term['name']);
     }
 
-    static function get_external_key() {
-        return apply_filters( 'ExchangeTerm::get_external_key', EXCHANGE_EXTERNAL_CODE_KEY );
+    public function unset_description() {
+        unset($this->term_taxonomy['description']);
     }
 
-    static function get_structure( $key ) {
-        $structure = array(
-            'terms'         => array(
-                'term_id'    => '%d',
-                'name'       => '%s',
-                'slug'       => '%s',
-                'term_group' => '%d',
-            ),
-            'term_taxonomy' => array(
-                'term_taxonomy_id' => '%d',
-                'term_id'          => '%d',
-                'taxonomy'         => '%s',
-                'description'      => '%s',
-                'parent'           => '%d',
-                'count'            => '%d',
-            ),
-            'term_meta'     => array(
-                'meta_id'    => '%d',
-                'term_id'    => '%d',
-                'meta_key'   => '%s',
-                'meta_value' => '%s',
-            )
-        );
-
-        if ( isset( $structure[ $key ] ) ) {
-            return $structure[ $key ];
-        }
-
-        return false;
-    }
-
-    abstract function prepare();
-
-    public function get_slug() {
-        return isset( $this->term['slug'] ) ? (string) $this->term['slug'] : '';
-    }
-
-    public function get_description() {
-        return isset( $this->term_taxonomy['description'] ) ? (string) $this->term_taxonomy['description'] : '';
-    }
-
-    public function get_count() {
-        return isset( $this->term_taxonomy['count'] ) ? (string) $this->term_taxonomy['count'] : '';
-    }
-
-    function check_mode( $term_id, $setting ) {
-        switch ( $setting ) {
-            case 'off':
-                return false;
-                break;
-
-            case 'create':
-                return ! $term_id;
-                break;
-
-            case 'update':
-                return (bool) $term_id;
-                break;
-        }
-
-        return true;
-    }
-
-    function update() {
+    public function update() {
     	$term = $this->get_term_array();
 
         if ( $term_id = $this->get_id() ) {
@@ -216,31 +225,16 @@ abstract class Term {
         return false;
     }
 
-    public function get_id() {
-        return isset( $this->term['term_id'] ) ? (int) $this->term['term_id'] : '';
-    }
+    public function update_object_term( $post_id ) {
+        $result = wp_set_object_terms( $post_id, $this->get_id(), $this->get_taxonomy(), $append = true );
+        if ( is_wp_error( $result ) ) {
+            Error()
+                ->add_message( $result, 'Warning', true )
+                ->add_message( $this, 'Target', true );
+        } else {
+            return true;
+        }
 
-    public function get_taxonomy() {
-        return $this->term_taxonomy['taxonomy'];
-    }
-
-	function get_term_array() {
-		return array_merge( $this->term, $this->term_taxonomy );
-    }
-
-    function get_term() {
-        return new \WP_Term( (object) $this->get_term_array() );
-    }
-
-    public function get_name() {
-        return isset( $this->term['name'] ) ? (string) $this->term['name'] : '';
-    }
-
-    function get_raw_external() {
-        return esc_external( $this->get_meta( static::get_external_key() ) );
-    }
-
-    function get_external() {
-        return $this->get_taxonomy() . '/' . $this->get_raw_external();
+        return false;
     }
 }

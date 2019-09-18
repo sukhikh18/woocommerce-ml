@@ -6,6 +6,7 @@ use NikolayS93\Exchange\Model\Abstracts\Term;
 use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
+use NikolayS93\Exchange\Plugin;
 
 /**
  * Class CollectionTerms
@@ -13,7 +14,6 @@ use NikolayS93\Exchange\Model\Interfaces\Identifiable;
  */
 class CollectionTerms extends Collection {
     /**
-     * @param Collection $terms
      * @param bool $orphaned_only @todo get data for items who not has term_id
      *
      * @return $this
@@ -30,11 +30,11 @@ class CollectionTerms extends Collection {
          */
         $build_query = function ( $term ) use ( &$externals ) {
             if ( ! $term->get_id() && $ext = $term->get_external() ) {
-                $externals[] = "`meta_value` = '$ext'";
+                $externals[] = sprintf( "`meta_value` = '%s'", esc_sql( $ext ) );
             }
 
             if ( $term instanceof HasParent && ! $term->get_parent_id() && $parent_ext = $term->get_parent_external() ) {
-                $externals[] = "`meta_value` = '$parent_ext'";
+                $externals[] = sprintf( "`meta_value` = '%s'", esc_sql( $parent_ext ) );
             }
         };
 
@@ -61,15 +61,16 @@ class CollectionTerms extends Collection {
          */
         array_walk( $exists, function ( $result ) use ( $exists ) {
             $external_from_db = $result->meta_value;
-            $term             = $this->offsetGet( $external_from_db );
 
-            $term->set_id( $result->term_id );
-            $term->meta_id = $result->meta_id;
+            if ( $term = $this->offsetGet( $external_from_db ) ) {
+                $term->set_id( $result->term_id );
+                $term->meta_id = $result->meta_id;
 
-            if ( $term instanceof HasParent ) {
-                if ( false !== $key = array_search( $term->get_parent_external(),
-                        wp_list_pluck( $exists, 'meta_value' ) ) ) {
-                    $term->set_parent_id( $exists[ $key ]->term_id );
+                if ( $term instanceof HasParent ) {
+                    if ( false !== $key = array_search( $term->get_parent_external(),
+                            wp_list_pluck( $exists, 'meta_value' ) ) ) {
+                        $term->set_parent_id( $exists[ $key ]->term_id );
+                    }
                 }
             }
         } );

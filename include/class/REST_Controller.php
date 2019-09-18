@@ -115,9 +115,9 @@ class REST_Controller {
      * @url http://v8.1c.ru/edi/edi_stnd/131/
      */
     function do_exchange() {
-        if ( ! headers_sent() ) {
-            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
-        }
+//        if ( ! headers_sent() ) {
+//            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
+//        }
 
         Error::set_strict_mode();
 
@@ -139,17 +139,16 @@ class REST_Controller {
 
         if ( 'checkauth' === $mode ) {
             $this->checkauth();
-        }
-        else {
+        } else {
             if ( is_user_logged_in() ) {
                 $user         = wp_get_current_user();
                 $user_id      = $user->ID;
                 $method_error = "Not logged in";
             } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
                 $user_id      = $user = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
-                $method_error = __("Invalid cookie", Plugin::DOMAIN);
+                $method_error = __( "Invalid cookie", Plugin::DOMAIN );
             } else {
-                $method_error = __("User not identified", Plugin::DOMAIN);
+                $method_error = __( "User not identified", Plugin::DOMAIN );
             }
 
             if ( ! $user_id ) {
@@ -161,7 +160,13 @@ class REST_Controller {
                     get_user_meta( $user_id, 'nickname', true ) ) );
             }
 
-            call_user_func( array( $this, $mode ) );
+            // $this->init
+            // $this->file
+            // $this->import();
+            // $this->deactivate();
+            // $this->complete();
+
+            call_user_func( array( $this, explode( '_', $mode )[0] ) );
         }
     }
 
@@ -273,10 +278,6 @@ class REST_Controller {
 //        return $file;
 //    }
 
-    protected function unzip() {
-
-    }
-
     /**
      * C. Выгрузка на сайт файлов обмена
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=file&filename=<имя файла>
@@ -326,22 +327,168 @@ class REST_Controller {
          * Parse
          */
         if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
-            Error()->add_message( __('File %s not found.', $file['path']) );
+            Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $file['path'] ) );
         }
 
         $Parser = new Parser( $files );
-        $Update = Update::get_instance();
+        $Update = new Update();
 
         Transaction()->set_transaction_mode();
 
         if ( ! in_array( Request::get_mode(), array( 'import_posts', 'import_relationships' ) ) ) {
-            $Update->update_terms( $Parser );
-        } elseif ( 'import_relationships' != Request::get_mode() ) {
-            $Update->update_products( $Parser );
-            $Update->update_offers( $Parser );
+            /**
+             * first step: Update terms
+             */
+            $Parser
+                ->listen_category()
+                ->listen_developer()
+                ->listen_warehouse()
+                ->listen_property()
+                ->parse();
+
+            $categories = $Parser->get_categories()->fill_exists();
+            $developers = $Parser->get_developers()->fill_exists();
+            $warehouses = $Parser->get_warehouses()->fill_exists();
+//            $attributes      = $Parser->get_properties()->fill_exists();
+//            $attributeValues = $attributes->get_all_values();
+
+            $Update->terms( $categories )->term_meta( $categories );
+            $Update->terms( $developers )->term_meta( $developers );
+            $Update->terms( $warehouses )->term_meta( $warehouses );
+            // @todo!
+//            Update::properties( $attributes );
+//            Update::terms( $attributeValues );
+//            Update::term_meta( $attributeValues );
+
+            $Update->set_mode( 'import_posts' );
+
+            exit( "$Update->status\n" . implode( ' -- ', array(
+                    "Обновлено {$Update->results['update']} категорий/терминов.",
+                    "Обновлено {$Update->results['meta']} мета записей.",
+                ) ) );
+
         } else {
-            $Update->update_products_relationships( $Parser );
-            $Update->update_offers_relationships( $Parser );
+            /**
+             * second step: Update posts with post meta
+             */
+            $Parser
+                ->listen_product()
+                ->listen_offer()
+                ->parse();
+
+            $products      = $Parser->get_products()->fill_exists();
+            $productsCount = $products->count();
+
+            /** @recursive update if is $productsCount > $offset */
+            if ( $productsCount > $Update->progress ) {
+                $products = $products->slice( $Update->progress, $Update->offset['product'] );
+
+                if ( 'import_relationships' != Request::get_mode() ) {
+                    $Update
+                        // Slice products who offset out
+                        ->update_products( $products )
+                        ->update_products_meta( $products )
+                        // Set mode for go away or retry
+                        ->set_mode( $Update->progress > $productsCount ?
+                            'import_relationships' : 'import_posts' );
+
+                    exit( "$Update->status\n" . implode( ' -- ', array(
+                            "$Update->progress из $productsCount записей товаров обработано.",
+                            $Update->results['create'] . " товаров добавлено.",
+                            $Update->results['update'] . " товаров обновлено.",
+                            $Update->results['meta'] . " произвольных записей товаров обновлено."
+                        ) ) );
+                } else {
+                    $msg = 'Обновление зависимостей завершено.';
+
+                    /** @var $progress int Offset from */
+//                    $offset         = apply_filters( 'exchange_products_relationships_offset', 500, $products_count,
+//                        Request::get_filename() );
+//                    $sizeOfProducts = sizeof( $products );
+
+                    /**
+                     * @todo write really update counter
+                     */
+                    $Update->relationships( $products );
+
+                    exit( "$Update->status\n" . implode( ' -- ', array(
+                            $Update->results['update'] . "зависимостей " . $products->count() . " товаров обновлено (всего $Update->progress из $productsCount обработано).",
+                        ) ) );
+
+//                    /** Require retry */
+//                    if ( $this->progress < $products_count ) {
+//                        $this->set_mode( 'import_relationships' );
+//                        exit( "progress\n$msg" );
+//                    }
+//
+//                    $this->set_mode( '' );
+//                    exit( "$this->status\n$msg" );
+                }
+
+            }
+
+            $offers      = $Parser->get_offers()->fill_exists();
+            $offersCount = $offers->count();
+
+            /** @recursive update if is $offersCount > $offset */
+            if ( $offersCount > $Update->progress ) {
+                $offers = $offers->slice( $Update->progress, $Update->offset['offer'] );
+
+                if ( 'import_relationships' != Request::get_mode() ) {
+                    $Update
+                        // Slice offers who offset out
+                        ->update_offers( $offers )
+                        ->update_offers_meta( $offers )
+                        // Set mode for go away or retry
+                        ->set_mode( $Update->progress > $offersCount ?
+                            'import_relationships' : 'import_posts' );
+
+                    /**
+                     * Build answer message
+                     */
+                    $filenames = $Parser->get_filenames();
+                    if ( ! empty( $filenames ) ) {
+                        $filename = current( $filenames );
+
+                        switch ( true ) {
+                            case 0 === strpos( $filename, 'price' ):
+                                $progressMessage = "{$Update->progress} из $offersCount цен обработано.";
+                                break;
+
+                            case 0 === strpos( $filename, 'rest' ):
+                                $progressMessage = "{$Update->progress} из $offersCount запасов обработано.";
+                                break;
+                        }
+                    }
+
+                    if ( empty( $progressMessage ) ) {
+                        $progressMessage = "{$Update->progress} из $offersCount предложений обработано.";
+                    }
+
+                    exit( "$Update->status\n" . implode( ' -- ', array(
+                            $progressMessage,
+                            $Update->results['meta'] . " произвольных записей товаров обновлено."
+                        ) ) );
+                } else {
+                    $msg = 'Обновление зависимостей завершено.';
+                    $Update->relationships( $offers );
+                    $msg = $Update->results['update'] . " зависимостей $offersCount предложений обновлено (всего $Update->progress из " . $offers->count() . " обработано).";
+
+                    /** Require retry */
+//                    if ( $this->progress < $offersCount ) {
+//                        $this->set_mode( 'import_relationships' );
+//                        exit( "progress\n$msg" );
+//                    }
+//
+//                    if ( floatval( $this->version ) < 3 ) {
+//                        $this->set_mode( 'deactivate' );
+//                        exit( "progress\n$msg" );
+//                    }
+//
+//                    $this->set_mode( '' );
+//                    exit( "success\n$msg" );
+                }
+            }
         }
 
         exit( "success" ); // \n$mode

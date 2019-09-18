@@ -245,10 +245,25 @@ add_action( 'restrict_manage_posts', function ( $post_type ) {
     }
 }, 10, 1 );
 
-//add_filter('Term::set_name', function($name, $obj) {
-//    return preg_replace( "/(^[0-9\/_|+ .-]+)[\w]/si", "", $name);
-//}, 10, 2);
+if ( ! function_exists( 'mb_ucfirst' ) ) {
+    function mb_ucfirst( $string, $enc = 'UTF-8' ) {
+        if ( function_exists( 'mb_strtoupper' ) && function_exists( 'mb_substr' ) && function_exists( 'mb_strlen' ) ) {
+            return mb_strtoupper( mb_substr( $string, 0, 1, $enc ), $enc ) .
+                   mb_substr( $string, 1, mb_strlen( $string, $enc ), $enc );
+        }
 
-add_filter('Term::set_slug', function($slug, $obj) {
+        return ucfirst( $string );
+    }
+}
+
+add_filter( 'Term::set_name', function ( $name, $obj ) {
+    $name  = function_exists( 'mb_strtolower' ) ? mb_strtolower( $name ) : strtolower( $name );
+    $name  = str_replace( '  ', ' ', $name );
+    $_name = preg_replace( "#^[0-9.,\\\|/)(-+_\s]+#si", "", $name );
+
+    return mb_ucfirst( $_name ? $_name : $name );
+}, 10, 2 );
+
+add_filter( 'Term::set_slug', function ( $slug, $obj ) {
     return esc_cyr( (string) $slug, false );
-}, 10, 2);
+}, 10, 2 );

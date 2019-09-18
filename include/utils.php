@@ -135,3 +135,21 @@ if ( ! function_exists( 'esc_cyr' ) ) {
 		return $s;
 	}
 }
+
+function check_mode( $id, $setting ) {
+    switch ( $setting ) {
+        case 'off':
+            return false;
+            break;
+
+        case 'create':
+            return ! $id;
+            break;
+
+        case 'update':
+            return (bool) $id;
+            break;
+    }
+
+    return true;
+}

@@ -67,6 +67,7 @@ class CollectionAttributes extends Collection {
 		}
 
 		$term_externals = array_unique( $term_externals );
+        $exists_terms = array();
 		if ( ! empty( $term_externals ) ) {
 			// @todo
 			$external_key   = AttributeValue::get_external_key();

@@ -12,6 +12,7 @@ use NikolayS93\Exchange\Model\ExchangeOffer;
 use NikolayS93\Exchange\Model\Warehouse;
 use NikolayS93\Exchange\ORM\Collection;
 use NikolayS93\Exchange\ORM\CollectionAttributes;
+use NikolayS93\Exchange\ORM\CollectionPosts;
 use NikolayS93\Exchange\ORM\CollectionTerms;
 use CommerceMLParser\Event;
 
@@ -37,9 +38,9 @@ class Parser {
 	private $arWarehouses;
 	/** @var CollectionAttributes $arProperties */
 	private $arProperties;
-	/** @var Collection $arProducts */
+	/** @var CollectionPosts $arProducts */
 	private $arProducts;
-	/** @var Collection $arOffers */
+	/** @var CollectionPosts $arOffers */
 	private $arOffers;
 
 	private $properties_as_requisites;
@@ -57,8 +58,8 @@ class Parser {
 		$this->arDevelopers = new CollectionTerms();
 		$this->arWarehouses = new CollectionTerms();
 		$this->arProperties = new CollectionAttributes();
-		$this->arProducts   = new Collection();
-		$this->arOffers     = new Collection();
+		$this->arProducts   = new CollectionPosts();
+		$this->arOffers     = new CollectionPosts();
 
 		$this->properties_as_requisites = (array) apply_filters( PLUGIN::PREFIX . 'ParsePropertiesAsRequisites', array(
 			'hotsale' => 'a35a3bd2-d12a-11e7-a4f2-0025904bff5d',
@@ -98,6 +99,12 @@ class Parser {
 		) );
 	}
 
+	public function get_filenames() {
+	    return array_map(function($file) {
+	        return basename($file);
+        }, $this->files);
+    }
+
 	//	public function addOwnerListener()
 	//	{
 	//		$this->CommerceParser->addListener("OwnerEvent", function (Event\OwnerEvent $ownerEvent) {
@@ -107,69 +114,59 @@ class Parser {
 	/**
 	 * @note Products has requisites
 	 */
-	public function watch_product() {
+	public function listen_product() {
 		$this->CommerceParser->addListener( "ProductEvent",
 			array( $this, 'parse_products_event' ) );
 
 		return $this;
 	}
 
-	public function watch_offer() {
+	public function listen_offer() {
 		$this->CommerceParser->addListener( "OfferEvent",
 			array( $this, 'parse_offers_event' ) );
 
 		return $this;
 	}
 
-	public function watch_category() {
+	public function listen_category() {
 		$this->CommerceParser->addListener( "CategoryEvent",
 			array( $this, 'parse_categories_event' ) );
 
 		if ( ! empty( $this->requisites_as_categories ) ) {
-			$this->watch_product();
+			$this->listen_product();
 		}
 
 		return $this;
 	}
 
-	public function watch_developer() {
-		$this->watch_product();
+	public function listen_developer() {
+		$this->listen_product();
 
 		if ( ! empty( $this->requisites_as_developers ) ) {
-			$this->watch_product();
+			$this->listen_product();
 		}
 
 		return $this;
 	}
 
-	public function watch_warehouse() {
+	public function listen_warehouse() {
 		$this->CommerceParser->addListener( "WarehouseEvent",
 			array( $this, 'parse_warehouses_event' ) );
 
 		if ( ! empty( $this->requisites_as_warehouses ) ) {
-			$this->watch_product();
+			$this->listen_product();
 		}
 
 		return $this;
 	}
 
-	public function watch_property() {
+	public function listen_property() {
 		$this->CommerceParser->addListener( "PropertyEvent",
 			array( $this, 'parse_properties_event' ) );
 
 		if ( ! empty( $this->requisites_as_properties ) ) {
-			$this->watch_product();
+			$this->listen_product();
 		}
-
-		return $this;
-	}
-
-	public function watch_terms() {
-		$this
-			->watch_category()
-			->watch_developer()
-		    ->watch_warehouse()
-		    ->watch_property();
 
 		return $this;
 	}

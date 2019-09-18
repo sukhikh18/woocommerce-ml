@@ -153,13 +153,12 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 
 	public function slice( $offset, $length ) {
 		if ( is_array( $this->items ) || $this->items instanceof \Traversable ) {
-			$this->items = array_slice( $this->items, $offset, $length );
-
-			return $this->count();
+            $this->items = array_slice( $this->items, $offset, $length );
 		} else {
 			// @TODO
-			return $this;
 		}
+
+        return $this;
 	}
 
 	/**

@@ -58,8 +58,16 @@ class Request {
      * @return array
      */
     private static function get_allowed_modes() {
-        $allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes',
-            array( 'checkauth', 'init', 'file', 'import', 'deactivate', 'complete' ) );
+        $allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes', array(
+            'checkauth',
+            'init',
+            'file',
+            'import',
+            'import_posts',
+            'import_relationships',
+            'deactivate',
+            'complete',
+        ) );
 
         return (array) $allowed;
     }
