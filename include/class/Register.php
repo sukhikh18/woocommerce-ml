@@ -150,6 +150,43 @@ class Register {
 		return $Page;
 	}
 
+    public function register_exchange_url() {
+        add_filter( 'query_vars', function( $query_vars ) {
+            $query_vars[] = 'ex1с';
+
+            return $query_vars;
+        } );
+
+        add_action( 'init', function() {
+            add_rewrite_rule( "exchange", "index.php?ex1с=exchange", 'top' );
+            // add_rewrite_rule("clean", "index.php?ex1с=clean");
+
+            flush_rewrite_rules();
+        }, 1000 );
+
+        add_action( 'template_redirect', function() {
+            $value = get_query_var( 'ex1с' );
+            if ( empty( $value ) ) {
+                return;
+            }
+
+            if ( false !== strpos( $value, '?' ) ) {
+                list( $value, $query ) = explode( '?', $value, 2 );
+                parse_str( $query, $query );
+                $_GET = array_merge( $_GET, $query );
+            }
+
+            if ( $value == 'exchange' ) {
+                $REST = new REST_Controller();
+                $REST->do_exchange();
+            }
+            // elseif ($value == 'clean') {
+            //     // require_once PLUGIN_DIR . "/include/clean.php";
+            //     exit;
+            // }
+        }, - 10 );
+    }
+
 	private static function set_mime_type_indexes() {
 		global $wpdb;
 

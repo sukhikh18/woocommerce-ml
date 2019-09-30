@@ -38,12 +38,12 @@ ORM
     - Collection
 
 Utilites
-    - Error
+    - Error (Singleton)
+    - Transaction (Singleton)
     - Request
-    - Transaction
 
 Register
-    - Plugin
+    - Plugin (Singleton)
     - Register
 
 Actions

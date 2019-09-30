@@ -115,9 +115,9 @@ class REST_Controller {
      * @url http://v8.1c.ru/edi/edi_stnd/131/
      */
     function do_exchange() {
-//        if ( ! headers_sent() ) {
-//            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
-//        }
+        if ( ! headers_sent() ) {
+            header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
+        }
 
         Error::set_strict_mode();
 
@@ -166,7 +166,10 @@ class REST_Controller {
             // $this->deactivate();
             // $this->complete();
 
-            call_user_func( array( $this, explode( '_', $mode )[0] ) );
+            call_user_func( array(
+                $this,
+                false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode
+            ) );
         }
     }
 
@@ -231,8 +234,6 @@ class REST_Controller {
         /** Zip required (if no - must die) */
         check_zip_extension();
 
-        $Update = Update::get_instance();
-
         /**
          * Option is empty then exchange end
          * @var [type]
@@ -249,34 +250,12 @@ class REST_Controller {
              */
             update_option( 'exchange_start-date', current_time( 'mysql' ) );
 
+            $Update = new Update();
             $Update->set_mode( '' );
         }
 
         exit( "zip=yes\nfile_limit=" . wp_max_upload_size() );
     }
-
-//    protected function put_requested_file( $requested, $path ) {
-//        $temp_path = "$path~";
-//
-//        // Open raw stream and create temporary file
-//        $input_file = fopen( $requested, 'r' );
-//        $temp_file  = fopen( $temp_path, 'w' );
-//        stream_copy_to_stream( $input_file, $temp_file );
-//
-//        // if file with no xml data is exists remove it
-//        if ( is_file( $path ) ) {
-//            $temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
-//            if ( strpos( $temp_header, "<?xml " ) !== false ) {
-//                unlink( $path );
-//            }
-//        }
-//        $file = fopen( $path, 'a' );
-//        stream_copy_to_stream( $temp_file, $file );
-//        fclose( $temp_file );
-//        unlink( $temp_path );
-//
-//        return $file;
-//    }
 
     /**
      * C. Выгрузка на сайт файлов обмена
@@ -294,7 +273,6 @@ class REST_Controller {
         $path_dir = $Plugin->get_exchange_dir( Request::get_type() );
         $path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
 
-        // $resource = $this->put_requested_file( $requested, $path );
         $from     = fopen( $requested, 'r' );
         $resource = fopen( $path, 'a' );
         stream_copy_to_stream( $from, $resource );
@@ -322,10 +300,8 @@ class REST_Controller {
      */
     public function import() {
         $file = Request::get_file();
+        $mode = Request::get_mode();
 
-        /**
-         * Parse
-         */
         if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
             Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $file['path'] ) );
         }
@@ -333,115 +309,81 @@ class REST_Controller {
         $Parser = new Parser( $files );
         $Update = new Update();
 
-        Transaction()->set_transaction_mode();
+        $Parser
+            ->listen_product()
+            ->listen_offer()
+            ->parse();
 
-        if ( ! in_array( Request::get_mode(), array( 'import_posts', 'import_relationships' ) ) ) {
+        if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {
             /**
-             * first step: Update terms
+             * Get. Fill. Slice
              */
-            $Parser
-                ->listen_category()
-                ->listen_developer()
-                ->listen_warehouse()
-                ->listen_property()
-                ->parse();
-
-            $categories = $Parser->get_categories()->fill_exists();
-            $developers = $Parser->get_developers()->fill_exists();
-            $warehouses = $Parser->get_warehouses()->fill_exists();
-//            $attributes      = $Parser->get_properties()->fill_exists();
-//            $attributeValues = $attributes->get_all_values();
-
-            $Update->terms( $categories )->term_meta( $categories );
-            $Update->terms( $developers )->term_meta( $developers );
-            $Update->terms( $warehouses )->term_meta( $warehouses );
-            // @todo!
-//            Update::properties( $attributes );
-//            Update::terms( $attributeValues );
-//            Update::term_meta( $attributeValues );
-
-            $Update->set_mode( 'import_posts' );
-
-            exit( "$Update->status\n" . implode( ' -- ', array(
-                    "Обновлено {$Update->results['update']} категорий/терминов.",
-                    "Обновлено {$Update->results['meta']} мета записей.",
-                ) ) );
-
-        } else {
-            /**
-             * second step: Update posts with post meta
-             */
-            $Parser
-                ->listen_product()
-                ->listen_offer()
-                ->parse();
-
             $products      = $Parser->get_products()->fill_exists();
             $productsCount = $products->count();
+            $products      = $products->slice( $Update->progress, $Update->offset['product'] );
 
-            /** @recursive update if is $productsCount > $offset */
-            if ( $productsCount > $Update->progress ) {
-                $products = $products->slice( $Update->progress, $Update->offset['product'] );
+            if ( $products->count() ) {
+                Transaction()->set_transaction_mode();
 
-                if ( 'import_relationships' != Request::get_mode() ) {
+                // second step: import posts with post meta
+                if ( 'import_posts' == $mode ) {
                     $Update
-                        // Slice products who offset out
                         ->update_products( $products )
-                        ->update_products_meta( $products )
-                        // Set mode for go away or retry
-                        ->set_mode( $Update->progress > $productsCount ?
-                            'import_relationships' : 'import_posts' );
+                        ->update_products_meta( $products );
 
-                    exit( "$Update->status\n" . implode( ' -- ', array(
+                    // Set mode for go away or retry
+                    if ( $Update->progress < $productsCount ) {
+                        $Update->set_mode( 'import_posts' );
+                    } else {
+                        $Update->set_mode( 'import_relationships', array( 'progress' => 0 ) );
+                    }
+
+                    $Update
+                        ->set_status( 'progress' )
+                        ->stop( array(
                             "$Update->progress из $productsCount записей товаров обработано.",
                             $Update->results['create'] . " товаров добавлено.",
                             $Update->results['update'] . " товаров обновлено.",
                             $Update->results['meta'] . " произвольных записей товаров обновлено."
-                        ) ) );
-                } else {
-                    $msg = 'Обновление зависимостей завершено.';
+                        ) );
+                } // third step: import posts relationships
+                elseif ( 'import_relationships' == $mode ) {
+                    $Update
+                        ->relationships( $products );
 
-                    /** @var $progress int Offset from */
-//                    $offset         = apply_filters( 'exchange_products_relationships_offset', 500, $products_count,
-//                        Request::get_filename() );
-//                    $sizeOfProducts = sizeof( $products );
+                    $message = sprintf( '%d зависимостей %d товаров обновлено (всего %d из %d обработано).',
+                        $Update->results['update'],
+                        $products->count(),
+                        $Update->progress,
+                        $productsCount );
 
-                    /**
-                     * @todo write really update counter
-                     */
-                    $Update->relationships( $products );
+                    if ( $Update->progress < $productsCount ) {
+                        $Update
+                            ->set_status( 'progress' )
+                            ->set_mode( 'import_relationships' );
+                    } else {
+                        $Update
+                            ->set_status( 'success' )
+                            ->clear_progress()
+                            ->reset_mode();
+                    }
 
-                    exit( "$Update->status\n" . implode( ' -- ', array(
-                            $Update->results['update'] . "зависимостей " . $products->count() . " товаров обновлено (всего $Update->progress из $productsCount обработано).",
-                        ) ) );
-
-//                    /** Require retry */
-//                    if ( $this->progress < $products_count ) {
-//                        $this->set_mode( 'import_relationships' );
-//                        exit( "progress\n$msg" );
-//                    }
-//
-//                    $this->set_mode( '' );
-//                    exit( "$this->status\n$msg" );
+                    $Update->stop( $message );
                 }
-
             }
 
             $offers      = $Parser->get_offers()->fill_exists();
             $offersCount = $offers->count();
+            $offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
 
-            /** @recursive update if is $offersCount > $offset */
-            if ( $offersCount > $Update->progress ) {
-                $offers = $offers->slice( $Update->progress, $Update->offset['offer'] );
+            if ( $offers->count() ) {
+                Transaction()->set_transaction_mode();
 
-                if ( 'import_relationships' != Request::get_mode() ) {
+                // second step: import posts with post meta
+                if ( 'import_posts' == $mode ) {
                     $Update
-                        // Slice offers who offset out
                         ->update_offers( $offers )
-                        ->update_offers_meta( $offers )
-                        // Set mode for go away or retry
-                        ->set_mode( $Update->progress > $offersCount ?
-                            'import_relationships' : 'import_posts' );
+                        ->update_offers_meta( $offers );
 
                     /**
                      * Build answer message
@@ -465,33 +407,79 @@ class REST_Controller {
                         $progressMessage = "{$Update->progress} из $offersCount предложений обработано.";
                     }
 
-                    exit( "$Update->status\n" . implode( ' -- ', array(
+                    $Update
+                        ->set_status( 'progress' )
+                        // Set mode for go away or retry
+                        ->set_mode( $Update->progress > $offersCount ? 'import_relationships' : 'import_posts' )
+                        ->stop( array(
                             $progressMessage,
                             $Update->results['meta'] . " произвольных записей товаров обновлено."
-                        ) ) );
-                } else {
-                    $msg = 'Обновление зависимостей завершено.';
-                    $Update->relationships( $offers );
-                    $msg = $Update->results['update'] . " зависимостей $offersCount предложений обновлено (всего $Update->progress из " . $offers->count() . " обработано).";
+                        ) );
+                } // third step: import posts relationships
+                elseif ( 'import_relationships' == $mode ) {
 
-                    /** Require retry */
-//                    if ( $this->progress < $offersCount ) {
-//                        $this->set_mode( 'import_relationships' );
-//                        exit( "progress\n$msg" );
-//                    }
-//
-//                    if ( floatval( $this->version ) < 3 ) {
-//                        $this->set_mode( 'deactivate' );
-//                        exit( "progress\n$msg" );
-//                    }
-//
-//                    $this->set_mode( '' );
-//                    exit( "success\n$msg" );
+                    $Update
+                        ->relationships( $offers )
+                        ->set_status( $Update->progress < $offersCount ? 'progress' : 'success' );
+
+
+                    if ( 'success' == $Update->status ) {
+                        if ( floatval( $this->version ) < 3 ) {
+                            $Update
+                                ->set_status( 'progress' )
+                                ->set_mode( 'deactivate' );
+                        }
+                    } else {
+                        // retry
+                        $Update->set_mode( 'import_relationships' );
+                    }
+
+                    $Update
+                        ->stop( printf( '%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
+                            $Update->results['update'],
+                            $offers->count(),
+                            $Update->progress,
+                            $offersCount ) );
                 }
             }
+        } // first step: import terms
+        else {
+            Transaction()->set_transaction_mode();
+
+            $Parser
+                ->listen_category()
+                ->listen_developer()
+                ->listen_warehouse()
+                ->listen_property()
+                ->parse();
+
+            $categories = $Parser->get_categories()->fill_exists();
+            $developers = $Parser->get_developers()->fill_exists();
+            $warehouses = $Parser->get_warehouses()->fill_exists();
+//            $attributes      = $Parser->get_properties()->fill_exists();
+//            $attributeValues = $attributes->get_all_values();
+
+            $Update->terms( $categories )->term_meta( $categories );
+            $Update->terms( $developers )->term_meta( $developers );
+            $Update->terms( $warehouses )->term_meta( $warehouses );
+            // @todo!
+//            Update::properties( $attributes );
+//            Update::terms( $attributeValues );
+//            Update::term_meta( $attributeValues );
+
+            $Update
+                ->set_status( 'progress' )
+                ->set_mode( 'import_posts' )
+                ->stop( array(
+                    "Обновлено {$Update->results['update']} категорий/терминов.",
+                    "Обновлено {$Update->results['meta']} мета записей.",
+                ) );
         }
 
-        exit( "success" ); // \n$mode
+        /** Unreachable statement in theory */
+        $Update
+            ->set_mode( '', array( 'progress' => 0 ) )
+            ->stop();
     }
 
     /**

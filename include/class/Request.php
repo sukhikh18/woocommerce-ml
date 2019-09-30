@@ -74,10 +74,14 @@ class Request {
 
     public static function get_mode() {
         $allowed_modes = Request::get_allowed_modes();
+        $_mode         = Request::save_get_request( 'mode' );
         $mode          = Plugin()->get_setting( 'mode', false, 'status' );
 
+        if( 'complete' == $_mode ) {
+            return $_mode;
+        }
+
         if ( ! in_array( $mode, $allowed_modes ) ) {
-            $_mode = Request::save_get_request( 'mode' );
             $mode  = in_array( $_mode, $allowed_modes ) ? $_mode : false;
         }
 

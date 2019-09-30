@@ -114,9 +114,15 @@ add_action( 'plugins_loaded', function () {
 
     $Register = new Register();
     $Register->register_plugin_page();
+    // Register //example.com/exchange/ query
+    $Register->register_exchange_url();
 
     // Initialize the REST API routes.
-    add_action( 'rest_api_init', 'rest_api_init' );
+    add_action( 'rest_api_init', function () {
+        $this->rest_api = new REST_Controller();
+        $this->rest_api->register_routes();
+//		$this->rest_api->register_filters();
+    } );
 
     add_action( 'woocommerce_attribute_deleted',
         array( $Register, 'delete_attribute_taxonomy_meta' ), 10, 3 );
@@ -131,57 +137,9 @@ add_action( 'plugins_loaded', function () {
 
 }, 20 );
 
-function rest_api_init() {
-    $this->rest_api = new REST_Controller();
-    $this->rest_api->register_routes();
-//		$this->rest_api->register_filters();
-}
-
-
 register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'activate' ) );
 register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'deactivate' ) );
 register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'uninstall' ) );
-
-/**
- * Register //example.com/exchange/ query
- */
-add_filter( 'query_vars', __NAMESPACE__ . '\query_vars' );
-function query_vars( $query_vars ) {
-    $query_vars[] = 'ex1с';
-
-    return $query_vars;
-}
-
-add_action( 'init', __NAMESPACE__ . '\query_map', 1000 );
-function query_map() {
-    add_rewrite_rule( "exchange", "index.php?ex1с=exchange", 'top' );
-    // add_rewrite_rule("clean", "index.php?ex1с=clean");
-
-    flush_rewrite_rules();
-}
-
-add_action( 'template_redirect', __NAMESPACE__ . '\template_redirect', - 10 );
-function template_redirect() {
-    $value = get_query_var( 'ex1с' );
-    if ( empty( $value ) ) {
-        return;
-    }
-
-    if ( false !== strpos( $value, '?' ) ) {
-        list( $value, $query ) = explode( '?', $value, 2 );
-        parse_str( $query, $query );
-        $_GET = array_merge( $_GET, $query );
-    }
-
-    if ( $value == 'exchange' ) {
-        $REST = new REST_Controller();
-        $REST->do_exchange();
-    }
-    // elseif ($value == 'clean') {
-    //     // require_once PLUGIN_DIR . "/include/clean.php";
-    //     exit;
-    // }
-}
 
 add_action( 'wp_ajax_1c4wp_exchange', __NAMESPACE__ . '\ajax_1c4wp_exchange' );
 function ajax_1c4wp_exchange() {
@@ -231,7 +189,7 @@ add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mod
     return $status;
 }, 10, 4 );
 
-/** @var @todo Change hook */
+/** @todo Change hook */
 add_action( 'restrict_manage_posts', function ( $post_type ) {
     if ( 'product' == $post_type ) {
         ?>

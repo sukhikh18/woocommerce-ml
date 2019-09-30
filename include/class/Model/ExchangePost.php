@@ -78,6 +78,7 @@ class ExchangePost implements Identifiable, ExternalCode {
     }
 
     function prepare( $mode = '' ) {
+        return true;
     }
 
     function is_new() {

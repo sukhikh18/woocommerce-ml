@@ -78,6 +78,18 @@ class Update {
         );
     }
 
+    function set_status( $status ) {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    function clear_progress() {
+        $this->progress = 0;
+
+        return $this;
+    }
+
     /**
      * Set inner plug-in mode
      * @note Set empty mode for reset
@@ -85,7 +97,7 @@ class Update {
      * @param $mode
      * @param array $args
      *
-     * @return bool
+     * @return $this
      */
     function set_mode( $mode, $args = array() ) {
         $args = wp_parse_args( $args, array(
@@ -93,7 +105,52 @@ class Update {
             'progress' => (int) $this->progress,
         ) );
 
-        return Plugin()->set_setting( $args, null, 'status' );
+        Plugin()->set_setting( $args, null, 'status' );
+
+        return $this;
+    }
+
+    function reset_mode() {
+        return $this->set_mode( array(
+            'mode'     => '',
+            'progress' => 0,
+        ) );
+    }
+
+//    function update_mode( $args = array() ) {
+//        if( $args['mode'] != Request::get_mode() ) {
+//            $this->clear_progress();
+//        }
+//        else {
+//            $this->set_status('progress');
+//        }
+//
+//        $args = wp_parse_args( $args, array(
+//            'mode'     => Request::get_mode(),
+//            'progress' => (int) $this->progress,
+//        ) );
+//
+//        Plugin()->set_setting( $args, null, 'status' );
+//
+//        return $this;
+//    }
+
+    function stop( $messages = array() ) {
+        $messages = (array) $messages;
+
+        $filter_messages = function ( $msg ) {
+            if ( false !== strpos( $msg, '{{' ) ) {
+                $msg = str_replace( array( '{{create}}', '{{update}}', '{{meta}}' ), array(
+                    $this->results['create'],
+                    $this->results['update'],
+                    $this->results['meta']
+                ), $msg );
+            }
+
+            return $msg;
+        };
+
+        exit( "$this->status\n" . implode( ' -- ', array_filter( $messages, $filter_messages ) ) );
     }
 
     function update_meta( $post_id, $property_key, $property ) {
@@ -135,6 +192,8 @@ class Update {
             $products->walk( $update_products );
         }
 
+
+
         return $this;
     }
 
@@ -157,12 +216,14 @@ class Update {
          */
         $update_products_meta = function ( $product ) use ( $skip_post_meta ) {
             if ( $post_id = $product->get_id() ) {
-                if ( ! $skip_post_meta['value'] || $is_new = $product->is_new() ) {
+                $is_new = $product->is_new();
+
+                if ( ! $skip_post_meta['value'] || $is_new ) {
                     // Get list of all meta by product ["_sku"], ["_unit"], ["_tax"], ["{$custom}"]
                     $product_meta = $product->get_product_meta();
 
                     array_map( function ( $k, $v ) use ( $post_id, $is_new, $skip_post_meta ) {
-                        $value = trim( $v );
+                        $value = is_array($v) ? array_filter($v, 'trim') : trim( $v );
 
                         switch ( true ) {
                             case '_sku' == $k && $skip_post_meta['sku']:
@@ -386,7 +447,7 @@ class Update {
         /**
          * @param ExchangeProduct $post
          */
-        $update_relationships = function($post) {
+        $update_relationships = function ( $post ) {
             if ( $post_id = $post->get_id() ) {
                 if ( method_exists( $post, 'updateObjectTerms' ) ) {
                     $this->results['update'] += $post->updateObjectTerms();
@@ -398,7 +459,9 @@ class Update {
             }
         };
 
-        $posts->walk($update_relationships);
+        $posts->walk( $update_relationships );
+
+        $this->progress += $posts->count();
 
         return $this;
     }
