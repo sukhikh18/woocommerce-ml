@@ -182,7 +182,7 @@ class Update {
                         }
                     } else {
                         // if is create only
-                        if ( 'create' === $post_mode && $product->update() ) {
+                        if ( 'create' !== $post_mode && $product->update() ) {
                             $this->results['update'] ++;
                         }
                     }
@@ -191,7 +191,6 @@ class Update {
 
             $products->walk( $update_products );
         }
-
 
 
         return $this;
@@ -223,7 +222,7 @@ class Update {
                     $product_meta = $product->get_product_meta();
 
                     array_map( function ( $k, $v ) use ( $post_id, $is_new, $skip_post_meta ) {
-                        $value = is_array($v) ? array_filter($v, 'trim') : trim( $v );
+                        $value = is_array( $v ) ? array_filter( $v, 'trim' ) : trim( $v );
 
                         switch ( true ) {
                             case '_sku' == $k && $skip_post_meta['sku']:
@@ -324,7 +323,7 @@ class Update {
      */
     public function terms( $termsCollection ) {
         /** @var \NikolayS93\Exchange\Model\Abstracts\Term $term */
-        $closure = function ( $term, $offset ) use ( &$updated ) {
+        $closure = function ( $term, $offset ) {
             if ( $term->prepare() ) {
                 $this->results['update'] += (int) $term->update();
             }
@@ -358,7 +357,7 @@ class Update {
         }
 
         if ( ! empty( $insert ) && ! empty( $phs ) ) {
-            $query                 = static::get_sql_update( $wpdb->termmeta, $structure, $insert, $phs, $duplicate );
+            $query                 = static::get_sql_update( $wpdb->prefix . 'termmeta', $structure, $insert, $phs, $duplicate );
             $this->results['meta'] += $wpdb->query( $query );
         }
 
@@ -416,8 +415,6 @@ class Update {
                             ->add_message( "Empty attr insert or attr external", "Warning", true )
                             ->add_message( $attribute, "Target", true );
                     }
-
-                    $retry = true;
                 }
 
                 /**
@@ -449,12 +446,12 @@ class Update {
          */
         $update_relationships = function ( $post ) {
             if ( $post_id = $post->get_id() ) {
-                if ( method_exists( $post, 'updateObjectTerms' ) ) {
-                    $this->results['update'] += $post->updateObjectTerms();
+                if ( method_exists( $post, 'update_object_terms' ) ) {
+                    $this->results['update'] += $post->update_object_terms();
                 }
 
-                if ( method_exists( $post, 'updateAttributes' ) ) {
-                    $post->updateAttributes();
+                if ( method_exists( $post, 'update_attributes' ) ) {
+                    $post->update_attributes();
                 }
             }
         };

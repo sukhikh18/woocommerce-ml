@@ -52,13 +52,12 @@ class Error {
         if ( $message instanceof \WP_Error ) {
             array_map( function ( $message ) use ( $code ) {
                 $this->add_message( $message, $code );
-            }, $this->WP_Error->get_error_messages( $code ) );
+            }, $this->WP_Error->get_error_messages() ); // $code
+
             return $this;
-        }
-        elseif( is_object($message) ) {
-            $message = print_r($message, 1);
-        }
-        else {
+        } elseif ( is_object( $message ) ) {
+            $message = print_r( $message, 1 );
+        } elseif ($message) {
             // set dot if last space
             $last_char = substr( $message, - 1 );
             if ( ! in_array( $last_char, array( '.', '!', '?' ) ) ) {
@@ -66,8 +65,10 @@ class Error {
             }
         }
 
-        error_log( $message );
-        $this->WP_Error->add( $code, $message );
+        if( $message ) {
+            error_log( $message );
+            $this->WP_Error->add( $code, $message );
+        }
 
         if ( ! $no_exit ) {
             if ( is_debug() ) {

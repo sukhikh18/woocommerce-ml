@@ -8,6 +8,8 @@ use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 use NikolayS93\Exchange\Parser;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\Error;
 use function NikolayS93\Exchange\Plugin;
 
 /**
@@ -134,7 +136,7 @@ class ExchangeProduct extends ExchangePost {
         return $el;
     }
 
-    function updateAttributes() {
+    function update_attributes() {
 
         /**
          * Set attribute properties
@@ -209,49 +211,6 @@ class ExchangeProduct extends ExchangePost {
 //        update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
     }
 
-    private function update_object_term( $product_id, $terms, $taxonomy, $append = true ) {
-        $result = array();
-
-        if ( 'product_cat' == $taxonomy ) {
-
-
-            if ( 'off' === ( $post_relationship = Plugin()->get_setting( 'post_relationship' ) ) ) {
-                return 0;
-            } elseif ( 'default' == $post_relationship ) {
-                $object_terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'ids' ) );
-
-                if ( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
-                    if ( $default_term_id = (int) get_option( 'default_' . $taxonomy ) ) {
-                        $result = wp_set_object_terms( $product_id, $default_term_id, $taxonomy );
-                    }
-                }
-            }
-
-            $is_object_in_term = is_object_in_term( $product_id, $taxonomy, 'uncategorized' );
-            $append            = $is_object_in_term && ! is_wp_error( $is_object_in_term ) ? false : $append;
-        } elseif ( apply_filters( 'developerTaxonomySlug',
-                \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) == $taxonomy ) {
-            $result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
-        } elseif ( apply_filters( 'warehouseTaxonomySlug',
-                \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) == $taxonomy ) {
-            $result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
-        } // Attributes
-        else {
-            $result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, true );
-        }
-
-        if ( is_wp_error( $result ) ) {
-            Error()->add_message( $result, 'Warning', true );
-        } else {
-            return sizeof( $result );
-        }
-
-        return 0;
-    }
-
-    /**
-     * @note Do not merge data for KISS
-     */
     function update_object_terms() {
         $product_id = $this->get_id();
         $count      = 0;
@@ -269,45 +228,45 @@ class ExchangeProduct extends ExchangePost {
         $this->developers->walk( $update_object_terms );
 
         // @todo
-        if ( ! $this->attributes->isEmpty() ) {
-            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {
-                /**
-                 * @param Attribute $attribute
-                 */
-                $update_object_attribute_terms = function ($attribute) use ($update_object_terms) {
-                    /** @var AttributeValue $attribute_value */
-                    $attribute_value = $attribute->get_value();
-                    $attribute_value->walk( $update_object_terms );
-                };
-
-                $this->attributes->walk( $update_object_attribute_terms );
-            }
-        }
-
-        /**
-         * Update product's properties
-         */
-        if ( ! $this->properties->isEmpty() ) {
-            $terms_id = array();
-
-            /** @var Attribute attribute */
-            foreach ( $this->properties as $attribute ) {
-                if ( $taxonomy = $attribute->getSlug() ) {
-                    if ( ! isset( $terms_id[ $taxonomy ] ) ) {
-                        $terms_id[ $taxonomy ] = array();
-                    }
-
-                    $value = $attribute->getValue();
-                    if ( $term_id = $value->get_id() ) {
-                        $terms_id[ $taxonomy ][] = $term_id;
-                    }
-                }
-            }
-
-            foreach ( $terms_id as $tax => $terms ) {
-                $count += $this->update_object_term( $product_id, $terms, $tax );
-            }
-        }
+//        if ( ! $this->attributes->isEmpty() ) {
+//            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {
+//                /**
+//                 * @param Attribute $attribute
+//                 */
+//                $update_object_attribute_terms = function ($attribute) use ($update_object_terms) {
+//                    /** @var AttributeValue $attribute_value */
+//                    $attribute_value = $attribute->get_value();
+//                    $attribute_value->walk( $update_object_terms );
+//                };
+//
+//                $this->attributes->walk( $update_object_attribute_terms );
+//            }
+//        }
+//
+//        /**
+//         * Update product's properties
+//         */
+//        if ( ! $this->properties->isEmpty() ) {
+//            $terms_id = array();
+//
+//            /** @var Attribute attribute */
+//            foreach ( $this->properties as $attribute ) {
+//                if ( $taxonomy = $attribute->getSlug() ) {
+//                    if ( ! isset( $terms_id[ $taxonomy ] ) ) {
+//                        $terms_id[ $taxonomy ] = array();
+//                    }
+//
+//                    $value = $attribute->getValue();
+//                    if ( $term_id = $value->get_id() ) {
+//                        $terms_id[ $taxonomy ][] = $term_id;
+//                    }
+//                }
+//            }
+//
+//            foreach ( $terms_id as $tax => $terms ) {
+//                $count += $this->update_object_term( $product_id, $terms, $tax );
+//            }
+//        }
 
         return $count;
     }

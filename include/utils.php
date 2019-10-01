@@ -35,12 +35,7 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
  *
  * @return String|true    error message | all right
  */
-function unzip( $zip_path, $dir ) {
-    // распаковывает но возвращает статус 0
-    // $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));
-    // @exec($command, $_, $status);
-
-    // if (@$status !== 0) {
+function unzip( $zip_path, $dir, $nondelete = false ) {
     $zip    = new \ZipArchive();
     $result = $zip->open( $zip_path );
     if ( $result !== true ) {
@@ -49,20 +44,9 @@ function unzip( $zip_path, $dir ) {
 
     $zip->extractTo( $dir ) or Error()->add_message( sprintf( "Failed to extract from archive %s", $zip_path ) );
     $zip->close() or Error()->add_message( sprintf( "Failed to close archive %s", $zip_path ) );
-    // }
 
-    if ( is_debug() ) {
-        $Plugin = Plugin();
-        $file   = Request::get_file();
-        // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
-        $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
-        @mkdir( $path );
-        @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
-    } else {
+    if( !$nondelete ) {
         @unlink( $zip_path );
-//            if ( ! @unlink( $path ) ) {
-//                $remove_errors[] = sprintf( "Failed to unlink file %s", $path );
-//            }
     }
 
     return true;

@@ -18,6 +18,7 @@ abstract class Term {
     protected $term_taxonomy;
 
     abstract function prepare();
+
     abstract function get_taxonomy_name();
 
     static function get_structure( $key ) {
@@ -58,13 +59,13 @@ abstract class Term {
     public function esc_id( $term_id ) {
         if ( $term_id instanceof \WP_Term ) {
             $id = $term_id->term_id;
-        } elseif ( is_array( $term_id ) && !empty($term_id['term_id']) ) {
+        } elseif ( is_array( $term_id ) && ! empty( $term_id['term_id'] ) ) {
             $id = $term_id['term_id'];
         } else {
             $id = $term_id;
         }
 
-        return absint($id);
+        return absint( $id );
     }
 
     /**
@@ -72,14 +73,14 @@ abstract class Term {
      */
     function __construct( $term, $external = '', $meta = array() ) {
         $term = wp_parse_args( $term, array(
-            'term_id'    => 0,
-            'slug'       => '',
-            'name'       => '',
+            'term_id'     => 0,
+            'slug'        => '',
+            'name'        => '',
 //            'term_group' => '',
 //
 //            'term_taxonomy_id' => 0,
 //            'taxonomy'         => '',
-            'description'      => '', // 1c 8.2 not has a cat description?
+            'description' => '', // 1c 8.2 not has a cat description?
 //            'parent'           => 0,
 //            'count'            => 0,
 
@@ -189,15 +190,15 @@ abstract class Term {
     }
 
     public function unset_name() {
-        unset($this->term['name']);
+        unset( $this->term['name'] );
     }
 
     public function unset_description() {
-        unset($this->term_taxonomy['description']);
+        unset( $this->term_taxonomy['description'] );
     }
 
     public function update() {
-    	$term = $this->get_term_array();
+        $term = $this->get_term_array();
 
         if ( $term_id = $this->get_id() ) {
             $result = wp_update_term( $term_id, $this->get_taxonomy(), $term );
@@ -218,8 +219,8 @@ abstract class Term {
             return true;
         } else {
             Error()
-                ->add_message($result, 'Warning', true)
-                ->add_message(print_r( $this, 1 ), 'Target', true);
+                ->add_message( print_r( $result, 1 ), 'Warning', true )
+                ->add_message( print_r( $this, 1 ), 'Target', true );
         }
 
         return false;
@@ -227,12 +228,12 @@ abstract class Term {
 
     public function update_object_term( $post_id ) {
         $result = wp_set_object_terms( $post_id, $this->get_id(), $this->get_taxonomy(), $append = true );
-        if ( is_wp_error( $result ) ) {
+        if ( $result && ! is_wp_error( $result ) ) {
+            return true;
+        } else {
             Error()
                 ->add_message( $result, 'Warning', true )
                 ->add_message( $this, 'Target', true );
-        } else {
-            return true;
         }
 
         return false;

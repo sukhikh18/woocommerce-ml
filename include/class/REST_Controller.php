@@ -160,12 +160,11 @@ class REST_Controller {
                     get_user_meta( $user_id, 'nickname', true ) ) );
             }
 
-            // $this->init
-            // $this->file
+            // $this->init();
+            // $this->file();
             // $this->import();
             // $this->deactivate();
             // $this->complete();
-
             call_user_func( array(
                 $this,
                 false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode
@@ -177,10 +176,9 @@ class REST_Controller {
      * A. Начало сеанса (Авторизация)
      * Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
      * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
-     *
      * A. Начало сеанса
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
-     * @return 'success\nCookie\nCookie_value'
+     * @print 'success\nCookie\nCookie_value'
      */
     public function checkauth() {
         if ( ! is_user_logged_in() ) {
@@ -226,7 +224,7 @@ class REST_Controller {
      * B. Уточнение параметров сеанса
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=init
      *
-     * @exit
+     * @print
      * zip=yes|no - Сервер поддерживает Zip
      * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
      */
@@ -264,7 +262,7 @@ class REST_Controller {
      * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
      *
      * Загрузка CommerceML2 файла или его части в виде POST. (Пишет поток в файл и распаковывает его)
-     * @exit string 'success'
+     * @print string 'success'
      */
     public function file( $requested = "php://input" ) {
         $Plugin = Plugin();
@@ -272,6 +270,7 @@ class REST_Controller {
         // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
         $path_dir = $Plugin->get_exchange_dir( Request::get_type() );
         $path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
+        print_r($path, $path_dir);
 
         $from     = fopen( $requested, 'r' );
         $resource = fopen( $path, 'a' );
@@ -296,7 +295,7 @@ class REST_Controller {
     /**
      * D. Пошаговая загрузка данных
      * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
-     * @return 'progress|success|failure'
+     * @print 'progress|success|failure'
      */
     public function import() {
         $file = Request::get_file();
@@ -309,18 +308,21 @@ class REST_Controller {
         $Parser = new Parser( $files );
         $Update = new Update();
 
-        $Parser
-            ->listen_product()
-            ->listen_offer()
-            ->parse();
-
         if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {
+            $Parser
+                ->listen_product()
+                ->listen_offer()
+                ->parse();
+
             /**
-             * Get. Fill. Slice
+             * Get. Slice. Fill
              */
-            $products      = $Parser->get_products()->fill_exists();
+            $products      = $Parser->get_products();
             $productsCount = $products->count();
             $products      = $products->slice( $Update->progress, $Update->offset['product'] );
+            $products
+                ->fill_exists()
+                ->fill_exists_terms();
 
             if ( $products->count() ) {
                 Transaction()->set_transaction_mode();
@@ -372,9 +374,11 @@ class REST_Controller {
                 }
             }
 
-            $offers      = $Parser->get_offers()->fill_exists();
+            $offers      = $Parser->get_offers();
             $offersCount = $offers->count();
             $offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
+            $offers
+                ->fill_exists();
 
             if ( $offers->count() ) {
                 Transaction()->set_transaction_mode();
@@ -657,6 +661,15 @@ class REST_Controller {
 
         Plugin::set_mode( '' );
         update_option( 'exchange_last-update', current_time( 'mysql' ) );
+
+        //        if ( is_debug() ) {
+//            $Plugin = Plugin();
+//            $file   = Request::get_file();
+//            // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
+//            $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
+//            @mkdir( $path );
+//            @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
+//        }
 
         exit( "success\nВыгрузка данных завершена" );
     }

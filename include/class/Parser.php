@@ -725,14 +725,14 @@ class Parser {
 //                }
 //
 //                /** Fill relative exists who not exists in this exchange (filedata) */
-//                $product->fillExistsRelativesFromDB();
+//                $product->fill_exists_terms();
 //            }
 //        }
 //
 //        if ( ! empty( $this->arOffers ) ) {
 //            ExchangeProduct::fill_exists( $this->arOffers );
 //            foreach ( $this->arOffers as &$offer ) {
-//                $offer->fillExistsRelativesFromDB();
+//                $offer->fill_exists_terms();
 //            }
 //        }
 	}

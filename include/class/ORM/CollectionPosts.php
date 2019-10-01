@@ -7,11 +7,13 @@ use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Developer;
 use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeProduct;
 use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 use NikolayS93\Exchange\Model\Warehouse;
 use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\Error;
 
 /**
  * Class CollectionPosts
@@ -93,127 +95,82 @@ class CollectionPosts extends Collection {
         return $this;
     }
 
-    function getAllRelativeExternals( $orphaned_only = false ) {
-        $arExternals = array();
-
-        if ( ! empty( $this->product_cat ) ) {
-            /** @var Category $product_cat */
-            foreach ( $this->product_cat as $product_cat ) {
-                if ( $orphaned_only && $product_cat->get_id() ) {
-                    continue;
-                }
-                $arExternals[] = $product_cat->get_external();
-            }
-        }
-
-        if ( ! empty( $this->warehouses ) ) {
-            /** @var Warehouse $warehouse */
-            foreach ( $this->warehouses as $warehouse ) {
-                if ( $orphaned_only && $warehouse->get_id() ) {
-                    continue;
-                }
-                $arExternals[] = $warehouse->get_external();
-            }
-        }
-
-        if ( ! empty( $this->developer ) ) {
-            /** @var Developer $developer */
-            foreach ( $this->developer as $developer ) {
-                if ( $orphaned_only && $developer->get_id() ) {
-                    continue;
-                }
-                $arExternals[] = $developer->get_external();
-            }
-        }
-
-        if ( ! empty( $this->properties ) ) {
-            /** @var Attribute $property */
-            foreach ( $this->properties as $property ) {
-                foreach ( $property->get_values() as $ex_term ) {
-                    if ( $orphaned_only && $ex_term->get_id() ) {
-                        continue;
-                    }
-
-                    $arExternals[] = $ex_term->get_external();
-                }
-            }
-        }
-
-        return $arExternals;
-    }
-
-    function fillExistsRelativesFromDB() {
+    public function fill_exists_terms() {
         /** @global \wpdb $wpdb built in wordpress db object */
         global $wpdb;
 
-        $arExternals = $this->getAllRelativeExternals( true );
+        $externals = array();
 
-        if ( ! empty( $arExternals ) ) {
-            foreach ( $arExternals as $strExternal ) {
-                $arSqlExternals[] = "`meta_value` = '{$strExternal}'";
-            }
+        /**
+         * @param ExchangeProduct $product
+         */
+        $this->walk( function ( $product ) use ( &$externals ) {
+            /**
+             * @param Term $cat
+             */
+            $extract_external = function ( $cat ) use ( &$externals ) {
+                $externals[] = $cat->get_external();
+            };
 
-            $arTerms = array();
+            $product->categories->walk( $extract_external );
+            $product->developers->walk( $extract_external );
+            $product->warehouses->walk( $extract_external );
+            // $product->attributes->get_all_values()->walk( $extract_external );
+        } );
 
-            $exsists_terms_query = "
-                SELECT term_id, meta_key, meta_value
-                FROM {$wpdb->prefix}term_meta
-                WHERE meta_key = '" . Category::get_external_key() . "'
-                    AND (" . implode( " \t\n OR ", array_unique( $arSqlExternals ) ) . ")";
+        $externals = array_unique( $externals );
 
-            $ardbTerms = $wpdb->get_results( $exsists_terms_query );
-            foreach ( $ardbTerms as $ardbTerm ) {
-                $arTerms[ $ardbTerm->meta_value ] = $ardbTerm->term_id;
-            }
+        if ( ! empty( $externals ) ) {
+            array_walk( $externals, function ( &$external ) {
+                $external = "`meta_value` = '{$external}'";
+            } );
 
-            if ( ! empty( $this->product_cat ) ) {
-                /** @var Category $product_cat */
-                foreach ( $this->product_cat as &$product_cat ) {
-                    $ext = $product_cat->get_external();
-                    if ( ! empty( $arTerms[ $ext ] ) ) {
-                        $product_cat->set_id( $arTerms[ $ext ] );
+            $external_key = Category::get_external_key();
+            $exists_terms = wp_list_pluck( $wpdb->get_results( "
+                SELECT term_id, meta_value FROM {$wpdb->prefix}termmeta
+                WHERE meta_key = '$external_key'
+                    AND (" . implode( " \t\n OR ", $externals ) . ")" ),
+                'term_id',
+                'meta_value'
+            );
+
+            /**
+             * @param ExchangeProduct $product
+             */
+            $this->walk( function ( $product ) use ( $exists_terms ) {
+                /**
+                 * @param Term $term
+                 */
+                $put_terms = function ( $term ) use ( $exists_terms ) {
+                    if( isset($exists_terms[ $term->get_external() ]) ) {
+                        $term->set_id($exists_terms[ $term->get_external() ]);
                     }
-                }
-            }
+                };
 
-            if ( ! empty( $this->warehouses ) ) {
-                /** @var Warehouse $warehouse */
-                foreach ( $this->warehouses as &$warehouse ) {
-                    $ext = $warehouse->get_external();
-                    if ( ! empty( $arTerms[ $ext ] ) ) {
-                        $warehouse->set_id( $arTerms[ $ext ] );
-                    }
-                }
-            }
+                $product->categories->walk( $put_terms );
+                $product->developers->walk( $put_terms );
+                $product->warehouses->walk( $put_terms );
+                // $product->attributes->get_all_values()->walk( $put_terms );
+            } );
 
-            if ( ! empty( $this->developer ) ) {
-                /** @var Developer $developer */
-                foreach ( $this->developer as &$developer ) {
-                    $ext = $developer->get_external();
-                    if ( ! empty( $arTerms[ $ext ] ) ) {
-                        $developer->set_id( $arTerms[ $ext ] );
-                    }
-                }
-            }
-
-            if ( ! empty( $this->properties ) ) {
-                /** @var Attribute $property */
-                foreach ( $this->properties as &$property ) {
-                    if ( $property instanceof Attribute ) {
-                        foreach ( $property->get_values() as &$term ) {
-                            $ext = $term->get_external();
-                            if ( ! empty( $arTerms[ $ext ] ) ) {
-                                $term->set_id( $arTerms[ $ext ] );
-                            }
-                        }
-                    } else {
-                        // exit with error
-                        Error()
-                            ->add_message('Property not has attribute instance', 'Error', true)
-                            ->add_message( $property, 'Target' );
-                    }
-                }
-            }
+//            if ( ! empty( $this->properties ) ) {
+//                /** @var Attribute $property */
+//                foreach ( $this->properties as &$property ) {
+//                    if ( $property instanceof Attribute ) {
+//                        foreach ( $property->get_values() as &$term ) {
+//                            $ext = $term->get_external();
+//                            if ( ! empty( $arTerms[ $ext ] ) ) {
+//                                $term->set_id( $arTerms[ $ext ] );
+//                            }
+//                        }
+//                    } else {
+//                        // exit with error
+//                        Error()
+//                            ->add_message( 'Property not has attribute instance', 'Error', true )
+//                            ->add_message( $property, 'Target' );
+//                    }
+//                }
+//            }
         }
     }
 }

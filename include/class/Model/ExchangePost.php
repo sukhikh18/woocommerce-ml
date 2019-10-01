@@ -261,6 +261,7 @@ class ExchangePost implements Identifiable, ExternalCode {
     public function update() {
         global $wpdb;
 
+        // @todo add title/content..
         $wpdb->update(
             $wpdb->posts,
             // set

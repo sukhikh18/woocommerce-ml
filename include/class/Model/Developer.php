@@ -7,6 +7,7 @@ namespace NikolayS93\Exchange\Model;
 use NikolayS93\Exchange\Model\Abstracts\Term;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\check_mode;
 use function NikolayS93\Exchange\Error;
 
 class Developer extends Term {

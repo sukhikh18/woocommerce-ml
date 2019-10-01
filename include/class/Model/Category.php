@@ -83,11 +83,16 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
     }
 
     public function update_object_term( $post_id ) {
+        if( !$post_id || !$this->get_id() ) {
+            return false;
+        }
+
         if ( 'off' === ( $post_relationship = Plugin()->get_setting( 'post_relationship' ) ) ) {
             return false;
         }
 
         $taxonomy = $this->get_taxonomy();
+        $result = array();
 
         if ( 'default' == $post_relationship ) {
             $object_terms    = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'ids' ) );
@@ -103,13 +108,13 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
             $result = wp_set_object_terms( $post_id, $this->get_id(), $taxonomy, $append = true );
         }
 
-        if ( is_wp_error( $result ) ) {
+        if ( $result && !is_wp_error( $result ) ) {
+            return true;
+        }
+        else {
             Error()
                 ->add_message( $result, 'Warning', true )
                 ->add_message( $this, 'Target', true );
-        }
-        else {
-            return true;
         }
 
         return false;
