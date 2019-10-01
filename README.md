@@ -1,4 +1,4 @@
-### Автоматизация обмена данных о товарах и товарных предложениях между Wordpress и 1C
+### Автоматизация обмена данными о товарах и товарных предложениях из 1C в Wordpress
 
 Этот плагин позволяет автоматизировать наполнение товарами сайта на Wordpress с установленным плагином Woocommerce.
 
@@ -22,8 +22,8 @@
 [Документация по протоколу обмена](http://v8.1c.ru/edi/edi_stnd/131/)
 
 ##### 1. Начало сеанса (Авторизация)
-Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида: _1c_exchange.php?type=catalog&mode=checkauth_  
-```@return 'success\nCookie\nCookie_value'```
+Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
+_1c_exchange.php?type=catalog&mode=checkauth_  
 
 ##### 2. Уточнение параметров сеанса
 Система запрашивает возможности сервера
@@ -84,25 +84,18 @@ do_exchange() {
 
     $this->import() {
         $Update->update_terms() {
-            $Parser
-                ->watch_terms()
-                ->parse();
+        	$Parser->parse();
 
-            $categories = $Parser->get_categories()->fill_exists();
-            $developers = $Parser->get_developers()->fill_exists();
-            $warehouses = $Parser->get_warehouses()->fill_exists();
-    
             Update::terms( $categories, $developers, $warehouses );
             Update::term_meta( $categories, $developers, $warehouses );
         }
 
-        $Update->update_products( $Parser );
-        $Update->update_offers( $Parser );
-        $Update->update_products_relationships( $Parser );
-		$Update->update_offers_relationships( $Parser );
+        $Update->update_products()->update_offers();
+        $Update->update_products_relationships()->update_offers_relationships();
     }
-    
+
     $this->deactivate()
+
     $this->complete()
 }
 ```
