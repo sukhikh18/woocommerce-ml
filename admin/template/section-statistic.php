@@ -1,10 +1,10 @@
 <?php
 
-namespace NikolayS93\Exchange;
+namespace NikolayS93\Exchanger;
 
 use NikolayS93\WPAdminPage\Section;
 
-$Page->add_section( new Section(
+$page->add_section( new Section(
 	'statistic',
 	__( 'Report', DOMAIN ),
 	function () {
