@@ -8,7 +8,7 @@
 use NikolayS93\Exchanger\Plugin;
 use const NikolayS93\Exchanger\PLUGIN_DIR;
 
-require PLUGIN_DIR . 'tests/helper.php';
+require __DIR__ . '/../../helper.php';
 
 class PluginTest extends WP_UnitTestCase {
 

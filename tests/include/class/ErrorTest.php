@@ -6,9 +6,8 @@
  */
 
 use NikolayS93\Exchanger\Error;
-use const NikolayS93\Exchanger\PLUGIN_DIR;
 
-require PLUGIN_DIR . 'tests/helper.php';
+require __DIR__ . '/../../helper.php';
 
 class ErrorTest extends WP_UnitTestCase {
 

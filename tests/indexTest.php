@@ -7,7 +7,7 @@
 
 namespace NikolayS93\Exchanger;
 
-require PLUGIN_DIR . 'tests/helper.php';
+require __DIR__ . '/helper.php';
 
 /**
  * Sample test case.

@@ -1,15 +1,14 @@
 <?php
 /**
- * Class PluginTest
+ * Class RegisterTest
  *
  * @package Woocommerce.1c.Exchanger
  */
 
-namespace NikolayS93\Exchanger;
-
+use NikolayS93\Exchanger\Register;
 use const NikolayS93\Exchanger\PLUGIN_DIR;
 
-require PLUGIN_DIR . 'tests/helper.php';
+require __DIR__ . '/../../helper.php';
 
 class RegisterTest extends \WP_UnitTestCase {
 

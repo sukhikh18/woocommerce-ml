@@ -10,7 +10,7 @@ use NikolayS93\Exchanger\Request;
 use NikolayS93\Exchanger\REST_Controller;
 use const NikolayS93\Exchanger\PLUGIN_DIR;
 
-require PLUGIN_DIR . 'tests/helper.php';
+require __DIR__ . '/../../helper.php';
 
 class REST_ControllerTest extends WP_UnitTestCase {
 
