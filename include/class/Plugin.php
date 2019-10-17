@@ -38,9 +38,9 @@ class Plugin {
 	 * Please don't change this directly.
 	 * Use the self::PREFIX . "get_permissions" filter instead.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	private $permissions = 'manage_options';
+	private $permissions = array( 'shop_manager', 'administrator' );
 
 	/**
 	 * Get option name for a options in the WordPress database

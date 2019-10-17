@@ -1,22 +1,15 @@
 <?php
 
-namespace NikolayS93\Exchange;
+namespace NikolayS93\Exchanger;
 
-use NikolayS93\Exchange\Model\ExchangeOffer;
-use NikolayS93\Exchange\Model\ExchangeProduct;
-use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchanger\Model\ExchangeOffer;
+use NikolayS93\Exchanger\Model\ExchangeProduct;
+use NikolayS93\Exchanger\ORM\Collection;
 use WP_REST_Server;
 
 class REST_Controller {
 
-    const option_version = 'exchange_version';
-
-    /**
-     * The capability required to use REST API.
-     *
-     * @var array
-     */
-    public $permissions = array( 'shop_manager', 'administrator' );
+    const OPTION_VERSION = 'exchange_version';
 
     /**
      * The namespace for the REST API routes.
@@ -32,10 +25,7 @@ class REST_Controller {
 
     function __construct() {
         // Set CommerceML protocol version
-        $this->version = get_option( self::option_version, '' );
-
-        // Allow people to change what capability is required to use this plugin.
-        $this->permissions = apply_filters( Plugin::PREFIX . 'rest_permissions', $this->permissions );
+        $this->version = get_option( self::OPTION_VERSION, '' );
     }
 
     /**
@@ -44,17 +34,13 @@ class REST_Controller {
      * @return bool
      */
     public function has_permissions( $user ) {
-        foreach ( $this->get_permissions() as $permission ) {
+        foreach ( plugin()->get_permissions() as $permission ) {
             if ( user_can( $user, $permission ) ) {
                 return true;
             }
         }
 
         return false;
-    }
-
-    public function get_permissions() {
-        return $this->permissions;
     }
 
     function register_routes() {

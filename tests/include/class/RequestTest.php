@@ -6,6 +6,9 @@
  */
 
 use NikolayS93\Exchanger\Request;
+use const NikolayS93\Exchanger\PLUGIN_DIR;
+
+require PLUGIN_DIR . 'tests/helper.php';
 
 /**
  * Sample test case.

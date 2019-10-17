@@ -39,6 +39,19 @@ if ( ! defined( 'EXCHANGE_COOKIE_NAME' ) ) {
 	define( 'EXCHANGE_COOKIE_NAME', 'ex-auth' );
 }
 
+/**
+ * Current timestamp
+ */
+if ( ! defined( 'EXCHANGE_START_TIMESTAMP' ) ) {
+    define( 'EXCHANGE_START_TIMESTAMP', time() );
+}
+/**
+ * Work with charset
+ */
+if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
+    define( 'EXCHANGE_CHARSET', 'UTF-8' );
+}
+
 if ( ! function_exists( 'include_plugin_file' ) ) {
 	/**
 	 * Safe dynamic expression include.
