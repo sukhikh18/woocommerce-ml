@@ -6,6 +6,7 @@ use NikolayS93\Exchanger\Model\ExchangeOffer;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
 use NikolayS93\Exchanger\ORM\Collection;
 use WP_REST_Server;
+use function NikolayS93\Exchange\the_statistic_table;
 
 class REST_Controller {
 
@@ -150,7 +151,7 @@ class REST_Controller {
 			Error()->add_message( "Type no support" );
 		}
 
-		if ( ! $mode = Request::get_mode() ) {
+		if ( ! $mode = plugin()->get_mode() ) {
 			Error()->add_message( "Mode no support" );
 		}
 

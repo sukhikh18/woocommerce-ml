@@ -72,7 +72,11 @@ if ( ! function_exists( 'include_plugin_file' ) ) {
  * include required files
  */
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
-include_plugin_file( 'include/utils.php' );
+array_map(__NAMESPACE__ . '\include_plugin_file', array(
+	'include/utils.php',
+	'include/statistic.php'
+));
+
 if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) {
 	array_map(
 		__NAMESPACE__ . '\include_plugin_file',

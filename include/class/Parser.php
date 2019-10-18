@@ -10,12 +10,11 @@ use NikolayS93\Exchanger\Model\Attribute;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
 use NikolayS93\Exchanger\Model\ExchangeOffer;
 use NikolayS93\Exchanger\Model\Warehouse;
-use NikolayS93\Exchange\ORM\Collection;
-use NikolayS93\Exchange\ORM\CollectionAttributes;
-use NikolayS93\Exchange\ORM\CollectionPosts;
-use NikolayS93\Exchange\ORM\CollectionTerms;
+use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\ORM\CollectionAttributes;
+use NikolayS93\Exchanger\ORM\CollectionPosts;
+use NikolayS93\Exchanger\ORM\CollectionTerms;
 use CommerceMLParser\Event;
-
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );

@@ -66,7 +66,7 @@ class Register {
 			array(
 				'parent'      => 'woocommerce', // for ex. woocommerce.
 				'menu'        => __( '1C Exchange', Plugin::DOMAIN ),
-				'permissions' => $plugin->get_permissions(),
+				'permissions' => 'manage_options',
 				'columns'     => 2,
 			)
 		);
@@ -79,9 +79,29 @@ class Register {
 
 		$page->add_section(
 			new Section(
-				'section',
+				'Sumary info',
 				__( 'Section', Plugin::DOMAIN ),
-				$plugin->get_template( 'admin/template/section' )
+				$plugin->get_template( 'admin/template/section-statistic' )
+			)
+		);
+
+		$page->add_section(
+			new Section(
+				'postsinfo',
+				__( 'Posts', Plugin::DOMAIN ),
+				function() {
+					get_post_statistic( new Parser() );
+				}
+			)
+		);
+
+		$page->add_section(
+			new Section(
+				'termsinfo',
+				__( 'Terms', Plugin::DOMAIN ),
+				function() {
+					get_term_statistic( new Parser() );
+				}
 			)
 		);
 
