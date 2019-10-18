@@ -1,14 +1,14 @@
 <?php
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
-use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
-use NikolayS93\Exchange\Model\Interfaces\Taxonomy;
-use NikolayS93\Exchange\Model\Interfaces\Value;
+use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Model\Interfaces\Taxonomy;
+use NikolayS93\Exchanger\Model\Interfaces\Value;
 
-use NikolayS93\Exchange\ORM\Collection;
-use function NikolayS93\Exchange\esc_cyr;
+use NikolayS93\Exchanger\ORM\Collection;
+use function NikolayS93\Exchanger\esc_cyr;
 
 /**
  * Works with woocommerce_attribute_taxonomies

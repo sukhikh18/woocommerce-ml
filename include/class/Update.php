@@ -92,24 +92,6 @@ class Update {
         return $this;
     }
 
-//    function update_mode( $args = array() ) {
-//        if( $args['mode'] != Request::get_mode() ) {
-//            $this->reset_progress();
-//        }
-//        else {
-//            $this->set_status('progress');
-//        }
-//
-//        $args = wp_parse_args( $args, array(
-//            'mode'     => Request::get_mode(),
-//            'progress' => (int) $this->progress,
-//        ) );
-//
-//        Plugin()->set_setting( $args, null, 'status' );
-//
-//        return $this;
-//    }
-
     function stop( $messages = array() ) {
         $messages = (array) $messages;
 
@@ -297,7 +279,7 @@ class Update {
      * @param Collection $termsCollection
      */
     public function terms( $termsCollection ) {
-        /** @var \NikolayS93\Exchange\Model\Abstracts\Term $term */
+        /** @var \NikolayS93\Exchanger\Model\Abstracts\Term $term */
         $closure = function ( $term, $offset ) {
             if ( $term->prepare() ) {
                 $this->results['update'] += (int) $term->update();

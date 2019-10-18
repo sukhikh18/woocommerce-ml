@@ -1,8 +1,8 @@
 <?php
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
-use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchanger\ORM\Collection;
 
 /**
  * Works with posts, postmeta

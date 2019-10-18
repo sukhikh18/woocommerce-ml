@@ -1,16 +1,16 @@
 <?php
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
 
 use CommerceMLParser\Model\Property;
-use NikolayS93\Exchange\Error;
-use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
-use NikolayS93\Exchange\Model\Traits\ItemMeta;
-use NikolayS93\Exchange\ORM\Collection;
-use NikolayS93\Exchange\Plugin;
-use function NikolayS93\Exchange\esc_cyr;
+use NikolayS93\Exchanger\Error;
+use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Model\Traits\ItemMeta;
+use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\Plugin;
+use function NikolayS93\Exchanger\esc_cyr;
 
 /**
  * Works with posts, term_relationships, post meta

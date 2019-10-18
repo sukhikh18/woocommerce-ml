@@ -304,11 +304,12 @@ class REST_Controller {
 	 */
 	public function import() {
 		$file = Request::get_file();
-		$mode = Request::get_mode();
 
 		if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
 			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $file['path'] ) );
 		}
+
+		$mode = plugin()->get_mode();
 
 		$Parser = new Parser( $files );
 		$Update = new Update();

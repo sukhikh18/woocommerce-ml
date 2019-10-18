@@ -1,16 +1,16 @@
 <?php
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
 use CommerceMLParser\Model\Types\BaseUnit;
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
-use NikolayS93\Exchange\Parser;
-use NikolayS93\Exchange\Model\Category;
-use NikolayS93\Exchange\ORM\Collection;
-use NikolayS93\Exchange\Plugin;
-use function NikolayS93\Exchange\Error;
-use function NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Parser;
+use NikolayS93\Exchanger\Model\Category;
+use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\Plugin;
+use function NikolayS93\Exchanger\Error;
+use function NikolayS93\Exchanger\Plugin;
 
 /**
  * Content: {

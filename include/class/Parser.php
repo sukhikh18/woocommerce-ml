@@ -1,15 +1,15 @@
 <?php
 
-namespace NikolayS93\Exchange;
+namespace NikolayS93\Exchanger;
 
 use CommerceMLParser\Model\Types\PropertyValue;
-use NikolayS93\Exchange\Model\AttributeValue;
-use NikolayS93\Exchange\Model\Category;
-use NikolayS93\Exchange\Model\Developer;
-use NikolayS93\Exchange\Model\Attribute;
-use NikolayS93\Exchange\Model\ExchangeProduct;
-use NikolayS93\Exchange\Model\ExchangeOffer;
-use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchanger\Model\AttributeValue;
+use NikolayS93\Exchanger\Model\Category;
+use NikolayS93\Exchanger\Model\Developer;
+use NikolayS93\Exchanger\Model\Attribute;
+use NikolayS93\Exchanger\Model\ExchangeProduct;
+use NikolayS93\Exchanger\Model\ExchangeOffer;
+use NikolayS93\Exchanger\Model\Warehouse;
 use NikolayS93\Exchange\ORM\Collection;
 use NikolayS93\Exchange\ORM\CollectionAttributes;
 use NikolayS93\Exchange\ORM\CollectionPosts;
