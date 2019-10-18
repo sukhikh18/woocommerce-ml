@@ -18,16 +18,40 @@ class REST_ControllerTest extends WP_UnitTestCase {
         $this->assertTrue( defined(REST_Controller::OPTION_VERSION) );
     }
 
-    public function testFile() {
-        $_REQUEST['type'] = 'catalog';
-        $_REQUEST['mode'] = 'file';
-        $_REQUEST['filename'] = 'test.zip';
+	/**
+	 * Check exchange is started
+	 */
+	public function testExchange() {
+	}
 
-        $REST = new REST_Controller();
-        $REST->file( PLUGIN_DIR . 'tests/fixtures/import0_1.zip' );
+	public function testCheckauth() {
+	}
 
-        $plugin = Plugin::get_instance();
-        $exchange_dir = $plugin->get_exchange_dir( Request::get_type() );
-        $this->assertTrue( is_file($exchange_dir . '/import0_1.xml') );
-    }
+	public function testInit() {
+		$rest = new REST_Controller();
+		$rest->init( true );
+		$this->assertNotEmpty( get_option('exchange_start-date') );
+	}
+
+	public function testFile() {
+		$_REQUEST['type'] = 'catalog';
+		$_REQUEST['mode'] = 'file';
+		$_REQUEST['filename'] = 'test.zip';
+
+		$REST = new REST_Controller();
+		$REST->file( PLUGIN_DIR . 'tests/fixtures/import0_1.zip' );
+
+		$plugin = Plugin::get_instance();
+		$exchange_dir = $plugin->get_exchange_dir( Request::get_type() );
+		$this->assertTrue( is_file($exchange_dir . '/import0_1.xml') );
+	}
+
+	public function testImport() {
+	}
+
+	public function testDeactivate() {
+	}
+
+	public function testComplete() {
+	}
 }

@@ -24,6 +24,14 @@ class ErrorTest extends WP_UnitTestCase {
 		$this->assertTrue( true );
 	}
 
+	public function testIs_empty() {
+		$err = Error::get_instance();
+		$this->assertTrue( $err->is_empty() );
+
+		$err->add_message( 'Test', $code = 'Unit', $no_exit = true );
+		$this->assertFalse( $err->is_empty() );
+	}
+
 	/**
 	 * Unrealized test
 	 *

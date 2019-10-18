@@ -48,24 +48,6 @@ class RequestTest extends WP_UnitTestCase {
 	 *
 	 * @todo
 	 */
-	public function testGet_allowed_modes() {
-		$this->assertTrue( true );
-	}
-
-	/**
-	 * Unrealized test
-	 *
-	 * @todo
-	 */
-	public function testGet_mode() {
-		$this->assertTrue( true );
-	}
-
-	/**
-	 * Unrealized test
-	 *
-	 * @todo
-	 */
 	public function testDisable_request_time_limit() {
 		$this->assertTrue( true );
 	}

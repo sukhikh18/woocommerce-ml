@@ -52,42 +52,6 @@ class Request {
 		return (string) static::save_get_request( 'type' );
 	}
 
-	/**
-	 * Allowed modes from GET
-	 *
-	 * @return array
-	 */
-	private static function get_allowed_modes() {
-		$allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes', array(
-			'checkauth',
-			'init',
-			'file',
-			'import',
-			'import_posts',
-			'import_relationships',
-			'deactivate',
-			'complete',
-		) );
-
-		return (array) $allowed;
-	}
-
-	public static function get_mode() {
-		$allowed_modes = Request::get_allowed_modes();
-		$_mode         = Request::save_get_request( 'mode' );
-		$mode          = Plugin()->get_setting( 'mode', false, 'status' );
-
-		if ( 'complete' === $_mode ) {
-			return $_mode;
-		}
-
-		if ( ! in_array( $mode, $allowed_modes ) ) {
-			$mode = in_array( $_mode, $allowed_modes ) ? $_mode : false;
-		}
-
-		return $mode;
-	}
-
 	static function get_full_request_uri() {
 		$uri = 'http';
 		if ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] == 'on' ) {

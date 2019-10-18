@@ -203,7 +203,7 @@ class Register {
 
 //			if ( $value == 'exchange' ) {
 //				$REST = new REST_Controller();
-//				$REST->do_exchange();
+//				$REST->exchange();
 //			}
 			// elseif ($value == 'clean') {
 			//     // require_once PLUGIN_DIR . "/include/clean.php";

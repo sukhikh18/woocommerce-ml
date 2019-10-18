@@ -135,4 +135,40 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->plugin->set_setting('test', 2, 'context') );
 		$this->assertTrue( $this->plugin->set_setting(array( 'test2' => 3)) );
 	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testGet_allowed_modes() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testGet_mode() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testSet_mode() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testReset_mode() {
+		$this->assertTrue( true );
+	}
 }

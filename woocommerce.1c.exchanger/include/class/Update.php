@@ -1,24 +1,22 @@
 <?php
 
-namespace NikolayS93\Exchange;
+namespace NikolayS93\Exchanger;
 
-use NikolayS93\Exchange\Model\ExchangeProduct;
-use NikolayS93\Exchange\ORM\CollectionPosts;
-use NikolayS93\Exchange\ORM\CollectionTerms;
-use NikolayS93\Exchange\Traits\Singleton;
-use NikolayS93\Exchange\ORM\Collection;
-use NikolayS93\Exchange\Model\Interfaces\Term;
-use NikolayS93\Exchange\Model\Category;
-use NikolayS93\Exchange\Model\Developer;
-use NikolayS93\Exchange\Model\Attribute;
-use NikolayS93\Exchange\Model\Warehouse;
-use NikolayS93\Exchange\Model\ExchangeOffer;
-use NikolayS93\Exchange\Model\ExchangePost;
 
+use NikolayS93\Exchanger\ORM\CollectionPosts;
+use NikolayS93\Exchanger\ORM\CollectionTerms;
+use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\Model\Interfaces\Term;
+use NikolayS93\Exchanger\Model\Category;
+use NikolayS93\Exchanger\Model\Developer;
+use NikolayS93\Exchanger\Model\Attribute;
+use NikolayS93\Exchanger\Model\Warehouse;
+use NikolayS93\Exchanger\Model\ExchangePost;
+use NikolayS93\Exchanger\Model\ExchangeProduct;
+use NikolayS93\Exchanger\Model\ExchangeOffer;
 
 class Update {
 
-//    use Singleton;
     public $offset;
 
     /** @var $progress int Offset from */
@@ -84,42 +82,19 @@ class Update {
         return $this;
     }
 
-    function clear_progress() {
+    function get_progress() {
+    	return $this->progress;
+    }
+
+    function reset_progress() {
         $this->progress = 0;
 
         return $this;
     }
 
-    /**
-     * Set inner plug-in mode
-     * @note Set empty mode for reset
-     *
-     * @param $mode
-     * @param array $args
-     *
-     * @return $this
-     */
-    function set_mode( $mode, $args = array() ) {
-        $args = wp_parse_args( $args, array(
-            'mode'     => $mode,
-            'progress' => (int) $this->progress,
-        ) );
-
-        Plugin()->set_setting( $args, null, 'status' );
-
-        return $this;
-    }
-
-    function reset_mode() {
-        return $this->set_mode( array(
-            'mode'     => '',
-            'progress' => 0,
-        ) );
-    }
-
 //    function update_mode( $args = array() ) {
 //        if( $args['mode'] != Request::get_mode() ) {
-//            $this->clear_progress();
+//            $this->reset_progress();
 //        }
 //        else {
 //            $this->set_status('progress');

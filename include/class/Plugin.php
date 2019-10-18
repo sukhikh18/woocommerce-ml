@@ -201,4 +201,61 @@ class Plugin {
 		// load plugin languages.
 		load_plugin_textdomain( self::DOMAIN, false, basename( self::get_dir() ) . '/languages/' );
 	}
+
+	/**
+	 * Allowed modes from GET
+	 *
+	 * @return array
+	 */
+	private function get_allowed_modes() {
+		$allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes', array(
+			'checkauth',
+			'init',
+			'file',
+			'import',
+			'import_posts',
+			'import_relationships',
+			'deactivate',
+			'complete',
+		) );
+
+		return (array) $allowed;
+	}
+
+	public function get_mode() {
+		$allowed_modes = $this->get_allowed_modes();
+		$mode          = $this->get_setting( 'mode', false, 'status' );
+		$_mode         = Request::save_get_request( 'mode' );
+
+		if ( 'complete' === $_mode ) {
+			return $_mode;
+		}
+
+		if ( ! in_array( $mode, $allowed_modes ) ) {
+			$mode = in_array( $_mode, $allowed_modes ) ? $_mode : false;
+		}
+
+		return $mode;
+	}
+
+	/**
+	 * Set inner plug-in mode
+	 *
+	 * @param string $mode
+	 * @param Update $update instance
+	 * @return $this|Update
+	 */
+	public function set_mode( $mode, $update = 0 ) {
+		$args = array(
+			'mode'     => $mode,
+			'progress' => $update->get_progress(),
+		);
+
+
+		return Plugin()->set_setting( $args, null, 'status' );
+	}
+
+	function reset_mode() {
+		return $this->set_mode( '', new Update() );
+	}
 }

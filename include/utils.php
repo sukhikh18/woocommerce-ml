@@ -24,8 +24,10 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
 		// ! 0 === @$status
 
 		if ( ! class_exists( 'ZipArchive' ) ) {
-			error()->add_message( 'The PHP extension zip is required.' );
+			return new \WP_Error('ZIP_ABSENT', 'The PHP extension zip is required.');
 		}
+
+		return true;
 	}
 }
 
