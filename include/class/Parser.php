@@ -110,6 +110,7 @@ class Parser {
 	//			$Partner = $ownerEvent->getPartner();
 	//		});
 	//	}
+
 	/**
 	 * @note Products has requisites
 	 */
@@ -644,11 +645,9 @@ class Parser {
 	 * @todo add documentation
 	 */
 	function fill_exists() {
-		if ( ! empty( $this->arCategories ) ) {
-			Category::fill_exists( $this->arCategories );
-		}
-
-//        fill_exists
+//		if ( ! empty( $this->arCategories ) ) {
+//			Category::fill_exists( $this->arCategories );
+//		}
 
 //        if ( ! empty( $this->arDevelopers ) ) {
 //            Category::fill_exists( $this->arDevelopers );

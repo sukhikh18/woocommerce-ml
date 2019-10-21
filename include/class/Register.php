@@ -35,6 +35,7 @@ class Register {
 	public static function activate() {
 		self::set_mime_type_indexes();
 		self::create_taxonomy_meta_table();
+		self::create_temporary_exchange_table();
 
 		file_put_contents( plugin()->get_exchange_dir() . "/.htaccess", "Deny from all" );
 		file_put_contents( plugin()->get_exchange_dir() . "/index.html", '' );
@@ -210,7 +211,8 @@ class Register {
 		}, 1000 );
 
 		add_action( 'template_redirect', function () {
-			$value = get_query_var( 'ex1с' );
+			$value = get_query_var( Plugin::DOMAIN );
+
 			if ( empty( $value ) ) {
 				return;
 			}
@@ -221,10 +223,10 @@ class Register {
 				$_GET = array_merge( $_GET, $query );
 			}
 
-//			if ( $value == 'exchange' ) {
-//				$REST = new REST_Controller();
-//				$REST->exchange();
-//			}
+			if ( $value == 'exchange' ) {
+				$REST = new REST_Controller();
+				$REST->exchange();
+			}
 			// elseif ($value == 'clean') {
 			//     // require_once PLUGIN_DIR . "/include/clean.php";
 			//     exit;
@@ -232,7 +234,7 @@ class Register {
 		}, - 10 );
 	}
 
-	private static function set_mime_type_indexes() {
+	public static function set_mime_type_indexes() {
 		global $wpdb;
 
 		/**
@@ -248,7 +250,7 @@ class Register {
 		return false;
 	}
 
-	private static function create_taxonomy_meta_table() {
+	public static function create_taxonomy_meta_table() {
 		global $wpdb;
 
 		$charset_collate = $wpdb->get_charset_collate();
@@ -273,6 +275,38 @@ class Register {
                 ALTER TABLE {$taxonomymeta}
                     ADD INDEX `tax_id` (`tax_id`),
                     ADD INDEX `meta_key` (`meta_key`(191));" );
+		}
+	}
+
+	public static function get_exchange_table_name() {
+		global $wpdb;
+
+		return $wpdb->get_blog_prefix() . 'exchange';
+	}
+
+	public static function create_temporary_exchange_table() {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$tmp_exchange_table_name = static::get_exchange_table_name();
+
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '$tmp_exchange_table_name'" ) != $tmp_exchange_table_name ) {
+			/** Required for dbDelta */
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+
+			dbDelta( "CREATE TABLE {$tmp_exchange_table_name} (
+                `product_id` bigint(20) unsigned NOT NULL DEFAULT '0' PRIMARY KEY,
+                `xml` varchar(100) NOT NULL,
+                `name` varchar(200) NULL,
+                `desc` longtext NULL,
+                `meta_list` longtext NULL,
+                `relationships_list` longtext NULL
+            ) {$charset_collate};" );
+
+			$wpdb->query( "
+                ALTER TABLE {$tmp_exchange_table_name}
+                    ADD UNIQUE INDEX `xml` (`xml`);" );
 		}
 	}
 }

@@ -169,7 +169,7 @@ class Plugin {
 		$option = $this->get_setting( null, false, $context );
 
 		if ( is_array( $prop_name ) ) {
-			$option = array_merge( $option, $prop_name );
+			$option = is_array($option) ? array_merge( $option, $prop_name ) : $prop_name;
 		} else {
 			$option[ $prop_name ] = $value;
 		}
@@ -250,7 +250,6 @@ class Plugin {
 			'mode'     => $mode,
 			'progress' => $update->get_progress(),
 		);
-
 
 		return Plugin()->set_setting( $args, null, 'status' );
 	}

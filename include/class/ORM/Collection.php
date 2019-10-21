@@ -79,15 +79,21 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	}
 
 	/**
-	 * @param \Closure $p
+	 * @param \Closure|array $p
 	 *
 	 * @return self
 	 */
-	public function filter( \Closure $p ) {
+	public function filter( $p ) {
 		return new static( array_filter( $this->items, $p ) );
 	}
 
-	public function walk( \Closure $p, $userdata = array() ) {
+	/**
+	 * @param Callable $p
+	 * @param array $userdata
+	 *
+	 * @return Collection
+	 */
+	public function walk( $p, $userdata = array() ) {
 		return new static( array_walk( $this->items, $p, $userdata ) );
 	}
 

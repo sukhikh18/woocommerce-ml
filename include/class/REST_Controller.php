@@ -315,170 +315,132 @@ class REST_Controller {
 		$Parser = new Parser( $files );
 		$Update = new Update();
 
-		if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {
-			$Parser
-				->listen_product()
-				->listen_offer()
-				->parse();
+		$Parser
+			->listen_category()
+			->listen_developer()
+			->listen_warehouse()
+			->listen_property()
+			->listen_product()
+			->listen_offer()
+			->parse();
 
-			/**
-			 * Get. Slice. Fill
-			 */
-			$products      = $Parser->get_products();
-			$productsCount = $products->count();
-			$products      = $products->slice( $Update->progress, $Update->offset['product'] );
-			$products
-				->fill_exists()
-				->fill_exists_terms();
+		/**
+		 * Get. Slice. Fill
+		 */
+		$products   = $Parser->get_products();
+		$categories = $Parser->get_categories();
+		$developers = $Parser->get_developers();
+		$warehouses = $Parser->get_warehouses();
+		$attributes = $Parser->get_properties();
 
-			if ( $products->count() ) {
-				Transaction()->set_transaction_mode();
-
-				// second step: import posts with post meta
-				if ( 'import_posts' == $mode ) {
-					$Update
-						->update_products( $products )
-						->update_products_meta( $products );
-
-					// Set mode for go away or retry
-					if ( $Update->progress < $productsCount ) {
-						plugin()->set_mode( 'import_posts', $Update );
-					} else {
-						plugin()->set_mode( 'import_relationships', $Update->reset_progress() );
-					}
-
-					$Update
-						->set_status( 'progress' )
-						->stop( array(
-							"$Update->progress из $productsCount записей товаров обработано.",
-							$Update->results['create'] . " товаров добавлено.",
-							$Update->results['update'] . " товаров обновлено.",
-							$Update->results['meta'] . " произвольных записей товаров обновлено."
-						) );
-				} // third step: import posts relationships
-				elseif ( 'import_relationships' == $mode ) {
-					$Update
-						->relationships( $products );
-
-					$message = sprintf( '%d зависимостей %d товаров обновлено (всего %d из %d обработано).',
-						$Update->results['update'],
-						$products->count(),
-						$Update->progress,
-						$productsCount );
-
-					if ( $Update->progress < $productsCount ) {
-						plugin()->set_mode( 'import_relationships', $Update->set_status( 'progress' ) );
-					} else {
-						plugin()->reset_mode();
-						$Update
-							->set_status( 'success' )
-							->reset_progress();
-					}
-
-					$Update->stop( $message );
-				}
-			}
-
-			$offers      = $Parser->get_offers();
-			$offersCount = $offers->count();
-			$offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
-			$offers
-				->fill_exists();
-
-			if ( $offers->count() ) {
-				Transaction()->set_transaction_mode();
-
-				// second step: import posts with post meta
-				if ( 'import_posts' == $mode ) {
-					$Update
-						->update_offers( $offers )
-						->update_offers_meta( $offers );
-
-					/**
-					 * Build answer message
-					 */
-					$filenames = $Parser->get_filenames();
-					if ( ! empty( $filenames ) ) {
-						$filename = current( $filenames );
-
-						switch ( true ) {
-							case 0 === strpos( $filename, 'price' ):
-								$progressMessage = "{$Update->progress} из $offersCount цен обработано.";
-								break;
-
-							case 0 === strpos( $filename, 'rest' ):
-								$progressMessage = "{$Update->progress} из $offersCount запасов обработано.";
-								break;
-						}
-					}
-
-					if ( empty( $progressMessage ) ) {
-						$progressMessage = "{$Update->progress} из $offersCount предложений обработано.";
-					}
-
-					// Set mode for go away or retry
-					plugin()->set_mode( $Update->progress > $offersCount ? 'import_relationships' : 'import_posts',
-						$Update->set_status( 'progress' ) );
-
-					$Update
-						->stop( array(
-							$progressMessage,
-							$Update->results['meta'] . " произвольных записей товаров обновлено."
-						) );
-				} // third step: import posts relationships
-				elseif ( 'import_relationships' == $mode ) {
-
-					$Update
-						->relationships( $offers )
-						->set_status( $Update->progress < $offersCount ? 'progress' : 'success' );
-
-					if ( 'success' == $Update->status ) {
-						if ( floatval( $this->version ) < 3 ) {
-							plugin()->set_mode( 'deactivate', $Update->set_status( 'progress' ) );
-						}
-					} else {
-						// retry
-						plugin()->set_mode( 'import_relationships', $Update );
-					}
-
-					$Update
-						->stop( printf( '%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
-							$Update->results['update'],
-							$offers->count(),
-							$Update->progress,
-							$offersCount ) );
-				}
-			}
-		} // first step: import terms
-		else {
+		if ( $products->count() || $categories->count() || $developers->count() || $warehouses->count() || $attributes->count() ) {
 			Transaction()->set_transaction_mode();
 
-			$Parser
-				->listen_category()
-				->listen_developer()
-				->listen_warehouse()
-				->listen_property()
-				->parse();
+			$categories->fill_exists();
+			$developers->fill_exists();
+			$warehouses->fill_exists();
+			$attributes->fill_exists();
 
-			$categories = $Parser->get_categories()->fill_exists();
-			$developers = $Parser->get_developers()->fill_exists();
-			$warehouses = $Parser->get_warehouses()->fill_exists();
-//            $attributes      = $Parser->get_properties()->fill_exists();
-//            $attributeValues = $attributes->get_all_values();
+			$products
+				->fill_exists()
+				->fill_exists_terms( $Parser );
+
+			$Update
+				->update_products( $products )
+				->update_products_meta( $products );
 
 			$Update->terms( $categories )->term_meta( $categories );
 			$Update->terms( $developers )->term_meta( $developers );
 			$Update->terms( $warehouses )->term_meta( $warehouses );
-			// @todo!
-//            Update::properties( $attributes );
-//            Update::terms( $attributeValues );
-//            Update::term_meta( $attributeValues );
 
-			plugin()->set_mode( 'import_posts', $Update->set_status( 'progress' ) );
+			$attributeValues = $attributes->get_all_values();
+			$Update->properties( $attributes );
+			$Update->terms( $attributeValues )->term_meta( $attributeValues );
+
 			$Update->stop( array(
+				"Записаны временные данные",
 				"Обновлено {$Update->results['update']} категорий/терминов.",
 				"Обновлено {$Update->results['meta']} мета записей.",
 			) );
+		}
+
+		$offers      = $Parser->get_offers();
+		$offersCount = $offers->count();
+		$offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
+
+		if ( $offers->count() ) {
+			Transaction()->set_transaction_mode();
+
+			$offers->fill_exists();
+
+			// second step: import posts with post meta
+			if ( 'import_relationships' !== $mode ) {
+				$Update
+					->update_offers( $offers )
+					->update_offers_meta( $offers );
+
+				/**
+				 * Build answer message
+				 */
+				$filenames = $Parser->get_filenames();
+				if ( ! empty( $filenames ) ) {
+					$filename = current( $filenames );
+
+					switch ( true ) {
+						case 0 === strpos( $filename, 'price' ):
+							$progressMessage = "{$Update->progress} из $offersCount цен обработано.";
+							break;
+
+						case 0 === strpos( $filename, 'rest' ):
+							$progressMessage = "{$Update->progress} из $offersCount запасов обработано.";
+							break;
+					}
+				}
+
+				if ( empty( $progressMessage ) ) {
+					$progressMessage = "{$Update->progress} из $offersCount предложений обработано.";
+				}
+
+				// Set mode for go away or retry
+				plugin()->set_mode( $Update->progress > $offersCount ? 'import_relationships' : 'import_posts',
+					$Update->set_status( 'progress' ) );
+
+				$Update
+					->stop( array(
+						$progressMessage,
+						$Update->results['meta'] . " произвольных записей товаров обновлено."
+					) );
+			} // third step: import posts relationships
+			else {
+
+				$Update
+					->relationships( $offers )
+					->set_status( $Update->progress < $offersCount ? 'progress' : 'success' );
+
+				if ( 'success' == $Update->status ) {
+					if ( floatval( $this->version ) < 3 ) {
+						plugin()->set_mode( 'deactivate', $Update->set_status( 'progress' ) );
+					}
+				} else {
+					// retry
+					plugin()->set_mode( 'import_relationships', $Update );
+				}
+
+				$Update
+					->stop( printf( '%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
+						$Update->results['update'],
+						$offers->count(),
+						$Update->progress,
+						$offersCount ) );
+			}
+		}
+
+		if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {
+			if ( $offers->count() ) {
+				Transaction()->set_transaction_mode();
+
+				$offers->fill_exists();
+			}
 		}
 
 		/** Unreachable statement in theory */
