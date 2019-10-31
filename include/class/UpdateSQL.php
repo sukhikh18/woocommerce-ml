@@ -15,77 +15,80 @@ use NikolayS93\Exchanger\Model\ExchangePost;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
 use NikolayS93\Exchanger\Model\ExchangeOffer;
 
-class Update {
+class UpdateSQL extends Update {
 
-	public $offset;
-
-	/** @var $progress int Offset from */
-	public $progress;
-
-	public $results;
-
-	public $status = 'success';
-
-	function __construct() {
-
-		$this->offset = apply_filters( PLUGIN::PREFIX . 'update_count_offset', array(
-			'product' => 500,
-			'offer'   => 500,
-			'rest'    => 1001,
-			'price'   => 1001,
-		) );
-
-		$this->progress = intval( Plugin()->get_setting( 'progress', 0, 'status' ) );
-
-		$this->results = array(
-			'create' => 0,
-			'update' => 0,
-			'meta'   => 0,
+	static function get_structure( $key ) {
+		$structure = array(
+			'posts'    => array(
+				'ID'                    => '%d',
+				'post_author'           => '%d',
+				'post_date'             => '%s',
+				'post_date_gmt'         => '%s',
+				'post_content'          => '%s',
+				'post_title'            => '%s',
+				'post_excerpt'          => '%s',
+				'post_status'           => '%s',
+				'comment_status'        => '%s',
+				'ping_status'           => '%s',
+				'post_password'         => '%s',
+				'post_name'             => '%s',
+				'to_ping'               => '%s',
+				'pinged'                => '%s',
+				'post_modified'         => '%s',
+				'post_modified_gmt'     => '%s',
+				'post_content_filtered' => '%s',
+				'post_parent'           => '%d',
+				'guid'                  => '%s',
+				'menu_order'            => '%d',
+				'post_type'             => '%s',
+				'post_mime_type'        => '%s',
+				'comment_count'         => '%d',
+			),
+			'postmeta' => array(
+				'meta_id'    => '%d',
+				'post_id'    => '%d',
+				'meta_key'   => '%s',
+				'meta_value' => '%s',
+			)
 		);
+
+		if ( isset( $structure[ $key ] ) ) {
+			return $structure[ $key ];
+		}
+
+		return false;
 	}
 
-	function get_status() {
-		return $this->status;
+	static function get_sql_placeholder( $structure ) {
+		$values = array();
+		foreach ( $structure as $column => $format ) {
+			$values[] = "'$format'";
+		}
+		$query = '(' . implode( ",", $values ) . ')';
+
+		return $query;
 	}
 
-	function get_progress() {
-		return $this->progress;
+	static function get_sql_structure( $structure ) {
+		return '(' . implode( ', ', array_keys( $structure ) ) . ')';
 	}
 
-	function set_status( $status ) {
-		$this->status = $status;
+	static function get_sql_duplicate( $structure ) {
+		$values = array();
+		foreach ( $structure as $column => $format ) {
+			$values[] = "$column = VALUES($column)";
+		}
+		$query = implode( ",\n", $values ) . ';';
 
-		return $this;
+		return $query;
 	}
 
-	function set_progress( $progress ) {
-		$this->progress = $progress;
+	static function get_sql_update( $bd_name, $structure, $insert, $placeholders, $duplicate ) {
+		global $wpdb;
+		$query = "INSERT INTO $bd_name $structure VALUES " . implode( ', ', $placeholders );
+		$query .= " ON DUPLICATE KEY UPDATE " . $duplicate;
 
-		return $this;
-	}
-
-	function reset_progress() {
-		$this->set_progress( 0 );
-
-		return $this;
-	}
-
-	function stop( $messages = array() ) {
-		$messages = (array) $messages;
-
-		$filter_messages = function ( $msg ) {
-			if ( false !== strpos( $msg, '{{' ) ) {
-				$msg = str_replace( array( '{{create}}', '{{update}}', '{{meta}}' ), array(
-					$this->results['create'],
-					$this->results['update'],
-					$this->results['meta']
-				), $msg );
-			}
-
-			return $msg;
-		};
-
-		exit( "$this->status\n" . implode( ' -- ', array_filter( $messages, $filter_messages ) ) );
+		return $wpdb->prepare( $query, $insert );
 	}
 
 	function update_meta( $post_id, $property_key, $property ) {
@@ -279,16 +282,29 @@ class Update {
 	public function term_meta( $terms ) {
 		global $wpdb;
 
+		$insert = array();
+		$phs    = array();
+
+		$meta_structure = Category::get_structure( 'term_meta' );
+
+		$structure       = static::get_sql_structure( $meta_structure );
+		$duplicate       = static::get_sql_duplicate( $meta_structure );
+		$sql_placeholder = static::get_sql_placeholder( $meta_structure );
 
 		/** @var Model\Abstracts\Term $term */
 		foreach ( $terms as $term ) {
-			$term_id = $term->get_id();
-			if ( ! $term_id ) {
+			if ( ! $term->get_id() ) {
 				continue;
 			}
 
-			update_term_meta( $term_id, $term->get_external_key(), $term->get_external() );
-			$this->results['meta'] ++;
+			array_push( $insert, $term->meta_id, $term->get_id(), $term->get_external_key(), $term->get_external() );
+			array_push( $phs, $sql_placeholder );
+		}
+
+		if ( ! empty( $insert ) && ! empty( $phs ) ) {
+			$query                 = static::get_sql_update( $wpdb->prefix . 'termmeta', $structure, $insert, $phs,
+				$duplicate );
+			$this->results['meta'] += $wpdb->query( $query );
 		}
 
 		return $this;

@@ -95,7 +95,6 @@ if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php'
 			'include/class/Model/Attribute.php',
 			'include/class/Model/AttributeValue.php',
 			'include/class/Model/Category.php',
-			'include/class/Model/Developer.php',
 			'include/class/Model/ExchangeOffer.php',
 			'include/class/Model/ExchangePost.php',
 			'include/class/Model/ExchangeProduct.php',

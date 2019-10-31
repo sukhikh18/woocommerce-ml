@@ -250,6 +250,7 @@ class REST_Controller {
 		if ( ! $start = get_option( 'exchange_start-date', '' ) ) {
 			/**
 			 * Refresh exchange version
+			 *
 			 * @var float isset($_GET['version']) ? ver >= 3.0 : ver <= 2.99
 			 */
 			update_option( 'exchange_version', ! empty( $_GET['version'] ) ? $_GET['version'] : '' );
@@ -333,10 +334,11 @@ class REST_Controller {
 
 		$this->parse_items( $Parser, $Dispatcher );
 		$products   = $Parser->get_products();
+		$offers     = $Parser->get_offers();
 		$categories = $Parser->get_categories();
-		$developers = $Parser->get_developers();
 		$warehouses = $Parser->get_warehouses();
 		$attributes = $Parser->get_properties();
+
 
 		$mode = plugin()->get_mode();
 
@@ -344,13 +346,8 @@ class REST_Controller {
 			$Update = new Update();
 		}
 
-		if ( $products->count() || $categories->count() || $developers->count() || $warehouses->count() || $attributes->count() ) {
+		if( 'import_temporary' === $mode && $products->count() ) {
 			Transaction()->set_transaction_mode();
-
-			$categories->fill_exists();
-			$developers->fill_exists();
-			$warehouses->fill_exists();
-			$attributes->fill_exists();
 
 			$products
 				->fill_exists()
@@ -360,26 +357,40 @@ class REST_Controller {
 				->update_products( $products )
 				->update_products_meta( $products );
 
+			$Update->stop( array(
+				"Записаны временные данные товаров",
+			) );
+		}
+
+		if( $categories->count() || $warehouses->count() || $attributes->count() ) {
+			Transaction()->set_transaction_mode();
+
+			$categories->fill_exists();
+			$warehouses->fill_exists();
+			$attributes->fill_exists();
+
 			$Update->terms( $categories )->term_meta( $categories );
-			$Update->terms( $developers )->term_meta( $developers );
 			$Update->terms( $warehouses )->term_meta( $warehouses );
 
-			$attributeValues = $attributes->get_all_values();
-			$Update->properties( $attributes );
-			$Update->terms( $attributeValues )->term_meta( $attributeValues );
+			// $attributeValues = $attributes->get_all_values();
+			// $Update
+			// 	->properties( $attributes )
+			// 	->terms( $attributeValues )
+			// 	->term_meta( $attributeValues );
+			if ( $products->count() && floatval( $this->version ) < 3 ) {
+				plugin()->set_mode( 'import_temporary', $Update->set_status( 'progress' ) );
+			}
 
 			$Update->stop( array(
-				"Записаны временные данные",
 				"Обновлено {$Update->results['update']} категорий/терминов.",
 				"Обновлено {$Update->results['meta']} мета записей.",
 			) );
 		}
 
-		$offers      = $Parser->get_offers();
 		$offersCount = $offers->count();
 		$offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
 
-		if ( $offers->count() ) {
+		if ( $offersCount ) {
 			Transaction()->set_transaction_mode();
 
 			$offers->fill_exists();

@@ -35,12 +35,6 @@ class ExchangeProduct extends ExchangePost {
     public $attributes;
 
     /**
-     * Single term. Link to developer (prev. created)
-     * @var Collection
-     */
-    public $developers;
-
-    /**
      * @param \CommerceMLParser\ORM\Collection $base_unit
      */
     public function get_current_base_unit( $base_unit ) {
@@ -65,7 +59,6 @@ class ExchangeProduct extends ExchangePost {
 
         $this->categories = new Collection();
         $this->attributes = new Collection();
-        $this->developers = new Collection();
     }
 
     /**************************************************** Relatives ***************************************************/
@@ -80,20 +73,6 @@ class ExchangeProduct extends ExchangePost {
 
     public function add_category( Category $ExchangeTerm ) {
         $this->categories->add( $ExchangeTerm );
-
-        return $this;
-    }
-
-    public function get_developer( $CollectionItemKey = '' ) {
-        $developer = $CollectionItemKey ?
-            $this->developers->offsetGet( $CollectionItemKey ) :
-            $this->developers->first();
-
-        return $developer;
-    }
-
-    public function add_developer( Developer $ExchangeTerm ) {
-        $this->developers->add( $ExchangeTerm );
 
         return $this;
     }
@@ -117,8 +96,7 @@ class ExchangeProduct extends ExchangePost {
         $el                       = parent::fetch();
         $el['term_relationships'] = array();
 
-        array_map( function ( Identifiable $item ) use ( &$el ) {
-
+        $fetch = function ( Identifiable $item ) use ( &$el ) {
             if ( $this->get_id() && $item->get_id() ) {
                 $el['term_relationships'][] = array(
                     'object_id'        => $this->get_id(),
@@ -126,12 +104,10 @@ class ExchangeProduct extends ExchangePost {
                     'term_order'       => 0,
                 );
             }
+        };
 
-        },
-            $this->categories->fetch(),
-            $this->attributes->fetch(),
-            $this->developers->fetch()
-        );
+        array_map( $fetch, $this->categories->fetch() );
+        array_map( $fetch, $this->attributes->fetch() );
 
         return $el;
     }
@@ -225,7 +201,6 @@ class ExchangeProduct extends ExchangePost {
         };
 
         $this->categories->walk( $update_object_terms );
-        $this->developers->walk( $update_object_terms );
 
         // @todo
 //        if ( ! $this->attributes->isEmpty() ) {

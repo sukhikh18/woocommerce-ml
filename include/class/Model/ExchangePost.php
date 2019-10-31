@@ -30,54 +30,14 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 	public $warehouses = array();
 
+	public $properties = array();
+
 	/**
 	 * @var \WP_Post
 	 * @sql FROM $wpdb->posts
 	 *      WHERE ID = %d
 	 */
 	private $post;
-
-	static function get_structure( $key ) {
-		$structure = array(
-			'posts'    => array(
-				'ID'                    => '%d',
-				'post_author'           => '%d',
-				'post_date'             => '%s',
-				'post_date_gmt'         => '%s',
-				'post_content'          => '%s',
-				'post_title'            => '%s',
-				'post_excerpt'          => '%s',
-				'post_status'           => '%s',
-				'comment_status'        => '%s',
-				'ping_status'           => '%s',
-				'post_password'         => '%s',
-				'post_name'             => '%s',
-				'to_ping'               => '%s',
-				'pinged'                => '%s',
-				'post_modified'         => '%s',
-				'post_modified_gmt'     => '%s',
-				'post_content_filtered' => '%s',
-				'post_parent'           => '%d',
-				'guid'                  => '%s',
-				'menu_order'            => '%d',
-				'post_type'             => '%s',
-				'post_mime_type'        => '%s',
-				'comment_count'         => '%d',
-			),
-			'postmeta' => array(
-				'meta_id'    => '%d',
-				'post_id'    => '%d',
-				'meta_key'   => '%s',
-				'meta_value' => '%s',
-			)
-		);
-
-		if ( isset( $structure[ $key ] ) ) {
-			return $structure[ $key ];
-		}
-
-		return false;
-	}
 
 	function prepare( $mode = '' ) {
 		return true;
@@ -308,7 +268,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 		$table = Register::get_exchange_table_name();
 
-		$product_id         = $this->get_id();
+		$product_id         = $this->get_id() ? intval($this->get_id()) : 0;
 		$xml                = $this->get_external();
 		$name               = $this->get_title();
 		$desc               = $this->get_content();
@@ -325,20 +285,19 @@ class ExchangePost implements Identifiable, ExternalCode {
 		// @todo set tax relative
 		$this->categories->walk( $term_list_pluck );
 		// $this->attributes->walk( $term_list_pluck );
-		$this->developers->walk( $term_list_pluck );
 		$this->warehouses->walk( $term_list_pluck );
 
 		$relationships_list = serialize( $relationships_list );
 
 		$columns      = array( 'product_id', 'xml', 'name', 'desc', 'meta_list', 'relationships_list' );
-		$values       = compact( $columns );
-		$values_args  = implode( ', ', array_map( function ( $value ) {
-			return "'$value'";
-		}, $values ) );
-		$columns_args = implode( ", \r\n", array_map( function ( $column ) {
-			return "`$column` = VALUES(`$column`)";
-		}, $columns ) );
+		// $values_args  = implode( ', ', array_map( function ( $value ) {
+		// 	return "'$value'";
+		// }, $values ) );
+		// $columns_args = implode( ", \r\n", array_map( function ( $column ) {
+		// 	return "`$column` = VALUES(`$column`)";
+		// }, $columns ) );
 
-		$wpdb->query( "INSERT INTO $table VALUES ($values_args) ON DUPLICATE KEY UPDATE $columns_args;" );
+		// $wpdb->query( "INSERT INTO $table VALUES ($values_args) ON DUPLICATE KEY UPDATE $columns_args;" );
+		$q = $wpdb->insert( $table, compact( $columns ) );
 	}
 }

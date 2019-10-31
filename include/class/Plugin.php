@@ -213,6 +213,7 @@ class Plugin {
 			'init',
 			'file',
 			'import',
+			'import_temporary',
 			'import_posts',
 			'import_relationships',
 			'deactivate',

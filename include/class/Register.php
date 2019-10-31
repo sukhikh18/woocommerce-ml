@@ -296,8 +296,8 @@ class Register {
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 			dbDelta( "CREATE TABLE {$tmp_exchange_table_name} (
-                `product_id` bigint(20) unsigned NOT NULL DEFAULT '0' PRIMARY KEY,
-                `xml` varchar(100) NOT NULL,
+                `product_id` bigint(20) unsigned NULL DEFAULT '0',
+                `xml` varchar(100) NOT NULL PRIMARY KEY,
                 `name` varchar(200) NULL,
                 `desc` longtext NULL,
                 `meta_list` longtext NULL,

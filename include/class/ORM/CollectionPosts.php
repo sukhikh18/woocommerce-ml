@@ -5,7 +5,6 @@ namespace NikolayS93\Exchanger\ORM;
 use NikolayS93\Exchanger\Model\Abstracts\Term;
 use NikolayS93\Exchanger\Model\Attribute;
 use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\Developer;
 use NikolayS93\Exchanger\Model\ExchangePost;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
 use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
@@ -128,7 +127,6 @@ class CollectionPosts extends Collection {
 			};
 
 			$product->categories->walk( $extract_external );
-			$product->developers->walk( $extract_external );
 			$product->warehouses->walk( $extract_external );
 			// $product->attributes->get_all_values()->walk( $extract_external );
 		} );
@@ -164,7 +162,6 @@ class CollectionPosts extends Collection {
 				};
 
 				$product->categories->walk( $put_terms );
-				$product->developers->walk( $put_terms );
 				$product->warehouses->walk( $put_terms );
 				// $product->attributes->get_all_values()->walk( $put_terms );
 			} );
