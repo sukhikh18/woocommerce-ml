@@ -163,15 +163,19 @@ class REST_Controller {
 				Error()->add_message( $user );
 			}
 
-			// init();
-			// file();
-			// import();
-			// deactivate();
-			// complete();
-			call_user_func( array(
+			$route = array(
 				$this,
 				false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode
-			) );
+			);
+
+			if( is_callable($route) ) {
+				// init();
+				// file();
+				// import();
+				// deactivate();
+				// complete();
+				call_user_func( $route );
+			}
 		}
 	}
 
@@ -298,40 +302,47 @@ class REST_Controller {
 	public function query() {
 	}
 
+	private function parse_items( &$Parser, $Dispatcher ) {
+		$filename = Request::get_file();
+		if ( ! $file = Plugin()->get_exchange_file( $filename ) ) {
+			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $filename ) );
+		}
+
+		if( null === $Parser ) {
+			$Parser = new Parser();
+		}
+
+		if( null === $Dispatcher ) {
+			$Dispatcher = \CommerceMLParser\Parser::getInstance();
+		}
+
+		$Dispatcher->addListener( "ProductEvent", array( $Parser, 'product_event' ) );
+		$Dispatcher->addListener( "OfferEvent", array( $Parser, 'offer_event' ) );
+		$Dispatcher->addListener( "CategoryEvent", array( $Parser, 'category_event' ) );
+		$Dispatcher->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) );
+		$Dispatcher->addListener( "PropertyEvent", array( $Parser, 'property_event' ) );
+		$Dispatcher->parse( $file );
+	}
+
 	/**
 	 * D. Пошаговая загрузка данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
 	 * @print 'progress|success|failure'
 	 */
-	public function import() {
-		$file = Request::get_file();
+	public function import($Parser = null, $Dispatcher = null, $Update = null) {
 
-		if ( ! $files = Plugin()->get_exchange_files( $file['path'] ) ) {
-			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $file['path'] ) );
-		}
-
-		$mode = plugin()->get_mode();
-
-		$Parser = new Parser( $files );
-		$Update = new Update();
-
-		$Parser
-			->listen_category()
-			->listen_developer()
-			->listen_warehouse()
-			->listen_property()
-			->listen_product()
-			->listen_offer()
-			->parse();
-
-		/**
-		 * Get. Slice. Fill
-		 */
+		$this->parse_items( $Parser, $Dispatcher );
 		$products   = $Parser->get_products();
 		$categories = $Parser->get_categories();
 		$developers = $Parser->get_developers();
 		$warehouses = $Parser->get_warehouses();
 		$attributes = $Parser->get_properties();
+
+		$mode = plugin()->get_mode();
+
+		if( null === $Update ) {
+			$Update = new Update();
+		}
 
 		if ( $products->count() || $categories->count() || $developers->count() || $warehouses->count() || $attributes->count() ) {
 			Transaction()->set_transaction_mode();

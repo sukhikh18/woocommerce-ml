@@ -21,14 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Parser {
-
-//	use Singleton;
-
-	private $files;
-
-	/** @var \CommerceMLParser\Parser */
-	private $CommerceParser;
-
 	/** @var CollectionTerms $arCategories */
 	private $arCategories;
 	/** @var CollectionTerms $arDevelopers */
@@ -49,10 +41,7 @@ class Parser {
 	private $requisites_as_properties;
 	private $requisites_exclude;
 
-	function __construct( $files = array() ) {
-		$this->files          = $files;
-		$this->CommerceParser = \CommerceMLParser\Parser::getInstance();
-
+	function __construct() {
 		$this->arCategories = new CollectionTerms();
 		$this->arDevelopers = new CollectionTerms();
 		$this->arWarehouses = new CollectionTerms();
@@ -98,90 +87,12 @@ class Parser {
 		) );
 	}
 
-	public function get_filenames() {
-	    return array_map(function($file) {
-	        return basename($file);
-        }, $this->files);
-    }
-
 	//	public function addOwnerListener()
 	//	{
 	//		$this->CommerceParser->addListener("OwnerEvent", function (Event\OwnerEvent $ownerEvent) {
 	//			$Partner = $ownerEvent->getPartner();
 	//		});
 	//	}
-
-	/**
-	 * @note Products has requisites
-	 */
-	public function listen_product() {
-		$this->CommerceParser->addListener( "ProductEvent",
-			array( $this, 'parse_products_event' ) );
-
-		return $this;
-	}
-
-	public function listen_offer() {
-		$this->CommerceParser->addListener( "OfferEvent",
-			array( $this, 'parse_offers_event' ) );
-
-		return $this;
-	}
-
-	public function listen_category() {
-		$this->CommerceParser->addListener( "CategoryEvent",
-			array( $this, 'parse_categories_event' ) );
-
-		if ( ! empty( $this->requisites_as_categories ) ) {
-			$this->listen_product();
-		}
-
-		return $this;
-	}
-
-	public function listen_developer() {
-		$this->listen_product();
-
-		if ( ! empty( $this->requisites_as_developers ) ) {
-			$this->listen_product();
-		}
-
-		return $this;
-	}
-
-	public function listen_warehouse() {
-		$this->CommerceParser->addListener( "WarehouseEvent",
-			array( $this, 'parse_warehouses_event' ) );
-
-		if ( ! empty( $this->requisites_as_warehouses ) ) {
-			$this->listen_product();
-		}
-
-		return $this;
-	}
-
-	public function listen_property() {
-		$this->CommerceParser->addListener( "PropertyEvent",
-			array( $this, 'parse_properties_event' ) );
-
-		if ( ! empty( $this->requisites_as_properties ) ) {
-			$this->listen_product();
-		}
-
-		return $this;
-	}
-
-	function parse() {
-		array_map( function ( $file ) {
-			if ( ! is_readable( $file ) ) {
-				Error()->add_message( sprintf( __( 'File %s is not readable.' ), $file ), "Warning", true );
-			}
-
-			$this->CommerceParser->parse( $file );
-		}, $this->files );
-
-		return $this;
-	}
 
 	public function get_categories() {
 		return $this->arCategories;
@@ -239,7 +150,7 @@ class Parser {
 		}
 	}
 
-	function parse_categories_event( Event\CategoryEvent $categoryEvent ) {
+	function category_event( Event\CategoryEvent $categoryEvent ) {
 		/** @todo check this */
 		// $flatCategory = $categoryEvent->getFlatCategories()->fetch();
 
@@ -253,7 +164,7 @@ class Parser {
 		}
 	}
 
-	function parse_warehouses_event( Event\WarehouseEvent $warehouseEvent ) {
+	function warehouse_event( Event\WarehouseEvent $warehouseEvent ) {
 		/** @var \CommerceMLParser\Model\Warehouse */
 		$warehouse = $warehouseEvent->getWarehouse();
 
@@ -264,7 +175,7 @@ class Parser {
 		$this->arWarehouses->add( new Warehouse( $term, $warehouse->getId() ) );
 	}
 
-	function parse_properties_event( Event\PropertyEvent $propertyEvent ) {
+	function property_event( Event\PropertyEvent $propertyEvent ) {
 		/** @var \CommerceMLParser\Model\Property */
 		$property      = $propertyEvent->getProperty();
 
@@ -310,7 +221,7 @@ class Parser {
 		return $requisites;
 	}
 
-	function parse_products_event( Event\ProductEvent $productEvent ) {
+	function product_event( Event\ProductEvent $productEvent ) {
 		/** @var \CommerceMLParser\Model\Product $product */
 		$product = $productEvent->getProduct();
 
@@ -424,7 +335,7 @@ class Parser {
 		$this->arProducts->add( $ExchangeProduct );
 	}
 
-	function parse_offers_event( Event\OfferEvent $offerEvent ) {
+	function offer_event( Event\OfferEvent $offerEvent ) {
 		/** @var \CommerceMLParser\Model\Offer */
 		$offer = $offerEvent->getOffer();
 		// @list($product_id, $offer_id) = explode('#', $id);
