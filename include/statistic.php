@@ -5,7 +5,6 @@ namespace NikolayS93\Exchanger;
 if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
 	function the_statistic_table( Parser $Parser ) {
 		$newCatsCount = 0;
-		$newDevsCount = 0;
 		$newProductsCount = 0;
 		$orphanedProducts = 0;
 		$newOffersCount = 0;
@@ -48,13 +47,6 @@ if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
 		foreach ( $properties as $property ) {
 			foreach ( $property->get_values() as $term ) {
 				$attributeValues[] = $term;
-			}
-		}
-
-		$developers = $Parser->get_developers();
-		foreach ( $developers as $dev ) {
-			if ( ! $dev->get_id() ) {
-				$newDevsCount ++;
 			}
 		}
 
@@ -107,11 +99,6 @@ if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
 				<td><?= sizeof( $attributeValues ); ?></td>
 			</tr>
 			<tr>
-				<td><?= __( 'Manufacturers count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $developers ); ?> (<?= $newDevsCount ?>
-					<?= _n( 'new', 'new', $newDevsCount, Plugin::DOMAIN ) ?>)</td>
-			</tr>
-			<tr>
 				<td><?= __( 'Warehouses count', Plugin::DOMAIN ); ?></td>
 				<td><?= sizeof( $warehouses ) ?></td>
 			</tr>
@@ -149,7 +136,6 @@ if( !function_exists('get_term_statistic') ) {
 	function get_term_statistic( Parser $Parser ) {
 		$categories = $Parser->get_categories();
 		$properties = $Parser->get_properties();
-//		$developers = $Parser->get_developers();
 		$warehouses = $Parser->get_warehouses();
 
 //		foreach ( $properties as $property ) {
@@ -165,8 +151,6 @@ if( !function_exists('get_term_statistic') ) {
 		$html .= "\n" . '   </div>';
 
 		$html .= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
-		// $html.= "\n" . '       <h3>Производители</h3>';
-		// $html.= "\n" . '   ' . print_r( array_slice($developers, 0, 2), 1 );
 		$html .= "\n" . '       <h3>Свойства</h3>';
 		$html .= "\n" . '   ' . print_r( $properties, 1 );
 		$html .= "\n" . '   </div>';
@@ -184,19 +168,30 @@ function ajax_update_statistic() {
 		wp_die();
 	}
 
-	$filename = ! empty( $_GET['filename'] ) ? sanitize_text_field( $_GET['filename'] ) : null;
+	$filename = null;
+	if( ! empty( $_GET['filename'] ) ) {
+		$filename = is_array( $_GET['filename'] ) ? array_filter( $_GET['filename'], 'sanitize_text_field' ) :
+			sanitize_text_field( $_GET['filename'] );
+	}
 
-	$files    = Plugin()->get_exchange_files( $filename );
+	$Parser = new Parser();
 
-	$Parser = new Parser( $files );
-	$Parser
-		->listen_product()
-		->listen_offer()
-		->listen_category()
-		->listen_developer()
-		->listen_warehouse()
-		->listen_property()
-		->parse();
+	$Dispatcher = Dispatcher();
+	$Dispatcher
+		->addListener( "ProductEvent", array( $Parser, 'product_event' ) )
+		->addListener( "OfferEvent", array( $Parser, 'offer_event' ) )
+		->addListener( "CategoryEvent", array( $Parser, 'category_event' ) )
+		->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) )
+		->addListener( "PropertyEvent", array( $Parser, 'property_event' ) );
+
+	if( is_array( $filename ) ) {
+		foreach ($filename as $file) {
+			$Dispatcher->parse( $file );
+		}
+	}
+	else {
+		$Dispatcher->parse( $filename );
+	}
 
 	$result = array(
 		'table' => '',

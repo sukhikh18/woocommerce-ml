@@ -38,9 +38,10 @@ class Update {
 		$this->progress = intval( Plugin()->get_setting( 'progress', 0, 'status' ) );
 
 		$this->results = array(
-			'create' => 0,
-			'update' => 0,
-			'meta'   => 0,
+			'create'        => 0,
+			'update'        => 0,
+			'meta'          => 0,
+			'relationships' => 0,
 		);
 	}
 
@@ -101,12 +102,12 @@ class Update {
 		// Count products will be updated
 		$this->progress += $products->count();
 
-		if( 'off' === $post_mode = Plugin()->get_setting( 'post_mode' ) ) {
+		if ( 'off' === $post_mode = Plugin()->get_setting( 'post_mode' ) ) {
 			return $this;
 		}
 
 //		$products->walk( array($this, 'update_products_step') );
-		$products->walk( function( $product ) {
+		$products->walk( function ( $product ) {
 			$product->write_temporary_data();
 		} );
 
@@ -117,7 +118,7 @@ class Update {
 	 * @param ExchangePost $product
 	 */
 	public function update_products_step( $product ) {
-		/** @var string $post_mode use get_option (has cache)*/
+		/** @var string $post_mode use get_option (has cache) */
 		$post_mode = Plugin()->get_setting( 'post_mode' );
 		if ( $product->prepare( $post_mode ) ) {
 			if ( ! $product->get_id() ) {
@@ -377,7 +378,7 @@ class Update {
 		$update_relationships = function ( $post ) {
 			if ( $post_id = $post->get_id() ) {
 				if ( method_exists( $post, 'update_object_terms' ) ) {
-					$this->results['update'] += $post->update_object_terms();
+					$this->results['relationships'] += $post->update_object_terms();
 				}
 
 				if ( method_exists( $post, 'update_attributes' ) ) {

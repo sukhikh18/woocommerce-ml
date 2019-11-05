@@ -92,13 +92,13 @@ class ExchangeProduct extends ExchangePost {
     }
 
     /****************************************************** CRUD ******************************************************/
-    public function fetch() {
-        $el                       = parent::fetch();
-        $el['term_relationships'] = array();
+    public function fetch( $key = null ) {
+        $data                       = parent::fetch();
+        $data['term_relationships'] = array();
 
-        $fetch = function ( Identifiable $item ) use ( &$el ) {
+        $fetch = function ( Identifiable $item ) use ( &$data ) {
             if ( $this->get_id() && $item->get_id() ) {
-                $el['term_relationships'][] = array(
+                $data['term_relationships'][] = array(
                     'object_id'        => $this->get_id(),
                     'term_taxonomy_id' => $item->get_id(),
                     'term_order'       => 0,
@@ -109,7 +109,11 @@ class ExchangeProduct extends ExchangePost {
         array_map( $fetch, $this->categories->fetch() );
         array_map( $fetch, $this->attributes->fetch() );
 
-        return $el;
+        if( null === $key || ($key && !isset($data[ $key ])) ) {
+            return $data;
+        }
+
+        return $data[ $key ];
     }
 
     function update_attributes() {

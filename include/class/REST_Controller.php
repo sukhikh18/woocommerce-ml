@@ -5,6 +5,8 @@ namespace NikolayS93\Exchanger;
 use NikolayS93\Exchanger\Model\ExchangeOffer;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
 use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\ORM\CollectionPosts;
+use NikolayS93\Exchanger\ORM\CollectionTerms;
 use WP_REST_Server;
 use function NikolayS93\Exchange\the_statistic_table;
 
@@ -303,42 +305,54 @@ class REST_Controller {
 	public function query() {
 	}
 
-	private function parse_items( &$Parser, $Dispatcher ) {
-		$filename = Request::get_file();
-		if ( ! $file = Plugin()->get_exchange_file( $filename ) ) {
-			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $filename ) );
-		}
+	private function get_message_by_filename( $file_name = '' ) {
+		switch ( true ) {
+			case 0 === strpos( $file_name, 'price' ):
+				return "%s из %s цен обработано.";
 
-		if( null === $Parser ) {
-			$Parser = new Parser();
-		}
+			case 0 === strpos( $file_name, 'rest' ):
+				return '%s из %s запасов обработано.';
 
-		if( null === $Dispatcher ) {
-			$Dispatcher = \CommerceMLParser\Parser::getInstance();
+			default:
+				return '%s из %s предложений обработано.'
 		}
-
-		$Dispatcher->addListener( "ProductEvent", array( $Parser, 'product_event' ) );
-		$Dispatcher->addListener( "OfferEvent", array( $Parser, 'offer_event' ) );
-		$Dispatcher->addListener( "CategoryEvent", array( $Parser, 'category_event' ) );
-		$Dispatcher->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) );
-		$Dispatcher->addListener( "PropertyEvent", array( $Parser, 'property_event' ) );
-		$Dispatcher->parse( $file );
 	}
 
 	/**
 	 * D. Пошаговая загрузка данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
+	 *
+	 * @param Parser $Parser
+	 * @param \CommerceMLParser\Parser $Dispatcher
+	 * @param Update $Update
 	 * @print 'progress|success|failure'
 	 */
-	public function import($Parser = null, $Dispatcher = null, $Update = null) {
+	public function import( $Parser = null, $Update = null ) {
 
-		$this->parse_items( $Parser, $Dispatcher );
+		$file = Plugin()->get_exchange_file( Request::get_file() );
+		file_is_readble( $file, true );
+
+		$Parser = new Parser();
+
+		$Dispatcher = Dispatcher();
+		$Dispatcher
+			->addListener( "ProductEvent", array( $Parser, 'product_event' ) )
+			->addListener( "OfferEvent", array( $Parser, 'offer_event' ) )
+			->addListener( "CategoryEvent", array( $Parser, 'category_event' ) )
+			->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) )
+			->addListener( "PropertyEvent", array( $Parser, 'property_event' ) )
+			->parse( $file );
+
+		/** @var CollectionPosts $products */
 		$products   = $Parser->get_products();
+		/** @var  $offers */
 		$offers     = $Parser->get_offers();
+		/** @var CollectionTerms $categories */
 		$categories = $Parser->get_categories();
+		/** @var CollectionTerms $warehouses */
 		$warehouses = $Parser->get_warehouses();
+		/** @var CollectionTerms $attributes */
 		$attributes = $Parser->get_properties();
-
 
 		$mode = plugin()->get_mode();
 
@@ -356,6 +370,8 @@ class REST_Controller {
 			$Update
 				->update_products( $products )
 				->update_products_meta( $products );
+
+			plugin()->reset_mode();
 
 			$Update->stop( array(
 				"Записаны временные данные товаров",
@@ -399,62 +415,33 @@ class REST_Controller {
 			if ( 'import_relationships' !== $mode ) {
 				$Update
 					->update_offers( $offers )
+					->relationships( $offers )
 					->update_offers_meta( $offers );
 
-				/**
-				 * Build answer message
-				 */
-				$filenames = $Parser->get_filenames();
-				if ( ! empty( $filenames ) ) {
-					$filename = current( $filenames );
-
-					switch ( true ) {
-						case 0 === strpos( $filename, 'price' ):
-							$progressMessage = "{$Update->progress} из $offersCount цен обработано.";
-							break;
-
-						case 0 === strpos( $filename, 'rest' ):
-							$progressMessage = "{$Update->progress} из $offersCount запасов обработано.";
-							break;
-					}
+				if( $Update->progress < $offersCount ) {
+					// Set mode for retry
+					$Update->set_status( 'progress' );
 				}
-
-				if ( empty( $progressMessage ) ) {
-					$progressMessage = "{$Update->progress} из $offersCount предложений обработано.";
-				}
-
-				// Set mode for go away or retry
-				plugin()->set_mode( $Update->progress > $offersCount ? 'import_relationships' : 'import_posts',
-					$Update->set_status( 'progress' ) );
-
-				$Update
-					->stop( array(
-						$progressMessage,
-						$Update->results['meta'] . " произвольных записей товаров обновлено."
-					) );
-			} // third step: import posts relationships
-			else {
-
-				$Update
-					->relationships( $offers )
-					->set_status( $Update->progress < $offersCount ? 'progress' : 'success' );
-
-				if ( 'success' == $Update->status ) {
+				elseif ( 'success' == $Update->status ) {
 					if ( floatval( $this->version ) < 3 ) {
 						plugin()->set_mode( 'deactivate', $Update->set_status( 'progress' ) );
 					}
-				} else {
-					// retry
-					plugin()->set_mode( 'import_relationships', $Update );
 				}
 
 				$Update
+					->stop( array(
+						sprintf( $this->get_message_by_filename( Request::get_file()['name'] ), $Update->progress, $offersCount ),
+						$Update->results['meta'] . " произвольных записей товаров обновлено."
+					) );
+
+				$Update
 					->stop( printf( '%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
-						$Update->results['update'],
+						$Update->results['relationships'],
 						$offers->count(),
 						$Update->progress,
 						$offersCount ) );
-			}
+
+			} // third step: import posts relationships
 		}
 
 		if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {

@@ -214,30 +214,51 @@ class ExchangePost implements Identifiable, ExternalCode {
 	}
 
 	/****************************************************** CRUD ******************************************************/
-	function fetch() {
-		return array(
-			'posts'    => $this->post,
+	function fetch( $key = null ) {
+		$data = array(
+			'post'    => array(
+				'post_author'    => $this->post->post_author,
+				'post_content'   => $this->post->post_content,
+				'post_title'     => $this->post->post_title,
+				'post_excerpt'   => $this->post->post_excerpt,
+				'post_status'    => $this->post->post_status,
+				'post_name'      => $this->post->post_name,
+				'post_type'      => $this->post->post_type,
+				'post_mime_type' => $this->post->post_mime_type,
+			),
 			'postmeta' => $this->get_meta(),
 		);
+
+		if( null === $key || ($key && !isset($data[ $key ])) ) {
+			return $data;
+		}
+
+		return $data[ $key ];
 	}
 
 	public function update() {
-		global $wpdb;
+		// global $wpdb;
 
 		// @todo add title/content..
-		$wpdb->update(
-			$wpdb->posts,
-			// set
-			array(
-				'post_status'       => 'publish',
-				'post_modified'     => current_time( 'mysql' ),
-				'post_modified_gmt' => current_time( 'mysql', 1 )
-			),
-			// where
-			array(
-				'post_mime_type' => $this->get_external(),
-			)
-		);
+		// $wpdb->update(
+		// 	$wpdb->posts,
+		// 	// set
+		// 	array(
+		// 		'post_status'       => 'publish',
+		// 		'post_modified'     => current_time( 'mysql' ),
+		// 		'post_modified_gmt' => current_time( 'mysql', 1 )
+		// 	),
+		// 	// where
+		// 	array(
+		// 		'post_mime_type' => $this->get_external(),
+		// 	)
+		// );
+
+		if( $_post = $this->fetch('post') ) {
+			return wp_update_post( $_post );
+		}
+
+		return 0;
 	}
 
 	public function deactivate() {
@@ -255,12 +276,15 @@ class ExchangePost implements Identifiable, ExternalCode {
 		);
 	}
 
+	/**
+	 * @return Int insert post ID or 0
+	 */
 	public function create() {
-		$res   = $this->fetch();
-		$post  = $res['posts'];
-		$_post = $post->to_array();
+		if( $_post = $this->fetch('post') ) {
+			return wp_insert_post( $_post );
+		}
 
-		return wp_insert_post( $_post );
+		return 0;
 	}
 
 	public function write_temporary_data() {

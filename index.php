@@ -52,6 +52,21 @@ if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
     define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
+if( ! function_exists( 'file_is_readble' ) ) {
+	function file_is_readble( $path, $show_error = false ) {
+		if ( is_file( $path ) && is_readable( $path ) ) {
+			return true;
+		}
+		else {
+			if( $show_error ) {
+				Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
+			}
+
+			return false;
+		}
+	}
+}
+
 if ( ! function_exists( 'include_plugin_file' ) ) {
 	/**
 	 * Safe dynamic expression include.
@@ -62,7 +77,8 @@ if ( ! function_exists( 'include_plugin_file' ) ) {
 		if ( 0 !== strpos( $path, PLUGIN_DIR ) ) {
 			$path = PLUGIN_DIR . $path;
 		}
-		if ( is_file( $path ) && is_readable( $path ) ) {
+
+		if( file_is_readble( $path ) ) {
 			require $path; // phpcs:ignore
 		}
 	}
@@ -110,27 +126,42 @@ if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php'
 	);
 }
 
-/**
- * Returns the single instance of this plugin, creating one if needed.
- *
- * @return Plugin
- */
-function plugin() {
-	return Plugin::get_instance();
+if( ! function_exists( __NAMESPACE__ . '\plugin' ) ) {
+	/**
+	 * Returns the single instance of this plugin, creating one if needed.
+	 *
+	 * @return Plugin
+	 */
+	function plugin() {
+		return Plugin::get_instance();
+	}
 }
 
-/**
- * @return Error
- */
-function error() {
-	return Error::get_instance();
+if( ! function_exists( __NAMESPACE__ . '\error' ) ) {
+	/**
+	 * @return Error
+	 */
+	function error() {
+		return Error::get_instance();
+	}
 }
 
-/**
- * @return Transaction
- */
-function transaction() {
-	return Transaction::get_instance();
+if( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
+	/**
+	 * @return Transaction
+	 */
+	function transaction() {
+		return Transaction::get_instance();
+	}
+}
+
+if( ! function_exists( __NAMESPACE__ . '\dispatcher' ) ) {
+	/**
+	 * @return Dispatcher
+	 */
+	function dispatcher() {
+		return \CommerceMLParser\Parser::getInstance();
+	}
 }
 
 /**
