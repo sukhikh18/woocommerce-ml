@@ -156,7 +156,7 @@ if ( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
 
 if ( ! function_exists( __NAMESPACE__ . '\dispatcher' ) ) {
 	/**
-	 * @return Dispatcher
+	 * @return \CommerceMLParser\Parser
 	 */
 	function dispatcher() {
 		return \CommerceMLParser\Parser::getInstance();
@@ -211,14 +211,8 @@ function ajax_1c4wp_exchange() {
 	wp_die();
 }
 
-// Save external Fields
-add_action( 'woocommerce_process_product_meta',
-	array( $Register, 'sanitize_product_external_code_field' ) );
-
-}, 20 );
-
 add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mode ) {
-	if ( 'product' != $post->post_status ) {
+	if ( 'product' !== $post->post_status ) {
 		return $status;
 	}
 

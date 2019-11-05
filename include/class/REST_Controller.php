@@ -47,53 +47,77 @@ class REST_Controller {
 	}
 
 	function register_routes() {
-		register_rest_route( $this->namespace, '/status/', array(
+		register_rest_route(
+			$this->namespace,
+			'/status/',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'status' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'status' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 
-		register_rest_route( $this->namespace, '/init/', array(
+		register_rest_route(
+			$this->namespace,
+			'/init/',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'init' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'init' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 
-		register_rest_route( $this->namespace, '/file/', array(
+		register_rest_route(
+			$this->namespace,
+			'/file/',
 			array(
-				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'file' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'file' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 
-		register_rest_route( $this->namespace, '/import/', array(
+		register_rest_route(
+			$this->namespace,
+			'/import/',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'import' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'import' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 
-		register_rest_route( $this->namespace, '/deactivate/', array(
+		register_rest_route(
+			$this->namespace,
+			'/deactivate/',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'deactivate' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'deactivate' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 
-		register_rest_route( $this->namespace, '/complete/', array(
+		register_rest_route(
+			$this->namespace,
+			'/complete/',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'complete' ),
-				'permission_callback' => array( $this, 'has_permissions' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'complete' ),
+					'permission_callback' => array( $this, 'has_permissions' ),
+				),
+			)
+		);
 	}
 
 	public function status() {
@@ -109,14 +133,14 @@ class REST_Controller {
 		if ( is_user_logged_in() ) {
 			$user         = wp_get_current_user();
 			$user_id      = $user->ID;
-			$method_error = __( "User not logged in", Plugin::DOMAIN );
+			$method_error = __( 'User not logged in', Plugin::DOMAIN );
 		} elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
 			$user         = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
 			$user_id      = $user->ID;
-			$method_error = __( "Invalid cookie", Plugin::DOMAIN );
+			$method_error = __( 'Invalid cookie', Plugin::DOMAIN );
 		} else {
 			$user_id      = 0;
-			$method_error = __( "User not identified", Plugin::DOMAIN );
+			$method_error = __( 'User not identified', Plugin::DOMAIN );
 		}
 
 		if ( ! $user_id ) {
@@ -124,8 +148,13 @@ class REST_Controller {
 		}
 
 		if ( ! $this->has_permissions( $user_id ) ) {
-			$user = new \WP_Error( 'AUTH_ERROR', sprintf( "User %s has not permissions",
-				get_user_meta( $user_id, 'nickname', true ) ) );
+			$user = new \WP_Error(
+				'AUTH_ERROR',
+				sprintf(
+					'User %s has not permissions',
+					get_user_meta( $user_id, 'nickname', true )
+				)
+			);
 		}
 
 		return $user;
@@ -138,7 +167,7 @@ class REST_Controller {
 	 */
 	function exchange() {
 		if ( ! headers_sent() ) {
-			header( "Content-Type: text/plain; charset=" . EXCHANGE_CHARSET );
+			header( 'Content-Type: text/plain; charset=' . EXCHANGE_CHARSET );
 		}
 
 		Error::set_strict_mode();
@@ -150,11 +179,11 @@ class REST_Controller {
 		}
 
 		if ( ! ( $type = Request::get_type() ) || ! in_array( $type, array( 'catalog' ) ) ) {
-			Error()->add_message( "Type no support" );
+			Error()->add_message( 'Type no support' );
 		}
 
 		if ( ! $mode = plugin()->get_mode() ) {
-			Error()->add_message( "Mode no support" );
+			Error()->add_message( 'Mode no support' );
 		}
 
 		if ( 'checkauth' === $mode ) {
@@ -167,7 +196,7 @@ class REST_Controller {
 
 			$route = array(
 				$this,
-				false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode
+				false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode,
 			);
 
 			if ( is_callable( $route ) ) {
@@ -187,6 +216,7 @@ class REST_Controller {
 	 * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
 	 * A. Начало сеанса
 	 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
+	 *
 	 * @print 'success\nCookie\nCookie_value'
 	 */
 	public function checkauth() {
@@ -197,14 +227,14 @@ class REST_Controller {
 				}
 
 				list( , $auth_value ) = explode( ' ', $_SERVER[ $server_key ], 2 );
-				$auth_value = base64_decode( $auth_value );
+				$auth_value           = base64_decode( $auth_value );
 				list( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) = explode( ':', $auth_value );
 
 				break;
 			}
 
 			if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
-				Error()->add_message( "No authentication credentials" );
+				Error()->add_message( 'No authentication credentials' );
 			}
 
 			$user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
@@ -216,12 +246,20 @@ class REST_Controller {
 		}
 
 		if ( ! $this->has_permissions( $user ) ) {
-			Error()->add_message( sprintf( "No %s user permissions",
-				get_user_meta( $user->ID, 'nickname', true ) ) );
+			Error()->add_message(
+				sprintf(
+					'No %s user permissions',
+					get_user_meta( $user->ID, 'nickname', true )
+				)
+			);
 		}
 
-		$expiration  = EXCHANGE_START_TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
-				false );
+		$expiration  = EXCHANGE_START_TIMESTAMP + apply_filters(
+			'auth_cookie_expiration',
+			DAY_IN_SECONDS,
+			$user->ID,
+			false
+		);
 		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
 
 		exit( "success\n" . EXCHANGE_COOKIE_NAME . "\n$auth_cookie" );
@@ -247,6 +285,7 @@ class REST_Controller {
 
 		/**
 		 * Option is empty then exchange end
+		 *
 		 * @var [type]
 		 */
 		if ( ! $start = get_option( 'exchange_start-date', '' ) ) {
@@ -275,9 +314,10 @@ class REST_Controller {
 	 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
 	 *
 	 * Загрузка CommerceML2 файла или его части в виде POST. (Пишет поток в файл и распаковывает его)
+	 *
 	 * @print string 'success'
 	 */
-	public function file( $requested = "php://input" ) {
+	public function file( $requested = 'php://input' ) {
 		$Plugin = Plugin();
 		$file   = Request::get_file();
 		// get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
@@ -308,13 +348,13 @@ class REST_Controller {
 	private function get_message_by_filename( $file_name = '' ) {
 		switch ( true ) {
 			case 0 === strpos( $file_name, 'price' ):
-				return "%s из %s цен обработано.";
+				return '%s из %s цен обработано.';
 
 			case 0 === strpos( $file_name, 'rest' ):
 				return '%s из %s запасов обработано.';
 
 			default:
-				return '%s из %s предложений обработано.'
+				return '%s из %s предложений обработано.';
 		}
 	}
 
@@ -322,13 +362,13 @@ class REST_Controller {
 	 * D. Пошаговая загрузка данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
 	 *
-	 * @param Parser $Parser
+	 * @param Parser                   $Parser
 	 * @param \CommerceMLParser\Parser $Dispatcher
-	 * @param Update $Update
+	 * @param Update                   $update
 	 *
 	 * @print 'progress|success|failure'
 	 */
-	public function import( $Parser = null, $Update = null ) {
+	public function import( $Parser = null, $update = null ) {
 
 		$file = Plugin()->get_exchange_file( Request::get_file() );
 		file_is_readble( $file, true );
@@ -336,13 +376,12 @@ class REST_Controller {
 		$Parser = new Parser();
 
 		$Dispatcher = Dispatcher();
-		$Dispatcher
-			->addListener( "ProductEvent", array( $Parser, 'product_event' ) )
-			->addListener( "OfferEvent", array( $Parser, 'offer_event' ) )
-			->addListener( "CategoryEvent", array( $Parser, 'category_event' ) )
-			->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) )
-			->addListener( "PropertyEvent", array( $Parser, 'property_event' ) )
-			->parse( $file );
+		$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
+		$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
+		$Dispatcher->addListener( 'CategoryEvent', array( $Parser, 'category_event' ) );
+		$Dispatcher->addListener( 'WarehouseEvent', array( $Parser, 'warehouse_event' ) );
+		$Dispatcher->addListener( 'PropertyEvent', array( $Parser, 'property_event' ) );
+		$Dispatcher->parse( $file );
 
 		/** @var CollectionPosts $products */
 		$products = $Parser->get_products();
@@ -357,8 +396,8 @@ class REST_Controller {
 
 		$mode = plugin()->get_mode();
 
-		if ( null === $Update ) {
-			$Update = new Update();
+		if ( null === $update ) {
+			$update = new Update();
 		}
 
 		if ( 'import_temporary' === $mode && $products->count() ) {
@@ -368,15 +407,13 @@ class REST_Controller {
 				->fill_exists()
 				->fill_exists_terms( $Parser );
 
-			$Update
+			$update
 				->update_products( $products )
 				->update_products_meta( $products );
 
 			plugin()->reset_mode();
 
-			$Update->stop( array(
-				"Записаны временные данные товаров",
-			) );
+			$update->stop( array( 'Записаны временные данные товаров' ) );
 		}
 
 		if ( $categories->count() || $warehouses->count() || $attributes->count() ) {
@@ -386,66 +423,76 @@ class REST_Controller {
 			$warehouses->fill_exists();
 			$attributes->fill_exists();
 
-			$Update->terms( $categories )->term_meta( $categories );
-			$Update->terms( $warehouses )->term_meta( $warehouses );
+			$update->terms( $categories )->term_meta( $categories );
+			$update->terms( $warehouses )->term_meta( $warehouses );
 
-			// $attributeValues = $attributes->get_all_values();
+			// $attribute_values = $attributes->get_all_values();
 			// $Update
-			// 	->properties( $attributes )
-			// 	->terms( $attributeValues )
-			// 	->term_meta( $attributeValues );
+			// ->properties( $attributes )
+			// ->terms( $attributeValues )
+			// ->term_meta( $attributeValues );
 			if ( $products->count() && floatval( $this->version ) < 3 ) {
-				plugin()->set_mode( 'import_temporary', $Update->set_status( 'progress' ) );
+				plugin()->set_mode( 'import_temporary', $update->set_status( 'progress' ) );
 			}
 
-			$Update->stop( array(
-				"Обновлено {$Update->results['update']} категорий/терминов.",
-				"Обновлено {$Update->results['meta']} мета записей.",
-			) );
+			$update->stop(
+				array(
+					"Обновлено {$update->results['update']} категорий/терминов.",
+					"Обновлено {$update->results['meta']} мета записей.",
+				)
+			);
 		}
 
-		$offersCount = $offers->count();
-		$offers      = $offers->slice( $Update->progress, $Update->offset['offer'] );
+		$offers_count = $offers->count();
+		$offers       = $offers->slice( $update->progress, $update->offset['offer'] );
 
-		if ( $offersCount ) {
+		if ( $offers_count ) {
 			Transaction()->set_transaction_mode();
 
 			$offers->fill_exists();
 
-			// second step: import posts with post meta
+			// second step: import posts with post meta.
 			if ( 'import_relationships' !== $mode ) {
-				$Update
+				$update
 					->update_offers( $offers )
 					->relationships( $offers )
 					->update_offers_meta( $offers );
 
-				if ( $Update->progress < $offersCount ) {
-					// Set mode for retry
-					$Update->set_status( 'progress' );
-				} elseif ( 'success' == $Update->status ) {
+				if ( $update->progress < $offers_count ) {
+					// Set mode for retry.
+					$update->set_status( 'progress' );
+				} elseif ( 'success' === $update->status ) {
 					if ( floatval( $this->version ) < 3 ) {
-						plugin()->set_mode( 'deactivate', $Update->set_status( 'progress' ) );
+						plugin()->set_mode( 'deactivate', $update->set_status( 'progress' ) );
 					}
 				}
 
-				$Update
-					->stop( array(
-						sprintf( $this->get_message_by_filename( Request::get_file()['name'] ), $Update->progress,
-							$offersCount ),
-						$Update->results['meta'] . " произвольных записей товаров обновлено."
-					) );
+				$update->stop(
+					array(
+						sprintf(
+							$this->get_message_by_filename( Request::get_file()['name'] ),
+							$update->progress,
+							$offers_count
+						),
+						$update->results['meta'] . ' произвольных записей товаров обновлено.',
+					)
+				);
 
-				$Update
-					->stop( printf( '%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
-						$Update->results['relationships'],
-						$offers->count(),
-						$Update->progress,
-						$offersCount ) );
+				$update
+					->stop(
+						printf(
+							'%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
+							$update->results['relationships'],
+							$offers->count(),
+							$update->progress,
+							$offers_count
+						)
+					);
 
-			} // third step: import posts relationships
+			} // third step: import posts relationships.
 		}
 
-		if ( 'import_posts' == $mode || 'import_relationships' == $mode ) {
+		if ( 'import_posts' === $mode || 'import_relationships' === $mode ) {
 			if ( $offers->count() ) {
 				Transaction()->set_transaction_mode();
 
@@ -453,23 +500,29 @@ class REST_Controller {
 			}
 		}
 
-		/** Unreachable statement in theory */
+		// Unreachable statement in theory.
 		plugin()->reset_mode();
-		$Update->stop();
+		$update->stop();
 	}
 
 	/**
 	 * E. Деактивация данных
-	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=deactivate
-	 * @return 'progress|success|failure'
+	 * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=deactivate
+	 *
+	 * @print 'progress|success|failure'
 	 * @note We need always update post_modified for true deactivate
 	 * @since  3.0
 	 */
 	public function deactivate() {
+
+		global $wpdb;
+
+		$start_date = get_option( 'exchange_start-date', false );
+
 		/**
 		 * Чистим и пересчитываем количество записей в терминах
 		 */
-		if ( ! $start_date = get_option( 'exchange_start-date', '' ) ) {
+		if ( ! $start_date ) {
 			return;
 		}
 
@@ -485,6 +538,7 @@ class REST_Controller {
 
 			/**
 			 * Meta data from any finded file
+			 *
 			 * @var array { version: float, is_full: bool }
 			 */
 			$summary = Plugin::get_summary_meta( current( $files ) );
@@ -498,13 +552,15 @@ class REST_Controller {
 
 				if ( ! $post_lost ) {
 					// $postmeta['_stock'] = 0; // required?
-					$wpdb->query( "
+					$wpdb->query(
+						"
                         UPDATE $wpdb->postmeta pm SET pm.meta_value = 'outofstock'
                         WHERE pm.meta_key = '_stock_status' AND pm.post_id IN (
                                   SELECT p.ID FROM $wpdb->posts p
                                   WHERE p.post_type = 'product'
                                         AND p.post_modified < '$start_date'
-                        ) " );
+                        ) "
+					);
 				} elseif ( 'delete' == $post_lost ) {
 					// delete query
 				}
@@ -514,9 +570,11 @@ class REST_Controller {
 		/**
 		 * Set pending status when post no has price meta
 		 * Most probably no has offer (or code error in last versions)
+		 *
 		 * @var array $notExistsPrice List of objects
 		 */
-		$notExistsPrice = $wpdb->get_results( "
+		$notExistsPrice = $wpdb->get_results(
+			"
                 SELECT p.ID, p.post_type, p.post_status
                 FROM $wpdb->posts p
                 WHERE
@@ -527,16 +585,19 @@ class REST_Controller {
                         SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
                         WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
                     )
-            " );
+            "
+		);
 
 		// Collect Ids
 		$notExistsPriceIDs = array_map( 'intval', wp_list_pluck( $notExistsPrice, 'ID' ) );
 
 		/**
 		 * Set pending status when post has a less price meta (null value)
+		 *
 		 * @var array $nullPrice List of objects
 		 */
-		$nullPrice = $wpdb->get_results( "
+		$nullPrice = $wpdb->get_results(
+			"
                 SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
                 FROM $wpdb->postmeta pm
                 INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
@@ -545,7 +606,8 @@ class REST_Controller {
                     AND p.post_modified > '$start_date'
                     AND pm.meta_key = '_price'
                     AND pm.meta_value = 0
-            " );
+            "
+		);
 
 		// Collect Ids
 		$nullPriceIDs = array_map( 'intval', wp_list_pluck( $nullPrice, 'post_id' ) );
@@ -564,7 +626,7 @@ class REST_Controller {
 			 */
 			$wpdb->query(
 				"UPDATE $wpdb->posts SET post_status = 'pending'
-                    WHERE ID IN (" . implode( ',', $deactivateIDs ) . ")"
+                    WHERE ID IN (" . implode( ',', $deactivateIDs ) . ')'
 			);
 		} elseif ( 'delete' == $price_lost ) {
 			// delete query
@@ -575,29 +637,29 @@ class REST_Controller {
 		 * Return post status if product has a better price (only new)
 		 */
 		// $betterPrice = $wpdb->get_results( "
-		//     SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-		//     FROM $wpdb->postmeta pm
-		//     INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-		//     WHERE   p.post_type   = 'product'
-		//         AND p.post_status = 'pending'
-		//         AND p.post_modified = p.post_date
-		//         AND pm.meta_key = '_price'
-		//         AND pm.meta_value > 0
+		// SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
+		// FROM $wpdb->postmeta pm
+		// INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+		// WHERE   p.post_type   = 'product'
+		// AND p.post_status = 'pending'
+		// AND p.post_modified = p.post_date
+		// AND pm.meta_key = '_price'
+		// AND pm.meta_value > 0
 		// " );
 
 		// // Collect Ids
 		// $betterPriceIDs = array_map('intval', wp_list_pluck( $betterPrice, 'ID' ));
 
 		// if( sizeof($betterPriceIDs) ) {
-		//     $wpdb->query(
-		//         "UPDATE $wpdb->posts SET post_status = 'publish'
-		//         WHERE ID IN (". implode(',', $betterPriceIDs) .")"
-		//     );
+		// $wpdb->query(
+		// "UPDATE $wpdb->posts SET post_status = 'publish'
+		// WHERE ID IN (". implode(',', $betterPriceIDs) .")"
+		// );
 		// }
 
 		$msg = 'Деактивация товаров завершена';
 
-		if ( floatval( $version ) < 3 ) {
+		if ( floatval( $this->version ) < 3 ) {
 			plugin()->set_mode( 'complete', new Update() );
 			exit( "progress\n$msg" );
 		}
@@ -608,6 +670,7 @@ class REST_Controller {
 	/**
 	 * F. Завершающее событие загрузки данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=complete
+	 *
 	 * @since  3.0
 	 */
 	public function complete() {
@@ -620,6 +683,7 @@ class REST_Controller {
 
 		/**
 		 * Reset start date
+		 *
 		 * @todo @fixit (check between)
 		 */
 		update_option( 'exchange_start-date', '' );
@@ -634,14 +698,14 @@ class REST_Controller {
 		Plugin::set_mode( '' );
 		update_option( 'exchange_last-update', current_time( 'mysql' ) );
 
-		//        if ( is_debug() ) {
-//            $Plugin = Plugin();
-//            $file   = Request::get_file();
-//            // get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
-//            $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
-//            @mkdir( $path );
-//            @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
-//        }
+		// if ( is_debug() ) {
+		// $Plugin = Plugin();
+		// $file   = Request::get_file();
+		// get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
+		// $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
+		// @mkdir( $path );
+		// @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
+		// }
 
 		exit( "success\nВыгрузка данных завершена" );
 	}

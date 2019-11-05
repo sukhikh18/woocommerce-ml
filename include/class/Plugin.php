@@ -125,7 +125,7 @@ class Plugin {
 	 * Get plugin setting from cache or database
 	 *
 	 * @param string $prop_name Option key or null (for a full request).
-	 * @param mixed $default What's return if field value not defined.
+	 * @param mixed  $default What's return if field value not defined.
 	 * @param string $context suffix option name. @see get_option_name().
 	 *
 	 * @return mixed
@@ -139,6 +139,10 @@ class Plugin {
 		 * @link https://developer.wordpress.org/reference/functions/get_option/
 		 * @var mixed
 		 */
+		$option = apply_filters(
+			self::PREFIX . 'get_option',
+			get_option( $option_name, $default )
+		);
 
 		if ( ! $prop_name ) {
 			return ! empty( $option ) ? $option : $default;
@@ -151,8 +155,8 @@ class Plugin {
 	 * Set new plugin setting
 	 *
 	 * @param string|array $prop_name Option key || array.
-	 * @param string $value prop_name key => value.
-	 * @param string $context suffix option name. @see get_option_name().
+	 * @param string       $value prop_name key => value.
+	 * @param string       $context suffix option name. @see get_option_name().
 	 *
 	 * @return bool                   Is updated @see update_option()
 	 */
@@ -204,21 +208,27 @@ class Plugin {
 	 * @return array
 	 */
 	private function get_allowed_modes() {
-		$allowed = apply_filters( Plugin::PREFIX . 'get_allowed_modes', array(
-			'checkauth',
-			'init',
-			'file',
-			'import',
-			'import_temporary',
-			'import_posts',
-			'import_relationships',
-			'deactivate',
-			'complete',
-		) );
+		$allowed = apply_filters(
+			self::PREFIX . 'get_allowed_modes',
+			array(
+				'checkauth',
+				'init',
+				'file',
+				'import',
+				'import_temporary',
+				'import_posts',
+				'import_relationships',
+				'deactivate',
+				'complete',
+			)
+		);
 
 		return (array) $allowed;
 	}
 
+	/**
+	 * @return bool|mixed|string
+	 */
 	public function get_mode() {
 		$allowed_modes = $this->get_allowed_modes();
 		$mode          = $this->get_setting( 'mode', false, 'status' );
@@ -228,8 +238,8 @@ class Plugin {
 			return $_mode;
 		}
 
-		if ( ! in_array( $mode, $allowed_modes ) ) {
-			$mode = in_array( $_mode, $allowed_modes ) ? $_mode : false;
+		if ( ! in_array( $mode, $allowed_modes, true ) ) {
+			$mode = in_array( $_mode, $allowed_modes, true ) ? $_mode : false;
 		}
 
 		return $mode;
@@ -238,7 +248,7 @@ class Plugin {
 	/**
 	 * Set inner plug-in mode
 	 *
-	 * @param string $mode
+	 * @param string $mode mode value.
 	 * @param Update $update instance
 	 *
 	 * @return $this|Update
@@ -252,6 +262,9 @@ class Plugin {
 		return Plugin()->set_setting( $args, null, 'status' );
 	}
 
+	/**
+	 * @return Plugin|Update
+	 */
 	function reset_mode() {
 		return $this->set_mode( '', new Update() );
 	}
