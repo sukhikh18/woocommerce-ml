@@ -1,11 +1,11 @@
 <?php
 
-namespace NikolayS93\Exchange\ORM;
+namespace NikolayS93\Exchanger\ORM;
 
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchange\Model\Interfaces\HasParent;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use \NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchanger\Model\Interfaces\HasParent;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
 
 class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 
@@ -79,15 +79,21 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	}
 
 	/**
-	 * @param \Closure $p
+	 * @param \Closure|array $p
 	 *
 	 * @return self
 	 */
-	public function filter( \Closure $p ) {
+	public function filter( $p ) {
 		return new static( array_filter( $this->items, $p ) );
 	}
 
-	public function walk( \Closure $p, $userdata = array() ) {
+	/**
+	 * @param Callable $p
+	 * @param array $userdata
+	 *
+	 * @return Collection
+	 */
+	public function walk( $p, $userdata = array() ) {
 		return new static( array_walk( $this->items, $p, $userdata ) );
 	}
 

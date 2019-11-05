@@ -1,16 +1,15 @@
 <?php
 
-namespace NikolayS93\Exchange\ORM;
+namespace NikolayS93\Exchanger\ORM;
 
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use \NikolayS93\Exchange\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchange\Model\Interfaces\HasParent;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
-use NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchanger\Model\Interfaces\HasParent;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Plugin;
 
 /**
  * Class CollectionTerms
- * @package NikolayS93\Exchange\ORM
  */
 class CollectionTerms extends Collection {
     /**

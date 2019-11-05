@@ -1,11 +1,11 @@
 <?php
 
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
 
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use NikolayS93\Exchanger\Plugin;
 
 class AttributeValue extends Term {
 

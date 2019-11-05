@@ -1,16 +1,28 @@
 <?php
+/**
+ * Singleton pattern
+ *
+ * @link https://en.wikipedia.org/wiki/Singleton_pattern
+ * @package Newproject.WordPress.plugin
+ */
 
-namespace NikolayS93\Exchange\Traits;
+namespace NikolayS93\Exchanger\Traits;
 
 use ReflectionClass;
+use ReflectionException;
 use RuntimeException;
 
 trait Singleton {
-	/** @var static The stored singleton instance */
+	/**
+	 * The stored singleton instance
+	 *
+	 * @var static
+	 */
 	protected static $instance;
 
 	/**
 	 * Creates the original or retrieves the stored singleton instance
+	 *
 	 * @return static
 	 */
 	public static function get_instance() {
@@ -18,9 +30,9 @@ trait Singleton {
 			try {
 				static::$instance = ( new ReflectionClass( get_called_class() ) )
 					->newInstanceWithoutConstructor();
-				call_user_func_array( array( static::$instance, "__init" ), func_get_args() );
-			} catch ( \ReflectionException $e ) {
-				wp_die($e->getMessage());
+				call_user_func_array( array( static::$instance, 'constructor' ), func_get_args() );
+			} catch ( ReflectionException $e ) {
+				wp_die( esc_html( $e->getMessage() ) );
 			}
 		}
 
@@ -30,13 +42,13 @@ trait Singleton {
 	/**
 	 * Init Singleton function
 	 */
-	protected function __init() {
+	protected function constructor() {
 	}
 
 	/**
 	 * The constructor is disabled
 	 *
-	 * @throws RuntimeException if called
+	 * @throws RuntimeException If called.
 	 */
 	public function __construct() {
 		throw new RuntimeException( 'You may not explicitly instantiate this object, because it is a singleton.' );
@@ -45,7 +57,7 @@ trait Singleton {
 	/**
 	 * Cloning is disabled
 	 *
-	 * @throws RuntimeException if called
+	 * @throws RuntimeException If called.
 	 */
 	public function __clone() {
 		throw new RuntimeException( 'You may not clone this object, because it is a singleton.' );
@@ -54,7 +66,7 @@ trait Singleton {
 	/**
 	 * Unserialization is disabled
 	 *
-	 * @throws RuntimeException if called
+	 * @throws RuntimeException If called.
 	 */
 	public function __wakeup() {
 		throw new RuntimeException( 'You may not unserialize this object, because it is a singleton.' );
@@ -63,9 +75,9 @@ trait Singleton {
 	/**
 	 * Unserialization is disabled
 	 *
-	 * @param $serialized_data
+	 * @throws RuntimeException If called.
 	 */
-	public function unserialize( $serialized_data ) {
+	public function unserialize() {
 		throw new RuntimeException( 'You may not unserialize this object, because it is a singleton.' );
 	}
 }

@@ -1,9 +1,13 @@
 <?php
 
-namespace NikolayS93\Exchange\Traits;
+/**
+ * @TODO
+ */
 
-use const NikolayS93\Exchange\PLUGIN_DIR;
-use function NikolayS93\Exchange\Error;
+namespace NikolayS93\Exchanger\Traits;
+
+use const NikolayS93\Exchanger\PLUGIN_DIR;
+use function NikolayS93\Exchanger\error;
 
 trait IO {
 
@@ -72,6 +76,20 @@ trait IO {
 		return realpath( $dir );
 	}
 
+	public function get_exchange_file( $filepath, $namespace = 'catalog' ) {
+		if( ! empty( $filepath['path'] ) ) {
+			$filepath = $filepath['path'];
+		}
+
+		$file = new \SplFileObject( $this->get_exchange_dir( $namespace ) . '/' . $filepath );
+
+		if ( $file->isFile() && $file->isReadable() && 'xml' == strtolower( $file->getExtension() ) ) {
+			return $file->getPathname();
+		}
+
+		return false;
+	}
+
 	public function get_exchange_files( $filename = null, $namespace = 'catalog' ) {
 		$arResult = array();
 
@@ -87,12 +105,6 @@ trait IO {
 		 * Check objects name
 		 */
 		foreach ( $objects as $path => $object ) {
-			if ( ! $object->isFile() || ! $object->isReadable() ) {
-				continue;
-			}
-			if ( 'xml' != strtolower( $object->getExtension() ) ) {
-				continue;
-			}
 
 			if ( ! empty( $filename ) ) {
 				/**

@@ -1,14 +1,14 @@
 <?php
 
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
 
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use NikolayS93\Exchange\Plugin;
-use NikolayS93\Exchange\Register;
-use function NikolayS93\Exchange\check_mode;
-use function NikolayS93\Exchange\Error;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use NikolayS93\Exchanger\Plugin;
+use NikolayS93\Exchanger\Register;
+use function NikolayS93\Exchanger\check_mode;
+use function NikolayS93\Exchanger\Error;
 
 class Warehouse extends Term {
     function get_taxonomy_name() {

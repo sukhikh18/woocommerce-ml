@@ -1,16 +1,16 @@
 <?php
 
-namespace NikolayS93\Exchange\Model;
+namespace NikolayS93\Exchanger\Model;
 
 use CommerceMLParser\Model\Types\BaseUnit;
-use NikolayS93\Exchange\Model\Abstracts\Term;
-use NikolayS93\Exchange\Model\Interfaces\Identifiable;
-use NikolayS93\Exchange\Parser;
-use NikolayS93\Exchange\Model\Category;
-use NikolayS93\Exchange\ORM\Collection;
-use NikolayS93\Exchange\Plugin;
-use function NikolayS93\Exchange\Error;
-use function NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchanger\Model\Abstracts\Term;
+use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchanger\Parser;
+use NikolayS93\Exchanger\Model\Category;
+use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\Plugin;
+use function NikolayS93\Exchanger\Error;
+use function NikolayS93\Exchanger\Plugin;
 
 /**
  * Content: {
@@ -33,12 +33,6 @@ class ExchangeProduct extends ExchangePost {
      * @var Collection
      */
     public $attributes;
-
-    /**
-     * Single term. Link to developer (prev. created)
-     * @var Collection
-     */
-    public $developers;
 
     /**
      * @param \CommerceMLParser\ORM\Collection $base_unit
@@ -65,7 +59,6 @@ class ExchangeProduct extends ExchangePost {
 
         $this->categories = new Collection();
         $this->attributes = new Collection();
-        $this->developers = new Collection();
     }
 
     /**************************************************** Relatives ***************************************************/
@@ -80,20 +73,6 @@ class ExchangeProduct extends ExchangePost {
 
     public function add_category( Category $ExchangeTerm ) {
         $this->categories->add( $ExchangeTerm );
-
-        return $this;
-    }
-
-    public function get_developer( $CollectionItemKey = '' ) {
-        $developer = $CollectionItemKey ?
-            $this->developers->offsetGet( $CollectionItemKey ) :
-            $this->developers->first();
-
-        return $developer;
-    }
-
-    public function add_developer( Developer $ExchangeTerm ) {
-        $this->developers->add( $ExchangeTerm );
 
         return $this;
     }
@@ -113,27 +92,28 @@ class ExchangeProduct extends ExchangePost {
     }
 
     /****************************************************** CRUD ******************************************************/
-    public function fetch() {
-        $el                       = parent::fetch();
-        $el['term_relationships'] = array();
+    public function fetch( $key = null ) {
+        $data                       = parent::fetch();
+        $data['term_relationships'] = array();
 
-        array_map( function ( Identifiable $item ) use ( &$el ) {
-
+        $fetch = function ( Identifiable $item ) use ( &$data ) {
             if ( $this->get_id() && $item->get_id() ) {
-                $el['term_relationships'][] = array(
+                $data['term_relationships'][] = array(
                     'object_id'        => $this->get_id(),
                     'term_taxonomy_id' => $item->get_id(),
                     'term_order'       => 0,
                 );
             }
+        };
 
-        },
-            $this->categories->fetch(),
-            $this->attributes->fetch(),
-            $this->developers->fetch()
-        );
+        array_map( $fetch, $this->categories->fetch() );
+        array_map( $fetch, $this->attributes->fetch() );
 
-        return $el;
+        if( null === $key || ($key && !isset($data[ $key ])) ) {
+            return $data;
+        }
+
+        return $data[ $key ];
     }
 
     function update_attributes() {
@@ -225,8 +205,6 @@ class ExchangeProduct extends ExchangePost {
         };
 
         $this->categories->walk( $update_object_terms );
-        $this->developers->walk( $update_object_terms );
-
         // @todo
 //        if ( ! $this->attributes->isEmpty() ) {
 //            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {

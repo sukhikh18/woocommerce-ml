@@ -2,45 +2,50 @@
 /**
  * Class PluginTest
  *
- * @package Newproject.wordpress.plugin/
+ * @package Woocommerce.1c.Exchanger
  */
 
-use NikolayS93\Exchange\Plugin;
+use NikolayS93\Exchanger\Plugin;
+use const NikolayS93\Exchanger\PLUGIN_DIR;
 
-if( !class_exists('WP_UnitTestCase') ) {
-	class WP_UnitTestCase extends PHPUnit\Framework\TestCase {
-	}
-}
+require __DIR__ . '/../../helper.php';
 
-
-/**
- * Sample test case.
- */
 class PluginTest extends WP_UnitTestCase {
 
-    /** @var \NikolayS93\Exchange\Plugin  */
-	private $Plugin;
+    /** @var \NikolayS93\Exchanger\Plugin  */
+	private $plugin;
 
 	public function setUp() {
-		$this->Plugin = Plugin::get_instance();
+		$this->plugin = Plugin::get_instance();
 	}
 
 	public function testInstance() {
-		$this->assertInstanceOf( Plugin::class, $this->Plugin );
+		$this->assertInstanceOf( Plugin::class, $this->plugin );
 	}
-
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testActivate() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testDeactivate() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testUninstall() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
@@ -48,74 +53,122 @@ class PluginTest extends WP_UnitTestCase {
 		$filter_name = Plugin::PREFIX . 'get_option_name';
 		$option_name = 'test';
 
-		$this->assertEquals( $this->Plugin->get_option_name(),
+		$this->assertEquals( $this->plugin->get_option_name(),
 			apply_filters( $filter_name, Plugin::DOMAIN, null ) );
 
-		$this->assertEquals( $this->Plugin->get_option_name( $option_name ),
+		$this->assertEquals( $this->plugin->get_option_name( $option_name ),
 			apply_filters( $filter_name, Plugin::PREFIX . $option_name, $option_name ) );
 	}
 
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testGet_permissions() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testGet_dir() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
 	public function testGet_file() {
-		/** @todo */
 		$this->assertTrue( true );
 	}
 
 	public function testGet_url() {
 		$filter_name = Plugin::PREFIX . 'get_plugin_url';
 		$plugins_url = plugins_url();
-		$plugin_url  = $plugins_url . '/' . basename( $this->Plugin->get_dir() );
+		$plugin_url  = $plugins_url . '/' . basename( $this->plugin->get_dir() );
 
 		$path         = '/test/';
 		$path2        = 'test/';
 		$required_url = $plugin_url . $path;
 
-		$this->assertEquals( $this->Plugin->get_url( $path ),
+		$this->assertEquals( $this->plugin->get_url( $path ),
 			apply_filters( $filter_name, $required_url, $path ) );
-		$this->assertEquals( $this->Plugin->get_url( $path2 ),
+		$this->assertEquals( $this->plugin->get_url( $path2 ),
 			apply_filters( $filter_name, $required_url, $path ) );
 	}
 
 	public function testGet_template() {
 		$template = 'admin/template/menu-page';
-		$tpl      = $this->Plugin->get_dir() . "$template";
+		$tpl      = $this->plugin->get_dir() . "$template";
 
-		$this->assertFalse( $this->Plugin->get_template( 'fail/template/path' ) );
-		$this->assertEquals( $this->Plugin->get_template( $template ), $tpl . '.php' );
-		$this->assertEquals( $this->Plugin->get_template( '/' . $template . '.php' ), $tpl . '.php' );
+		$this->assertFalse( $this->plugin->get_template( 'fail/template/path' ) );
+		$this->assertEquals( $this->plugin->get_template( $template ), $tpl . '.php' );
+		$this->assertEquals( $this->plugin->get_template( '/' . $template . '.php' ), $tpl . '.php' );
 	}
 
 	private function resetOptions() {
-		delete_option( $this->Plugin->get_option_name() );
-		delete_option( $this->Plugin->get_option_name('context') );
+		delete_option( $this->plugin->get_option_name() );
+		delete_option( $this->plugin->get_option_name('context') );
 	}
 
 	public function testGet_setting() {
 		$this->testSet_setting();
 
-		$this->assertEquals( $this->Plugin->get_setting('test', false), 1 );
-		$this->assertEquals( $this->Plugin->get_setting('test', false, 'context'), 2 );
-		$this->assertEquals( $this->Plugin->get_setting('test2', false), 3 );
+		$this->assertEquals( $this->plugin->get_setting('test', false), 1 );
+		$this->assertEquals( $this->plugin->get_setting('test', false, 'context'), 2 );
+		$this->assertEquals( $this->plugin->get_setting('test2', false), 3 );
 		$this->resetOptions();
 
-		$this->assertFalse( $this->Plugin->get_setting('test', false) );
-		$this->assertNull( $this->Plugin->get_setting('test', null, 'context') );
-		$this->assertTrue( $this->Plugin->get_setting('test2', true) );
+		$this->assertFalse( $this->plugin->get_setting('test', false) );
+		$this->assertNull( $this->plugin->get_setting('test', null, 'context') );
+		$this->assertTrue( $this->plugin->get_setting('test2', true) );
 	}
 
 	public function testSet_setting() {
-		$this->assertTrue( $this->Plugin->set_setting('test', 1) );
-		$this->assertFalse( $this->Plugin->set_setting('test', 1) );
-		$this->assertTrue( $this->Plugin->set_setting('test', 2, 'context') );
-		$this->assertTrue( $this->Plugin->set_setting(array('test2' => 3)) );
+		$this->assertTrue( $this->plugin->set_setting('test', 1) );
+		$this->assertFalse( $this->plugin->set_setting('test', 1) );
+		$this->assertTrue( $this->plugin->set_setting('test', 2, 'context') );
+		$this->assertTrue( $this->plugin->set_setting(array( 'test2' => 3)) );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testGet_allowed_modes() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testGet_mode() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testSet_mode() {
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Unrealized test
+	 *
+	 * @todo
+	 */
+	public function testReset_mode() {
+		$this->assertTrue( true );
 	}
 }

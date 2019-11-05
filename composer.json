@@ -1,13 +1,13 @@
 {
+  "autoload": {
+    "psr-4": {
+      "NikolayS93\\Exchanger\\": "include\\class"
+    }
+  },
   "require": {
     "nikolays93/wp-admin-form": "dev-master",
     "nikolays93/wp-admin-page": "dev-master",
     "karakum/commerceml": "dev-master"
-  },
-  "autoload": {
-    "psr-4": {
-      "NikolayS93\\Exchange\\": "include\\class"
-    }
   },
   "repositories": [
     {
@@ -29,6 +29,15 @@
     }
   ],
   "require-dev": {
-    "phpunit/phpunit": "*"
+    "phpunit/phpunit": "*",
+    "wp-coding-standards/wpcs": "^0.13.1"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "\"vendor/bin/phpcs\" --config-set installed_paths vendor/wp-coding-standards/wpcs"
+    ],
+    "post-update-cmd": [
+      "\"vendor/bin/phpcs\" --config-set installed_paths vendor/wp-coding-standards/wpcs"
+    ]
   }
 }
