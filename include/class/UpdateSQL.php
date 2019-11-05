@@ -104,12 +104,12 @@ class UpdateSQL extends Update {
 		// Count products will be updated
 		$this->progress += $products->count();
 
-		if( 'off' === $post_mode = Plugin()->get_setting( 'post_mode' ) ) {
+		if ( 'off' === $post_mode = Plugin()->get_setting( 'post_mode' ) ) {
 			return $this;
 		}
 
 //		$products->walk( array($this, 'update_products_step') );
-		$products->walk( function( $product ) {
+		$products->walk( function ( $product ) {
 			$product->write_temporary_data();
 		} );
 
@@ -120,7 +120,7 @@ class UpdateSQL extends Update {
 	 * @param ExchangePost $product
 	 */
 	public function update_products_step( $product ) {
-		/** @var string $post_mode use get_option (has cache)*/
+		/** @var string $post_mode use get_option (has cache) */
 		$post_mode = Plugin()->get_setting( 'post_mode' );
 		if ( $product->prepare( $post_mode ) ) {
 			if ( ! $product->get_id() ) {

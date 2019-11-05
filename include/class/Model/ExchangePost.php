@@ -216,7 +216,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 	/****************************************************** CRUD ******************************************************/
 	function fetch( $key = null ) {
 		$data = array(
-			'post'    => array(
+			'post'     => array(
 				'post_author'    => $this->post->post_author,
 				'post_content'   => $this->post->post_content,
 				'post_title'     => $this->post->post_title,
@@ -229,7 +229,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 			'postmeta' => $this->get_meta(),
 		);
 
-		if( null === $key || ($key && !isset($data[ $key ])) ) {
+		if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
 			return $data;
 		}
 
@@ -254,7 +254,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 		// 	)
 		// );
 
-		if( $_post = $this->fetch('post') ) {
+		if ( $_post = $this->fetch( 'post' ) ) {
 			return wp_update_post( $_post );
 		}
 
@@ -280,7 +280,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 	 * @return Int insert post ID or 0
 	 */
 	public function create() {
-		if( $_post = $this->fetch('post') ) {
+		if ( $_post = $this->fetch( 'post' ) ) {
 			return wp_insert_post( $_post );
 		}
 
@@ -292,7 +292,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 		$table = Register::get_exchange_table_name();
 
-		$product_id         = $this->get_id() ? intval($this->get_id()) : 0;
+		$product_id         = $this->get_id() ? intval( $this->get_id() ) : 0;
 		$xml                = $this->get_external();
 		$name               = $this->get_title();
 		$desc               = $this->get_content();
@@ -313,7 +313,7 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 		$relationships_list = serialize( $relationships_list );
 
-		$columns      = array( 'product_id', 'xml', 'name', 'desc', 'meta_list', 'relationships_list' );
+		$columns = array( 'product_id', 'xml', 'name', 'desc', 'meta_list', 'relationships_list' );
 		// $values_args  = implode( ', ', array_map( function ( $value ) {
 		// 	return "'$value'";
 		// }, $values ) );

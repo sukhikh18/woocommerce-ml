@@ -11,7 +11,7 @@ if ( ! function_exists( 'get_time' ) ) {
 if ( ! function_exists( 'is_debug' ) ) {
 	function is_debug() {
 		return ( defined( 'WP_DEBUG_SHOW' ) && WP_DEBUG_SHOW ) ||
-			( ! defined( 'WP_DEBUG_SHOW' ) && defined( 'WP_DEBUG' ) && WP_DEBUG );
+		       ( ! defined( 'WP_DEBUG_SHOW' ) && defined( 'WP_DEBUG' ) && WP_DEBUG );
 	}
 }
 
@@ -24,7 +24,7 @@ if ( ! function_exists( 'check_zip_extension' ) ) {
 		// ! 0 === @$status
 
 		if ( ! class_exists( 'ZipArchive' ) ) {
-			return new \WP_Error('ZIP_ABSENT', 'The PHP extension zip is required.');
+			return new \WP_Error( 'ZIP_ABSENT', 'The PHP extension zip is required.' );
 		}
 
 		return true;

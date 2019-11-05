@@ -74,8 +74,7 @@ class CollectionPosts extends Collection {
 		$insert_data = function ( $post, $collectionOffset ) use ( $existsList ) {
 			if ( isset( $existsList[ $post->get_external() ] ) ) {
 				$post->set_id( $existsList[ $post->get_external() ] );
-			}
-			else {
+			} else {
 				// $this->offsetUnset( $collectionOffset );
 			}
 		};

@@ -56,8 +56,8 @@ class ExchangeOffer extends ExchangePost {
 	}
 
 	function set_quantity( $qty ) {
-		if( null !== $qty ) {
-			$qty = floatval($qty);
+		if ( null !== $qty ) {
+			$qty = floatval( $qty );
 
 			$this->set_meta( '_manage_stock', 'yes' );
 			$this->set_meta( '_stock_status', $qty ? 'instock' : 'outofstock' );
@@ -71,10 +71,11 @@ class ExchangeOffer extends ExchangePost {
 	 * Only one price coast for simple
 	 *
 	 * @param \CommerceMLParser\ORM\Collection $prices
+	 *
 	 * @return int
 	 */
 	public function get_current_price( $prices ) {
-		$price  = 0;
+		$price = 0;
 		if ( ! $prices->isEmpty() ) {
 			$price = $prices->current()->getPrice();
 		}

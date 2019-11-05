@@ -33,7 +33,7 @@ class AttributeValue extends Term {
 					break;
 			}
 
-			if( !check_mode($term_id, $Plugin->get_setting( 'pa_desc' )) ) {
+			if ( ! check_mode( $term_id, $Plugin->get_setting( 'pa_desc' ) ) ) {
 				$this->unset_description();
 			}
 

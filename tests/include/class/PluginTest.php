@@ -12,7 +12,7 @@ require __DIR__ . '/../../helper.php';
 
 class PluginTest extends WP_UnitTestCase {
 
-    /** @var \NikolayS93\Exchanger\Plugin  */
+	/** @var \NikolayS93\Exchanger\Plugin */
 	private $plugin;
 
 	public function setUp() {
@@ -22,6 +22,7 @@ class PluginTest extends WP_UnitTestCase {
 	public function testInstance() {
 		$this->assertInstanceOf( Plugin::class, $this->plugin );
 	}
+
 	/**
 	 * Unrealized test
 	 *
@@ -113,27 +114,27 @@ class PluginTest extends WP_UnitTestCase {
 
 	private function resetOptions() {
 		delete_option( $this->plugin->get_option_name() );
-		delete_option( $this->plugin->get_option_name('context') );
+		delete_option( $this->plugin->get_option_name( 'context' ) );
 	}
 
 	public function testGet_setting() {
 		$this->testSet_setting();
 
-		$this->assertEquals( $this->plugin->get_setting('test', false), 1 );
-		$this->assertEquals( $this->plugin->get_setting('test', false, 'context'), 2 );
-		$this->assertEquals( $this->plugin->get_setting('test2', false), 3 );
+		$this->assertEquals( $this->plugin->get_setting( 'test', false ), 1 );
+		$this->assertEquals( $this->plugin->get_setting( 'test', false, 'context' ), 2 );
+		$this->assertEquals( $this->plugin->get_setting( 'test2', false ), 3 );
 		$this->resetOptions();
 
-		$this->assertFalse( $this->plugin->get_setting('test', false) );
-		$this->assertNull( $this->plugin->get_setting('test', null, 'context') );
-		$this->assertTrue( $this->plugin->get_setting('test2', true) );
+		$this->assertFalse( $this->plugin->get_setting( 'test', false ) );
+		$this->assertNull( $this->plugin->get_setting( 'test', null, 'context' ) );
+		$this->assertTrue( $this->plugin->get_setting( 'test2', true ) );
 	}
 
 	public function testSet_setting() {
-		$this->assertTrue( $this->plugin->set_setting('test', 1) );
-		$this->assertFalse( $this->plugin->set_setting('test', 1) );
-		$this->assertTrue( $this->plugin->set_setting('test', 2, 'context') );
-		$this->assertTrue( $this->plugin->set_setting(array( 'test2' => 3)) );
+		$this->assertTrue( $this->plugin->set_setting( 'test', 1 ) );
+		$this->assertFalse( $this->plugin->set_setting( 'test', 1 ) );
+		$this->assertTrue( $this->plugin->set_setting( 'test', 2, 'context' ) );
+		$this->assertTrue( $this->plugin->set_setting( array( 'test2' => 3 ) ) );
 	}
 
 	/**

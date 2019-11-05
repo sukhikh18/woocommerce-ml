@@ -68,7 +68,7 @@ trait IO {
 
 	public function get_exchange_dir( $namespace = null ) {
 		$dir = trailingslashit( apply_filters( static::PREFIX . "get_exchange_dir",
-			$this->get_upload_dir() . "/1c-exchange/" . $namespace, $namespace) );
+			$this->get_upload_dir() . "/1c-exchange/" . $namespace, $namespace ) );
 
 		$this->try_make_dir( $dir );
 		$this->check_writable( $dir );
@@ -77,7 +77,7 @@ trait IO {
 	}
 
 	public function get_exchange_file( $filepath, $namespace = 'catalog' ) {
-		if( ! empty( $filepath['path'] ) ) {
+		if ( ! empty( $filepath['path'] ) ) {
 			$filepath = $filepath['path'];
 		}
 
@@ -94,7 +94,7 @@ trait IO {
 		$arResult = array();
 
 		// Get all folder objects
-		$dir     = $this->get_exchange_dir( $namespace );
+		$dir = $this->get_exchange_dir( $namespace );
 
 		$objects = new \RecursiveIteratorIterator(
 			new \RecursiveDirectoryIterator( $dir ),

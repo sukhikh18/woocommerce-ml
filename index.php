@@ -43,22 +43,21 @@ if ( ! defined( 'EXCHANGE_COOKIE_NAME' ) ) {
  * Current timestamp
  */
 if ( ! defined( 'EXCHANGE_START_TIMESTAMP' ) ) {
-    define( 'EXCHANGE_START_TIMESTAMP', time() );
+	define( 'EXCHANGE_START_TIMESTAMP', time() );
 }
 /**
  * Work with charset
  */
 if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
-    define( 'EXCHANGE_CHARSET', 'UTF-8' );
+	define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
-if( ! function_exists( 'file_is_readble' ) ) {
+if ( ! function_exists( 'file_is_readble' ) ) {
 	function file_is_readble( $path, $show_error = false ) {
 		if ( is_file( $path ) && is_readable( $path ) ) {
 			return true;
-		}
-		else {
-			if( $show_error ) {
+		} else {
+			if ( $show_error ) {
 				Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
 			}
 
@@ -78,7 +77,7 @@ if ( ! function_exists( 'include_plugin_file' ) ) {
 			$path = PLUGIN_DIR . $path;
 		}
 
-		if( file_is_readble( $path ) ) {
+		if ( file_is_readble( $path ) ) {
 			require $path; // phpcs:ignore
 		}
 	}
@@ -88,10 +87,10 @@ if ( ! function_exists( 'include_plugin_file' ) ) {
  * include required files
  */
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
-array_map(__NAMESPACE__ . '\include_plugin_file', array(
+array_map( __NAMESPACE__ . '\include_plugin_file', array(
 	'include/utils.php',
 	'include/statistic.php'
-));
+) );
 
 if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) {
 	array_map(
@@ -126,7 +125,7 @@ if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php'
 	);
 }
 
-if( ! function_exists( __NAMESPACE__ . '\plugin' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\plugin' ) ) {
 	/**
 	 * Returns the single instance of this plugin, creating one if needed.
 	 *
@@ -137,7 +136,7 @@ if( ! function_exists( __NAMESPACE__ . '\plugin' ) ) {
 	}
 }
 
-if( ! function_exists( __NAMESPACE__ . '\error' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\error' ) ) {
 	/**
 	 * @return Error
 	 */
@@ -146,7 +145,7 @@ if( ! function_exists( __NAMESPACE__ . '\error' ) ) {
 	}
 }
 
-if( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
 	/**
 	 * @return Transaction
 	 */
@@ -155,7 +154,7 @@ if( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
 	}
 }
 
-if( ! function_exists( __NAMESPACE__ . '\dispatcher' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\dispatcher' ) ) {
 	/**
 	 * @return Dispatcher
 	 */
@@ -212,30 +211,30 @@ function ajax_1c4wp_exchange() {
 	wp_die();
 }
 
-    // Save external Fields
-    add_action( 'woocommerce_process_product_meta',
-        array( $Register, 'sanitize_product_external_code_field' ) );
+// Save external Fields
+add_action( 'woocommerce_process_product_meta',
+	array( $Register, 'sanitize_product_external_code_field' ) );
 
 }, 20 );
 
 add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mode ) {
-    if ( 'product' != $post->post_status ) {
-        return $status;
-    }
+	if ( 'product' != $post->post_status ) {
+		return $status;
+	}
 
-    if ( $post->post_date < $post->post_modified && 'future' !== $post->post_status ) {
+	if ( $post->post_date < $post->post_modified && 'future' !== $post->post_status ) {
 
-        if ( 'publish' === $post->post_status ) {
-            $time      = get_post_modified_time( 'G', true, $post );
-            $time_diff = time() - $time;
+		if ( 'publish' === $post->post_status ) {
+			$time      = get_post_modified_time( 'G', true, $post );
+			$time_diff = time() - $time;
 
-            if ( $time_diff > 0 && $time_diff < DAY_IN_SECONDS ) {
-                $showTime = sprintf( __( '%s ago' ), human_time_diff( $time ) );
-            } else {
-                $showTime = mysql2date( __( 'Y/m/d' ), $time );
-            }
+			if ( $time_diff > 0 && $time_diff < DAY_IN_SECONDS ) {
+				$showTime = sprintf( __( '%s ago' ), human_time_diff( $time ) );
+			} else {
+				$showTime = mysql2date( __( 'Y/m/d' ), $time );
+			}
 
-            echo __( 'Last Modified' ) . '<br />';
+			echo __( 'Last Modified' ) . '<br />';
 
 			/** This filter is documented in wp-admin/includes/class-wp-posts-list-table.php */
 			echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime,
@@ -243,7 +242,7 @@ add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mod
 		}
 	}
 
-    return $status;
+	return $status;
 }, 10, 4 );
 
 /** @todo Change hook */

@@ -90,7 +90,7 @@ class Register {
 			new Section(
 				'postsinfo',
 				__( 'Posts', Plugin::DOMAIN ),
-				function() {
+				function () {
 					get_post_statistic( new Parser() );
 				}
 			)
@@ -100,7 +100,7 @@ class Register {
 			new Section(
 				'termsinfo',
 				__( 'Terms', Plugin::DOMAIN ),
-				function() {
+				function () {
 					get_term_statistic( new Parser() );
 				}
 			)
@@ -180,10 +180,10 @@ class Register {
 				wp_enqueue_script( 'Timer', $plugin->get_url( '/admin/assets/Timer.js' ) );
 				wp_enqueue_script( 'ExhangeProgress', $plugin->get_url( '/admin/assets/ExhangeProgress.js' ) );
 				wp_localize_script( 'ExhangeProgress', 'ml2e', array(
-					'ajax_url'   => admin_url( 'admin-ajax.php' ),
-					'nonce'      => wp_create_nonce( Plugin::DOMAIN ),
+					'ajax_url' => admin_url( 'admin-ajax.php' ),
+					'nonce'    => wp_create_nonce( Plugin::DOMAIN ),
 //				'debug_only' => Utils::is_debug(),
-					'files'      => $filenames,
+					'files'    => $filenames,
 				) );
 				wp_enqueue_script( 'exchange-page-js', $plugin->get_url( '/admin/assets/admin.js' ) );
 				/**

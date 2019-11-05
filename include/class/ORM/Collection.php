@@ -112,8 +112,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 		} else {
 			if ( $item instanceof ExternalCode ) {
 				$this->items[ $item->get_external() ] = $item;
-			}
-			elseif ( $item instanceof Identifiable && $item_id = $item->get_id() ) {
+			} elseif ( $item instanceof Identifiable && $item_id = $item->get_id() ) {
 				$this->items[ $item_id ] = $item;
 			} else {
 				$this->items[] = $item;
@@ -159,12 +158,12 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 
 	public function slice( $offset, $length ) {
 		if ( is_array( $this->items ) || $this->items instanceof \Traversable ) {
-            $this->items = array_slice( $this->items, $offset, $length );
+			$this->items = array_slice( $this->items, $offset, $length );
 		} else {
 			// @TODO
 		}
 
-        return $this;
+		return $this;
 	}
 
 	/**
@@ -253,6 +252,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 	 * {@inheritDoc}
 	 */
 	public function count() {
-		return count($this->items);
+		return count( $this->items );
 	}
 }

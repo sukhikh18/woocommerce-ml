@@ -18,7 +18,7 @@ class ExchangerPluginTest extends \WP_UnitTestCase {
 		$this->assertTrue( defined( '\NikolayS93\Exchanger\PLUGIN_DIR' ) );
 		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_EXTERNAL_CODE_KEY' ) );
 		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_COOKIE_NAME' ) );
-        $this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_CHARSET' ) );
+		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_CHARSET' ) );
 	}
 
 	public function testCallInstanceFunctions() {

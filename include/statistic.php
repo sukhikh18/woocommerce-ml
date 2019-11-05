@@ -2,14 +2,14 @@
 
 namespace NikolayS93\Exchanger;
 
-if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
+if ( ! function_exists( __NAMESPACE__ . '\the_statistic_table' ) ) {
 	function the_statistic_table( Parser $Parser ) {
-		$newCatsCount = 0;
+		$newCatsCount     = 0;
 		$newProductsCount = 0;
 		$orphanedProducts = 0;
-		$newOffersCount = 0;
-		$negativeCount = 0;
-		$nullPrice = 0;
+		$newOffersCount   = 0;
+		$negativeCount    = 0;
+		$nullPrice        = 0;
 
 		$products = $Parser->get_products();
 		$offers   = $Parser->get_offers();
@@ -42,7 +42,7 @@ if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
 			}
 		}
 
-		$properties = $Parser->get_properties();
+		$properties      = $Parser->get_properties();
 		$attributeValues = array();
 		foreach ( $properties as $property ) {
 			foreach ( $property->get_values() as $term ) {
@@ -52,66 +52,69 @@ if( !function_exists(__NAMESPACE__ . '\the_statistic_table') ) {
 
 		$warehouses = $Parser->get_warehouses();
 		?>
-		<table class="table widefat striped">
-			<tr>
-				<td><?= __( 'Finded files', Plugin::DOMAIN ); ?></td>
-				<td><?= implode('<br>', $Parser->get_filenames()) ?></td>
-			</tr>
-			<tr>
-				<td><?= __( 'Products count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $products ); ?> (<?= $newProductsCount ?>
-					<?= _n( 'new', 'new', $newProductsCount, Plugin::DOMAIN ) ?>)</td>
-			</tr>
-			<tr>
-				<td><?= __( 'Offers count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $offers ); ?> (<?= $newOffersCount ?>
-					<?= _n( 'new', 'new', $newOffersCount, Plugin::DOMAIN ) ?>)</td>
-			</tr>
+        <table class="table widefat striped">
+            <tr>
+                <td><?= __( 'Finded files', Plugin::DOMAIN ); ?></td>
+                <td><?= implode( '<br>', $Parser->get_filenames() ) ?></td>
+            </tr>
+            <tr>
+                <td><?= __( 'Products count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $products ); ?> (<?= $newProductsCount ?>
+					<?= _n( 'new', 'new', $newProductsCount, Plugin::DOMAIN ) ?>)
+                </td>
+            </tr>
+            <tr>
+                <td><?= __( 'Offers count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $offers ); ?> (<?= $newOffersCount ?>
+					<?= _n( 'new', 'new', $newOffersCount, Plugin::DOMAIN ) ?>)
+                </td>
+            </tr>
 			<?php if ( $orphanedProducts ): ?>
-				<tr>
-					<td style="color: #f00;"><?= __( 'Orphaned products', Plugin::DOMAIN ); ?></td>
-					<td style="color: #f00;"><?= $orphanedProducts ?></td>
-				</tr>
+                <tr>
+                    <td style="color: #f00;"><?= __( 'Orphaned products', Plugin::DOMAIN ); ?></td>
+                    <td style="color: #f00;"><?= $orphanedProducts ?></td>
+                </tr>
 			<?php endif; ?>
 			<?php if ( $negativeCount ): ?>
-				<tr>
-					<td style="color: #f00;"><?= __( 'Negative counts', Plugin::DOMAIN ); ?></td>
-					<td style="color: #f00;"><?= $negativeCount ?></td>
-				</tr>
+                <tr>
+                    <td style="color: #f00;"><?= __( 'Negative counts', Plugin::DOMAIN ); ?></td>
+                    <td style="color: #f00;"><?= $negativeCount ?></td>
+                </tr>
 			<?php endif; ?>
 			<?php if ( $nullPrice ) : ?>
-				<tr>
-					<td style="color: #f00;"><?= __( 'Null price offers', Plugin::DOMAIN ); ?></td>
-					<td style="color: #f00;"><?= $negativeCount ?></td>
-				</tr>
+                <tr>
+                    <td style="color: #f00;"><?= __( 'Null price offers', Plugin::DOMAIN ); ?></td>
+                    <td style="color: #f00;"><?= $negativeCount ?></td>
+                </tr>
 			<?php endif; ?>
-			<tr>
-				<td><?= __( 'Category count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $categories ); ?> (<?= $newCatsCount ?>
-					<?= _n( 'new', 'new', $newCatsCount, Plugin::DOMAIN ) ?>)</td>
-			</tr>
-			<tr>
-				<td><?= __( 'Properties count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $properties ); ?></td>
-			</tr>
-			<tr>
-				<td><?= __( 'Property\'s value count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $attributeValues ); ?></td>
-			</tr>
-			<tr>
-				<td><?= __( 'Warehouses count', Plugin::DOMAIN ); ?></td>
-				<td><?= sizeof( $warehouses ) ?></td>
-			</tr>
-			<tr>
-				<td><?= __( 'Last update', Plugin::DOMAIN ); ?></td>
-				<td><?= get_option( 'exchange_last-update' ) ?></td>
-			</tr>
-		</table>
+            <tr>
+                <td><?= __( 'Category count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $categories ); ?> (<?= $newCatsCount ?>
+					<?= _n( 'new', 'new', $newCatsCount, Plugin::DOMAIN ) ?>)
+                </td>
+            </tr>
+            <tr>
+                <td><?= __( 'Properties count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $properties ); ?></td>
+            </tr>
+            <tr>
+                <td><?= __( 'Property\'s value count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $attributeValues ); ?></td>
+            </tr>
+            <tr>
+                <td><?= __( 'Warehouses count', Plugin::DOMAIN ); ?></td>
+                <td><?= sizeof( $warehouses ) ?></td>
+            </tr>
+            <tr>
+                <td><?= __( 'Last update', Plugin::DOMAIN ); ?></td>
+                <td><?= get_option( 'exchange_last-update' ) ?></td>
+            </tr>
+        </table>
 		<?php
 	}
 }
 
-if( !function_exists(__NAMESPACE__ . '\get_post_statistic') ) {
+if ( ! function_exists( __NAMESPACE__ . '\get_post_statistic' ) ) {
 	function get_post_statistic( Parser $Parser ) {
 		$products = $Parser->get_products();
 		$offers   = $Parser->get_offers();
@@ -132,7 +135,7 @@ if( !function_exists(__NAMESPACE__ . '\get_post_statistic') ) {
 	}
 }
 
-if( !function_exists('get_term_statistic') ) {
+if ( ! function_exists( 'get_term_statistic' ) ) {
 	function get_term_statistic( Parser $Parser ) {
 		$categories = $Parser->get_categories();
 		$properties = $Parser->get_properties();
@@ -169,7 +172,7 @@ function ajax_update_statistic() {
 	}
 
 	$filename = null;
-	if( ! empty( $_GET['filename'] ) ) {
+	if ( ! empty( $_GET['filename'] ) ) {
 		$filename = is_array( $_GET['filename'] ) ? array_filter( $_GET['filename'], 'sanitize_text_field' ) :
 			sanitize_text_field( $_GET['filename'] );
 	}
@@ -184,12 +187,11 @@ function ajax_update_statistic() {
 		->addListener( "WarehouseEvent", array( $Parser, 'warehouse_event' ) )
 		->addListener( "PropertyEvent", array( $Parser, 'property_event' ) );
 
-	if( is_array( $filename ) ) {
-		foreach ($filename as $file) {
+	if ( is_array( $filename ) ) {
+		foreach ( $filename as $file ) {
 			$Dispatcher->parse( $file );
 		}
-	}
-	else {
+	} else {
 		$Dispatcher->parse( $filename );
 	}
 

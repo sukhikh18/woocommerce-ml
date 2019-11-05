@@ -170,7 +170,7 @@ class REST_Controller {
 				false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode
 			);
 
-			if( is_callable($route) ) {
+			if ( is_callable( $route ) ) {
 				// init();
 				// file();
 				// import();
@@ -325,6 +325,7 @@ class REST_Controller {
 	 * @param Parser $Parser
 	 * @param \CommerceMLParser\Parser $Dispatcher
 	 * @param Update $Update
+	 *
 	 * @print 'progress|success|failure'
 	 */
 	public function import( $Parser = null, $Update = null ) {
@@ -344,9 +345,9 @@ class REST_Controller {
 			->parse( $file );
 
 		/** @var CollectionPosts $products */
-		$products   = $Parser->get_products();
+		$products = $Parser->get_products();
 		/** @var  $offers */
-		$offers     = $Parser->get_offers();
+		$offers = $Parser->get_offers();
 		/** @var CollectionTerms $categories */
 		$categories = $Parser->get_categories();
 		/** @var CollectionTerms $warehouses */
@@ -356,11 +357,11 @@ class REST_Controller {
 
 		$mode = plugin()->get_mode();
 
-		if( null === $Update ) {
+		if ( null === $Update ) {
 			$Update = new Update();
 		}
 
-		if( 'import_temporary' === $mode && $products->count() ) {
+		if ( 'import_temporary' === $mode && $products->count() ) {
 			Transaction()->set_transaction_mode();
 
 			$products
@@ -378,7 +379,7 @@ class REST_Controller {
 			) );
 		}
 
-		if( $categories->count() || $warehouses->count() || $attributes->count() ) {
+		if ( $categories->count() || $warehouses->count() || $attributes->count() ) {
 			Transaction()->set_transaction_mode();
 
 			$categories->fill_exists();
@@ -418,11 +419,10 @@ class REST_Controller {
 					->relationships( $offers )
 					->update_offers_meta( $offers );
 
-				if( $Update->progress < $offersCount ) {
+				if ( $Update->progress < $offersCount ) {
 					// Set mode for retry
 					$Update->set_status( 'progress' );
-				}
-				elseif ( 'success' == $Update->status ) {
+				} elseif ( 'success' == $Update->status ) {
 					if ( floatval( $this->version ) < 3 ) {
 						plugin()->set_mode( 'deactivate', $Update->set_status( 'progress' ) );
 					}
@@ -430,7 +430,8 @@ class REST_Controller {
 
 				$Update
 					->stop( array(
-						sprintf( $this->get_message_by_filename( Request::get_file()['name'] ), $Update->progress, $offersCount ),
+						sprintf( $this->get_message_by_filename( Request::get_file()['name'] ), $Update->progress,
+							$offersCount ),
 						$Update->results['meta'] . " произвольных записей товаров обновлено."
 					) );
 

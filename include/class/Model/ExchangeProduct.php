@@ -22,105 +22,105 @@ use function NikolayS93\Exchanger\Plugin;
  * }
  */
 class ExchangeProduct extends ExchangePost {
-    /**
-     * "Product_cat" type wordpress terms
-     * @var Collection
-     */
-    public $categories;
+	/**
+	 * "Product_cat" type wordpress terms
+	 * @var Collection
+	 */
+	public $categories;
 
-    /**
-     * Product properties with link by term (has taxonomy/term)
-     * @var Collection
-     */
-    public $attributes;
+	/**
+	 * Product properties with link by term (has taxonomy/term)
+	 * @var Collection
+	 */
+	public $attributes;
 
-    /**
-     * @param \CommerceMLParser\ORM\Collection $base_unit
-     */
-    public function get_current_base_unit( $base_unit ) {
-        /** @var BaseUnit */
-        $base_unit_current = $base_unit->current();
-        if ( ! $base_unit_name = $base_unit_current->getNameInterShort() ) {
-            $base_unit_name = $base_unit_current->getNameFull();
-        }
+	/**
+	 * @param \CommerceMLParser\ORM\Collection $base_unit
+	 */
+	public function get_current_base_unit( $base_unit ) {
+		/** @var BaseUnit */
+		$base_unit_current = $base_unit->current();
+		if ( ! $base_unit_name = $base_unit_current->getNameInterShort() ) {
+			$base_unit_name = $base_unit_current->getNameFull();
+		}
 
-        return $base_unit_name;
-    }
+		return $base_unit_name;
+	}
 
-    /**
-     * @param \CommerceMLParser\ORM\Collection $taxRatesCollection СтавкиНалогов
-     */
-    public function get_current_tax_rate( $taxRatesCollection ) {
-        return $taxRatesCollection->current()->getRate();
-    }
+	/**
+	 * @param \CommerceMLParser\ORM\Collection $taxRatesCollection СтавкиНалогов
+	 */
+	public function get_current_tax_rate( $taxRatesCollection ) {
+		return $taxRatesCollection->current()->getRate();
+	}
 
-    function __construct( Array $post, $ext = '', $meta = array() ) {
-        parent::__construct( $post, $ext, $meta );
+	function __construct( Array $post, $ext = '', $meta = array() ) {
+		parent::__construct( $post, $ext, $meta );
 
-        $this->categories = new Collection();
-        $this->attributes = new Collection();
-    }
+		$this->categories = new Collection();
+		$this->attributes = new Collection();
+	}
 
-    /**************************************************** Relatives ***************************************************/
+	/**************************************************** Relatives ***************************************************/
 
-    public function get_category( $CollectionItemKey = '' ) {
-        $category = $CollectionItemKey ?
-            $this->categories->offsetGet( $CollectionItemKey ) :
-            $this->categories->first();
+	public function get_category( $CollectionItemKey = '' ) {
+		$category = $CollectionItemKey ?
+			$this->categories->offsetGet( $CollectionItemKey ) :
+			$this->categories->first();
 
-        return $category;
-    }
+		return $category;
+	}
 
-    public function add_category( Category $ExchangeTerm ) {
-        $this->categories->add( $ExchangeTerm );
+	public function add_category( Category $ExchangeTerm ) {
+		$this->categories->add( $ExchangeTerm );
 
-        return $this;
-    }
+		return $this;
+	}
 
-    public function get_attribute( $CollectionItemKey = '' ) {
-        $attribute = $CollectionItemKey ?
-            $this->attributes->offsetGet( $CollectionItemKey ) :
-            $this->attributes->first();
+	public function get_attribute( $CollectionItemKey = '' ) {
+		$attribute = $CollectionItemKey ?
+			$this->attributes->offsetGet( $CollectionItemKey ) :
+			$this->attributes->first();
 
-        return $attribute;
-    }
+		return $attribute;
+	}
 
-    public function add_attribute( Attribute $ProductAttribute ) {
-        $this->attributes->add( $ProductAttribute );
+	public function add_attribute( Attribute $ProductAttribute ) {
+		$this->attributes->add( $ProductAttribute );
 
-        return $this;
-    }
+		return $this;
+	}
 
-    /****************************************************** CRUD ******************************************************/
-    public function fetch( $key = null ) {
-        $data                       = parent::fetch();
-        $data['term_relationships'] = array();
+	/****************************************************** CRUD ******************************************************/
+	public function fetch( $key = null ) {
+		$data                       = parent::fetch();
+		$data['term_relationships'] = array();
 
-        $fetch = function ( Identifiable $item ) use ( &$data ) {
-            if ( $this->get_id() && $item->get_id() ) {
-                $data['term_relationships'][] = array(
-                    'object_id'        => $this->get_id(),
-                    'term_taxonomy_id' => $item->get_id(),
-                    'term_order'       => 0,
-                );
-            }
-        };
+		$fetch = function ( Identifiable $item ) use ( &$data ) {
+			if ( $this->get_id() && $item->get_id() ) {
+				$data['term_relationships'][] = array(
+					'object_id'        => $this->get_id(),
+					'term_taxonomy_id' => $item->get_id(),
+					'term_order'       => 0,
+				);
+			}
+		};
 
-        array_map( $fetch, $this->categories->fetch() );
-        array_map( $fetch, $this->attributes->fetch() );
+		array_map( $fetch, $this->categories->fetch() );
+		array_map( $fetch, $this->attributes->fetch() );
 
-        if( null === $key || ($key && !isset($data[ $key ])) ) {
-            return $data;
-        }
+		if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
+			return $data;
+		}
 
-        return $data[ $key ];
-    }
+		return $data[ $key ];
+	}
 
-    function update_attributes() {
+	function update_attributes() {
 
-        /**
-         * Set attribute properties
-         */
+		/**
+		 * Set attribute properties
+		 */
 //        $arAttributes = array();
 //
 //        if ( 'off' === ( $post_attribute_mode = Plugin()->get_setting( 'post_attribute' ) ) ) {
@@ -189,23 +189,23 @@ class ExchangeProduct extends ExchangePost {
 //        }
 //
 //        update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
-    }
+	}
 
-    function update_object_terms() {
-        $product_id = $this->get_id();
-        $count      = 0;
+	function update_object_terms() {
+		$product_id = $this->get_id();
+		$count      = 0;
 
-        /**
-         * @param Term $term
-         */
-        $update_object_terms = function ( $term ) use ( $product_id, &$count ) {
-            if ( $term->update_object_term( $product_id ) ) {
-                $count ++;
-            }
-        };
+		/**
+		 * @param Term $term
+		 */
+		$update_object_terms = function ( $term ) use ( $product_id, &$count ) {
+			if ( $term->update_object_term( $product_id ) ) {
+				$count ++;
+			}
+		};
 
-        $this->categories->walk( $update_object_terms );
-        // @todo
+		$this->categories->walk( $update_object_terms );
+		// @todo
 //        if ( ! $this->attributes->isEmpty() ) {
 //            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {
 //                /**
@@ -246,6 +246,6 @@ class ExchangeProduct extends ExchangePost {
 //            }
 //        }
 
-        return $count;
-    }
+		return $count;
+	}
 }

@@ -125,7 +125,7 @@ class Plugin {
 	 * Get plugin setting from cache or database
 	 *
 	 * @param string $prop_name Option key or null (for a full request).
-	 * @param mixed  $default What's return if field value not defined.
+	 * @param mixed $default What's return if field value not defined.
 	 * @param string $context suffix option name. @see get_option_name().
 	 *
 	 * @return mixed
@@ -151,8 +151,8 @@ class Plugin {
 	 * Set new plugin setting
 	 *
 	 * @param string|array $prop_name Option key || array.
-	 * @param string       $value prop_name key => value.
-	 * @param string       $context suffix option name. @see get_option_name().
+	 * @param string $value prop_name key => value.
+	 * @param string $context suffix option name. @see get_option_name().
 	 *
 	 * @return bool                   Is updated @see update_option()
 	 */
@@ -165,7 +165,7 @@ class Plugin {
 		$option = $this->get_setting( null, false, $context );
 
 		if ( is_array( $prop_name ) ) {
-			$option = is_array($option) ? array_merge( $option, $prop_name ) : $prop_name;
+			$option = is_array( $option ) ? array_merge( $option, $prop_name ) : $prop_name;
 		} else {
 			$option[ $prop_name ] = $value;
 		}
@@ -240,6 +240,7 @@ class Plugin {
 	 *
 	 * @param string $mode
 	 * @param Update $update instance
+	 *
 	 * @return $this|Update
 	 */
 	public function set_mode( $mode, $update = 0 ) {

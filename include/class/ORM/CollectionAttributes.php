@@ -66,7 +66,7 @@ class CollectionAttributes extends Collection {
 		}
 
 		$term_externals = array_unique( $term_externals );
-        $exists_terms = array();
+		$exists_terms   = array();
 		if ( ! empty( $term_externals ) ) {
 			// @todo
 			$external_key   = AttributeValue::get_external_key();
@@ -111,7 +111,7 @@ class CollectionAttributes extends Collection {
 		 * @param Attribute $attribute
 		 */
 		$closure = function ( $attribute ) {
-			$this->attribute_values->add($attribute->get_values());
+			$this->attribute_values->add( $attribute->get_values() );
 		};
 
 		$this->walk( $closure );

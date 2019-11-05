@@ -213,5 +213,5 @@ $adv = array(
     </div>
 	<?php
 
-    submit_button( 'Сохранить', 'primary right', 'save_changes' );
-    echo '<div class="clear"></div>';
+submit_button( 'Сохранить', 'primary right', 'save_changes' );
+echo '<div class="clear"></div>';
