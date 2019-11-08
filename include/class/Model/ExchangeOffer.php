@@ -3,6 +3,7 @@
 namespace NikolayS93\Exchanger\Model;
 
 use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\Register;
 
 /**
  * Works with posts, postmeta
@@ -37,6 +38,33 @@ class ExchangeOffer extends ExchangePost {
 	//     $this->post = new WP_Post( (object) $args );
 	//     $this->setMeta($meta);
 	// }
+	function fill_relative_post() {
+		global $wpdb;
+
+		$table = Register::get_exchange_table_name();
+		$ext   = $this->get_external();
+
+		$res = $wpdb->get_row( "
+			SELECT * FROM $table
+			WHERE `xml` = '$ext'
+			LIMIT 1
+		" );
+
+		if( !empty($res) ) {
+			if ( ! empty( $res->name ) ) {
+				$this->set_title( $res->name );
+			}
+
+//			if ( ! empty( $res->desc ) ) {
+//				$this->set_title( $res->name );
+//			}
+
+			$meta = unserialize( $res->meta_list );
+			$this->set_meta( $meta );
+			// reset status
+			$this->set_quantity( $this->get_quantity() );
+		}
+	}
 
 	function get_quantity() {
 		$stock = $this->get_meta( 'stock' );

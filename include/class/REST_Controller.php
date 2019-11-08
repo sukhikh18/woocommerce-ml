@@ -227,7 +227,7 @@ class REST_Controller {
 				}
 
 				list( , $auth_value ) = explode( ' ', $_SERVER[ $server_key ], 2 );
-				$auth_value           = base64_decode( $auth_value );
+				$auth_value = base64_decode( $auth_value );
 				list( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) = explode( ':', $auth_value );
 
 				break;
@@ -255,11 +255,11 @@ class REST_Controller {
 		}
 
 		$expiration  = EXCHANGE_START_TIMESTAMP + apply_filters(
-			'auth_cookie_expiration',
-			DAY_IN_SECONDS,
-			$user->ID,
-			false
-		);
+				'auth_cookie_expiration',
+				DAY_IN_SECONDS,
+				$user->ID,
+				false
+			);
 		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
 
 		exit( "success\n" . EXCHANGE_COOKIE_NAME . "\n$auth_cookie" );
@@ -362,9 +362,9 @@ class REST_Controller {
 	 * D. Пошаговая загрузка данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
 	 *
-	 * @param Parser                   $Parser
+	 * @param Parser $Parser
 	 * @param \CommerceMLParser\Parser $Dispatcher
-	 * @param Update                   $update
+	 * @param Update $update
 	 *
 	 * @print 'progress|success|failure'
 	 */
@@ -400,23 +400,78 @@ class REST_Controller {
 			$update = new Update();
 		}
 
-		if ( 'import_temporary' === $mode && $products->count() ) {
-			Transaction()->set_transaction_mode();
+		if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->count() && ! $attributes->count() ) ) {
+			if ( $products->count() ) { // update temporary products table
+				Transaction()->set_transaction_mode();
 
-			$products
-				->fill_exists()
-				->fill_exists_terms( $Parser );
+				$products
+					->fill_exists()
+					->fill_exists_terms( $Parser );
 
-			$update
-				->update_products( $products )
-				->update_products_meta( $products );
+				$update
+					->update_products( $products )
+					->update_products_meta( $products );
 
-			plugin()->reset_mode();
+				plugin()->reset_mode();
 
-			$update->stop( array( 'Записаны временные данные товаров' ) );
-		}
+				$update->stop( array( 'Записаны временные данные товаров' ) );
+			}
 
-		if ( $categories->count() || $warehouses->count() || $attributes->count() ) {
+			$offers_count = $offers->count();
+			$offers       = $offers->slice( $update->progress, $update->offset['offer'] );
+
+			if ( $offers_count ) {
+				Transaction()->set_transaction_mode();
+
+//				$offers->fill_exists();
+				foreach ( $offers as $offer ) {
+					$offer->fill_relative_post();
+				}
+
+				print_r($offers);
+				die();
+
+				// second step: import posts with post meta.
+//				if ( 'import_relationships' !== $mode ) {
+//					$update
+//						->update_offers( $offers )
+//						->relationships( $offers )
+//						->update_offers_meta( $offers );
+//
+//					if ( $update->progress < $offers_count ) {
+//						// Set mode for retry.
+//						$update->set_status( 'progress' );
+//					} elseif ( 'success' === $update->status ) {
+//						if ( floatval( $this->version ) < 3 ) {
+//							plugin()->set_mode( 'deactivate', $update->set_status( 'progress' ) );
+//						}
+//					}
+//
+//					$update->stop(
+//						array(
+//							sprintf(
+//								$this->get_message_by_filename( Request::get_file()['name'] ),
+//								$update->progress,
+//								$offers_count
+//							),
+//							$update->results['meta'] . ' произвольных записей товаров обновлено.',
+//						)
+//					);
+//
+//					$update
+//						->stop(
+//							printf(
+//								'%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
+//								$update->results['relationships'],
+//								$offers->count(),
+//								$update->progress,
+//								$offers_count
+//							)
+//						);
+
+				} // third step: import posts relationships.
+
+		} else { // Update terms
 			Transaction()->set_transaction_mode();
 
 			$categories->fill_exists();
@@ -431,9 +486,9 @@ class REST_Controller {
 			// ->properties( $attributes )
 			// ->terms( $attributeValues )
 			// ->term_meta( $attributeValues );
-			if ( $products->count() && floatval( $this->version ) < 3 ) {
-				plugin()->set_mode( 'import_temporary', $update->set_status( 'progress' ) );
-			}
+//			if ( $products->count() && floatval( $this->version ) < 3 ) {
+				plugin()->set_mode( 'import_posts', $update->set_status( 'progress' ) );
+//			}
 
 			$update->stop(
 				array(
@@ -443,62 +498,13 @@ class REST_Controller {
 			);
 		}
 
-		$offers_count = $offers->count();
-		$offers       = $offers->slice( $update->progress, $update->offset['offer'] );
-
-		if ( $offers_count ) {
-			Transaction()->set_transaction_mode();
-
-			$offers->fill_exists();
-
-			// second step: import posts with post meta.
-			if ( 'import_relationships' !== $mode ) {
-				$update
-					->update_offers( $offers )
-					->relationships( $offers )
-					->update_offers_meta( $offers );
-
-				if ( $update->progress < $offers_count ) {
-					// Set mode for retry.
-					$update->set_status( 'progress' );
-				} elseif ( 'success' === $update->status ) {
-					if ( floatval( $this->version ) < 3 ) {
-						plugin()->set_mode( 'deactivate', $update->set_status( 'progress' ) );
-					}
-				}
-
-				$update->stop(
-					array(
-						sprintf(
-							$this->get_message_by_filename( Request::get_file()['name'] ),
-							$update->progress,
-							$offers_count
-						),
-						$update->results['meta'] . ' произвольных записей товаров обновлено.',
-					)
-				);
-
-				$update
-					->stop(
-						printf(
-							'%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
-							$update->results['relationships'],
-							$offers->count(),
-							$update->progress,
-							$offers_count
-						)
-					);
-
-			} // third step: import posts relationships.
-		}
-
-		if ( 'import_posts' === $mode || 'import_relationships' === $mode ) {
-			if ( $offers->count() ) {
-				Transaction()->set_transaction_mode();
-
-				$offers->fill_exists();
-			}
-		}
+//		if ( 'import_posts' === $mode || 'import_relationships' === $mode ) {
+//			if ( $offers->count() ) {
+//				Transaction()->set_transaction_mode();
+//
+//				$offers->fill_exists();
+//			}
+//		}
 
 		// Unreachable statement in theory.
 		plugin()->reset_mode();

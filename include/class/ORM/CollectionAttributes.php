@@ -53,6 +53,8 @@ class CollectionAttributes extends Collection {
 		$this->walk( $build_query );
 
 		$externals = array_unique( $externals );
+		$exists_attributes = array();
+
 		if ( ! empty( $externals ) ) {
 			$external_key   = Attribute::get_external_key();
 			$externals_args = implode( " \t\n OR ", $externals );
