@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * abstract
  */
 class Plugin {
+	const DOMAIN = DOMAIN;
+
 	/**
 	 * @var array Commented data about plugin in root file
 	 */
@@ -94,18 +96,19 @@ class Plugin {
 	 */
 	public static function get_plugin_data( $arg = null ) {
 		/** Fill if is empty */
-		if ( empty( static::$data ) ) {
-			static::$data = get_plugin_data( PLUGIN_FILE );
-			load_plugin_textdomain( static::$data['TextDomain'], false, basename( PLUGIN_DIR ) . '/languages/' );
-		}
+		// if ( empty( static::$data ) ) {
+		// 	static::$data = get_plugin_data( PLUGIN_FILE );
+		// 	load_plugin_textdomain( static::$data['TextDomain'], false, basename( PLUGIN_DIR ) . '/languages/' );
+		// }
 
-		/** Get by key */
-		if ( $arg ) {
-			return isset( static::$data[ $arg ] ) ? static::$data[ $arg ] : null;
-		}
+		// /** Get by key */
+		// if ( $arg ) {
+		// 	return isset( static::$data[ $arg ] ) ? static::$data[ $arg ] : null;
+		// }
 
 		/** Get all */
-		return static::$data;
+		// return static::$data;
+		return '1c4wp';
 	}
 
 	/**
