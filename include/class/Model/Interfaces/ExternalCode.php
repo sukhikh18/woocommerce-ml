@@ -3,9 +3,12 @@
 namespace NikolayS93\Exchange\Model\Interfaces;
 
 interface ExternalCode {
-	function getExternal();
+	static function get_external_key();
 
-	function setExternal( $ext );
+	function get_external();
 
-	static function fillExistsFromDB( &$objects );
+	function get_raw_external();
+
+	function set_external( $ext );
+//	static function fillExistsFromDB( &$objects );
 }

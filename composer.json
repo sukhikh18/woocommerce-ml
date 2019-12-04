@@ -1,14 +1,13 @@
 {
-  "require": {
-    "nikolays93/wp-admin-form": "dev-master",
-    "nikolays93/wp-admin-page": "dev-master",
-    "nikolays93/wp-admin-table": "dev-master",
-    "karakum/commerceml": "dev-master"
-  },
   "autoload": {
     "psr-4": {
       "NikolayS93\\Exchange\\": "include\\class"
     }
+  },
+  "require": {
+    "nikolays93/wp-admin-form": "dev-master",
+    "nikolays93/wp-admin-page": "dev-master",
+    "karakum/commerceml": "dev-master"
   },
   "repositories": [
     {
@@ -18,14 +17,20 @@
     {
       "type": "git",
       "url": "https://github.com/nikolays93/wp-admin-page"
-    },
-    {
-      "type": "git",
-      "url": "https://github.com/nikolays93/wp-admin-table"
-    },
-    {
-      "type": "git",
-      "url": "https://github.com/nikolays93/commerceml"
     }
-  ]
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "*",
+    "squizlabs/php_codesniffer": "*",
+    "wp-coding-standards/wpcs": "^0.13.1",
+    "phpcompatibility/phpcompatibility-wp": "*"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "\"vendor/bin/phpcs\" --config-set installed_paths vendor/wp-coding-standards/wpcs"
+    ],
+    "post-update-cmd": [
+      "\"vendor/bin/phpcs\" --config-set installed_paths vendor/wp-coding-standards/wpcs"
+    ]
+  }
 }

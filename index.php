@@ -1,175 +1,201 @@
 <?php
-
-/*
- * Plugin Name: 1C Exchange
+/**
+ * Plugin Name: WooCommerce and 1C Exchange
  * Plugin URI: https://github.com/nikolays93
- * Description: Передача данных для актуализации информации на сайте
- * Version: 0.2
+ * Description: Передача данных между Wordpress сайтом и приложением 1С.
+ * Version: 0.0.8
  * Author: NikolayS93
  * Author URI: https://vk.com/nikolays_93
  * Author EMAIL: NikolayS93@ya.ru
  * License: GNU General Public License v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: 1c4wp
+ * Text Domain: w1ce
  * Domain Path: /languages/
+ *
+ * @package Newproject.WordPress.plugin
  */
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchange\Model\ExchangeProduct;
-use NikolayS93\Exchange\Model\ExchangeOffer;
-
-// for debug
-// $_SERVER['PHP_AUTH_USER'] = 'root';
-// $_SERVER['PHP_AUTH_PW'] = 'q1w2';
-
-// define('EX_DEBUG_ONLY', TRUE);
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );
 }
-if ( version_compare( PHP_VERSION, '5.4' ) < 0 ) {
-	throw new \Exception( 'Plugin requires PHP 5.4 or above' );
-}
-
-if ( defined( __NAMESPACE__ . '\PLUGIN_DIR' ) || defined( __NAMESPACE__ . '\PLUGIN_FILE' ) ) {
-	return;
-}
 
 if ( ! defined( __NAMESPACE__ . '\PLUGIN_DIR' ) ) {
-	define( __NAMESPACE__ . '\PLUGIN_DIR', __DIR__ );
-}
-if ( ! defined( __NAMESPACE__ . '\PLUGIN_FILE' ) ) {
-	define( __NAMESPACE__ . '\PLUGIN_FILE', __FILE__ );
-}
-
-require_once ABSPATH . "wp-admin/includes/plugin.php";
-require_once PLUGIN_DIR . '/vendor/autoload.php';
-
-define( __NAMESPACE__ . '\DEFAULT_DEVELOPER_TAX_SLUG', 'developer' );
-define( __NAMESPACE__ . '\DEFAULT_WAREHOUSE_TAX_SLUG', 'warehouse' );
-
-/**
- * Uniq prefix
- */
-define( __NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data( 'TextDomain' ) );
-
-/**
- * Server can get max size
- * @todo set to filter
- */
-if ( ! defined( __NAMESPACE__ . '\FILE_LIMIT' ) ) {
-	define( __NAMESPACE__ . '\FILE_LIMIT', null );
+	define( __NAMESPACE__ . '\PLUGIN_DIR', dirname( __FILE__ ) . DIRECTORY_SEPARATOR );
 }
 
 /**
- * Work in charset
+ * Post meta field key (name)
  */
-if ( ! defined( __NAMESPACE__ . '\XML_CHARSET' ) ) {
-	define( __NAMESPACE__ . '\XML_CHARSET', 'UTF-8' );
+if ( ! defined( __NAMESPACE__ . '\EXTERNAL_CODE_KEY' ) ) {
+	define( __NAMESPACE__ . '\EXTERNAL_CODE_KEY', '_ext_ID' );
 }
 
 /**
- * Notice type
- * @todo check this
+ * Plugin auth cookie name
  */
-if ( ! defined( __NAMESPACE__ . '\SUPPRESS_NOTICES' ) ) {
-	define( __NAMESPACE__ . '\SUPPRESS_NOTICES', false );
-}
-
-/**
- * Simple products only
- * @todo check this
- */
-if ( ! defined( __NAMESPACE__ . '\DISABLE_VARIATIONS' ) ) {
-	define( __NAMESPACE__ . '\DISABLE_VARIATIONS', false );
+if ( ! defined( __NAMESPACE__ . '\COOKIE_NAME' ) ) {
+	define( __NAMESPACE__ . '\COOKIE_NAME', 'ex-auth' );
 }
 
 /**
  * Current timestamp
  */
-if ( ! defined( __NAMESPACE__ . '\TIMESTAMP' ) ) {
-	define( __NAMESPACE__ . '\TIMESTAMP', time() );
+if ( ! defined( __NAMESPACE__ . '\START_TIMESTAMP' ) ) {
+	define( __NAMESPACE__ . '\START_TIMESTAMP', time() );
 }
 
 /**
- * Auth cookie name
+ * Work with charset
  */
-if ( ! defined( __NAMESPACE__ . '\COOKIENAME' ) ) {
-	define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
+if ( ! defined( __NAMESPACE__ . '\CHARSET' ) ) {
+	define( __NAMESPACE__ . '\CHARSET', 'UTF-8' );
+}
+
+function file_is_readble( $path, $show_error = false ) {
+	if ( is_file( $path ) && is_readable( $path ) ) {
+		return true;
+	} else {
+		if ( $show_error ) {
+			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
+		}
+
+		return false;
+	}
 }
 
 /**
- * Woocommerce currency for single price type
- * @todo move to function
+ * Safe dynamic expression include.
+ *
+ * @param string $path relative path.
  */
-if ( ! defined( __NAMESPACE__ . '\CURRENCY' ) ) {
-	define( __NAMESPACE__ . '\CURRENCY', null );
-}
-
-if ( ! defined( 'NikolayS93\Exchange\Model\EXT_ID' ) ) {
-	define( 'NikolayS93\Exchange\Model\EXT_ID', 'EXT_ID' );
-}
-if ( ! defined( 'EX_EXT_METAFIELD' ) ) {
-	define( 'EX_EXT_METAFIELD', 'EXT_ID' );
-}
-
-register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
-// register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'uninstall' ) );
-// register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'deactivate' ) );
-
-require_once PLUGIN_DIR . '/include/utils.php';
-require_once PLUGIN_DIR . '/include/statistic.php';
-
-require_once PLUGIN_DIR . '/include/post-types.php';
-require_once PLUGIN_DIR . '/include/admin-page.php';
-require_once PLUGIN_DIR . '/include/exchange.php';
-require_once PLUGIN_DIR . '/include/register-query.php';
-require_once PLUGIN_DIR . '/include/additional-properties.php';
-
-add_filter( 'exchange_posts_import_offset', __NAMESPACE__ . '\metas_exchange_posts_import_offset', 10, 4 );
-function metas_exchange_posts_import_offset( $offset, $productsCount, $offersCount, $filename ) {
-	if ( 0 === strpos( $filename, 'rest' ) || 0 === strpos( $filename, 'price' ) ) {
-		$offset = 1000;
+function include_plugin_file( $path ) {
+	if ( 0 !== strpos( $path, PLUGIN_DIR ) ) {
+		$path = PLUGIN_DIR . $path;
 	}
 
-	return $offset;
+	if ( file_is_readble( $path ) ) {
+		return require $path;
+	}
+
+	return false;
 }
 
-add_action( '1c4wp_exchange', __NAMESPACE__ . '\do_exchange', 10 );
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
+if ( ! include_plugin_file( 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) ) {
+	array_map(
+		__NAMESPACE__ . '\include_plugin_file',
+		array(
+            'vendor/wp-admin-form/wp-admin-form.php',
+            'vendor/wp-admin-page/init.php',
+			'include/class/Creational/Singleton.php',
+			'include/class/ORM/Collection.php',
+			'include/class/ORM/CollectionPosts.php',
+			'include/class/ORM/CollectionTerms.php',
+			'include/class/ORM/CollectionAttributes.php',
+			'include/class/Model/Traits/ItemMeta.php',
+			'include/class/Model/Interfaces/ExternalCode.php',
+			'include/class/Model/Interfaces/HasParent.php',
+			'include/class/Model/Interfaces/Identifiable.php',
+			'include/class/Model/Interfaces/Taxonomy.php',
+			'include/class/Model/Interfaces/Term.php',
+			'include/class/Model/Interfaces/Value.php',
+			'include/class/Model/Abstracts/Term.php',
+			'include/class/Model/Attribute.php',
+			'include/class/Model/AttributeValue.php',
+			'include/class/Model/Category.php',
+			'include/class/Model/ExchangeOffer.php',
+			'include/class/Model/ExchangePost.php',
+			'include/class/Model/ExchangeProduct.php',
+			'include/class/Model/Warehouse.php',
+			'include/class/Error.php',
+			'include/class/Request.php',
+			'include/class/Transaction.php',
+			'include/class/Parser.php',
+			'include/class/Plugin.php',
+			'include/class/Register.php',
+		)
+	);
+}
 
+include_plugin_file( 'include/utils.php' );
 
 /**
- * Register custom taxonomies
+ * Returns the single instance of this plugin, creating one if needed.
+ *
+ * @return Plugin
  */
-add_action( 'init', __NAMESPACE__ . '\register_post_types' );
+function plugin() {
+	return Plugin::get_instance();
+}
 
 /**
- * Add admin menu page
+ * @return Error
  */
-add_action( 'plugins_loaded', __NAMESPACE__ . '\admin_page', 10 );
+function error() {
+	return Error::get_instance();
+}
 
 /**
- * Add last modified to products table
+ * @return Transaction
  */
-// add_filter( 'manage_edit-product_columns', __NAMESPACE__ . '\true_add_post_columns', 10, 1 );
-// function true_add_post_columns($my_columns) {
-//     $my_columns['modified'] = 'Last modified';
-//     return $my_columns;
-// }
+function transaction() {
+	return Transaction::get_instance();
+}
 
-// add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\true_fill_post_columns', 10, 1 );
-// function true_fill_post_columns( $column ) {
-//     global $post;
-//     switch ( $column ) {
-//         case 'modified':
-//             echo $post->post_modified;
-//             break;
-//     }
-// }
+/**
+ * @return \CommerceMLParser\Parser
+ */
+function dispatcher() {
+	return \CommerceMLParser\Parser::getInstance();
+}
+
+/**
+ * Initialize this plugin once all other plugins have finished loading.
+ */
+add_action( 'plugins_loaded', __NAMESPACE__ . '\Plugin', 10 );
+add_action(
+	'plugins_loaded',
+	function () {
+		$register = new Register();
+		$register->register_plugin_page();
+		// Register //example.com/exchange/ query
+		$register->register_exchange_url();
+
+//		add_action( 'woocommerce_attribute_deleted',
+//			array( $register, 'delete_attribute_taxonomy_meta' ), 10, 3 );
+//
+//		// Show external Fields
+//		add_action( 'woocommerce_product_options_general_product_data',
+//			array( $register, 'add_product_external_code_field' ) );
+//
+//		// Save external Fields
+//		add_action( 'woocommerce_process_product_meta',
+//			array( $register, 'sanitize_product_external_code_field' ) );
+	},
+	20
+);
+
+register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'activate' ) );
+register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'deactivate' ) );
+register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'uninstall' ) );
+
+/**
+ * Unsorted code
+ */
+add_action( 'wp_ajax_1c4wp_exchange', function() {
+	if ( ! wp_verify_nonce( $_REQUEST['exchange_nonce'], Plugin::DOMAIN ) ) {
+		echo 'Ошибка! нарушены правила безопасности';
+		wp_die();
+	}
+
+	do_action( '1c4wp_exchange' );
+	wp_die();
+} );
 
 add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mode ) {
-	if ( 'product' != $post->post_status ) {
+	if ( 'product' !== $post->post_status ) {
 		return $status;
 	}
 
@@ -188,87 +214,34 @@ add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mod
 			echo __( 'Last Modified' ) . '<br />';
 
 			/** This filter is documented in wp-admin/includes/class-wp-posts-list-table.php */
-			echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime, $post, 'date', $mode ) . '</abbr><br />';
+			echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime,
+					$post, 'date', $mode ) . '</abbr><br />';
 		}
 	}
 
 	return $status;
 }, 10, 4 );
 
-/** @var @todo Change hook */
+/** @todo Change hook */
 add_action( 'restrict_manage_posts', function ( $post_type ) {
-	if ( 'product' == $post_type ) {
-		?>
-        <style>
-            body table.wp-list-table td.column-thumb img {
-                max-width: 75px;
-                max-height: 75px;
-            }
-        </style>
-		<?php
-	}
+	if ( 'product' === $post_type ) : ?>
+        <!--		<style>-->
+        <!--			body table.wp-list-table td.column-thumb img {-->
+        <!--				max-width: 75px;-->
+        <!--				max-height: 75px;-->
+        <!--			}-->
+        <!--		</style>-->
+	<?php endif;
 }, 10, 1 );
 
-add_action( 'woocommerce_attribute_deleted', function ( $id, $attribute_name, $taxonomy ) {
-	global $wpdb;
+add_filter( 'Term::set_name', function ( $name, $obj ) {
+	$name  = function_exists( 'mb_strtolower' ) ? mb_strtolower( $name ) : strtolower( $name );
+	$name  = str_replace( '  ', ' ', $name );
+	$_name = preg_replace( "#^[0-9.,\\\|/)(-+_\s]+#si", "", $name );
 
-	$is_deleted = $wpdb->delete(
-		$wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
-		array( 'tax_id' => $id ),
-		array( '%d' )
-	);
-}, 10, 3 );
+	return mb_ucfirst( $_name ? $_name : $name );
+}, 10, 2 );
 
-function strict_error_handler( $errno, $errstr, $errfile, $errline, $errcontext ) {
-	if ( 0 === error_reporting() ) {
-		return false;
-	}
-
-	switch ( $errno ) {
-		case E_NOTICE:
-		case E_USER_NOTICE:
-			$type = "Notice";
-			break;
-		case E_WARNING:
-		case E_USER_WARNING:
-			$type = "Warning";
-			break;
-		case E_ERROR:
-		case E_USER_ERROR:
-			$type = "Fatal Error";
-			break;
-		default:
-			$type = "Unknown Error";
-			break;
-	}
-
-	$message = sprintf( "%s in %s on line %d", $errstr, $errfile, $errline );
-	Utils::error( $message, "PHP $type" );
-}
-
-function strict_exception_handler( $exception ) {
-	$message = sprintf( "%s in %s on line %d", $exception->getMessage(), $exception->getFile(), $exception->getLine() );
-	Utils::error( $message, "Exception" );
-}
-
-function output_callback( $buffer ) {
-	global $ex_is_error;
-
-	if ( ! headers_sent() ) {
-		$is_xml       = @$_GET['mode'] == 'query';
-		$content_type = ! $is_xml || $ex_is_error ? 'text/plain' : 'text/xml';
-		header( "Content-Type: $content_type; charset=" . XML_CHARSET );
-	}
-
-	$buffer = ( XML_CHARSET == 'UTF-8' ) ? "\xEF\xBB\xBF$buffer" : mb_convert_encoding( $buffer, XML_CHARSET, 'UTF-8' );
-
-	return $buffer;
-}
-
-function transaction_shutdown_function() {
-	$error = error_get_last();
-
-	$is_commit = ! isset( $error['type'] ) || $error['type'] > E_PARSE;
-
-	Utils::wpdb_stop( $is_commit );
-}
+add_filter( 'Term::set_slug', function ( $slug, $obj ) {
+	return esc_cyr( (string) $slug, false );
+}, 10, 2 );

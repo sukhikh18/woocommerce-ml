@@ -1,480 +1,329 @@
 <?php
-
+/**
+ * Allowed modes from GET
+ *
+ * @return array
+ */
 namespace NikolayS93\Exchange;
 
-if ( ! function_exists( 'save_get_request' ) ) {
-	/**
-	 * Get requested data
-	 */
-	function save_get_request( $k ) {
-		$value = false;
+function get_allowed_modes() {
+    $allowed = apply_filters(
+        Plugin::PREFIX . 'get_allowed_modes',
+        array(
+            'checkauth',
+            'init',
+            'file',
+            'import',
+            'deactivate',
+            'complete',
+        )
+    );
 
-		if ( isset( $_REQUEST[ $k ] ) ) {
-			$value = sanitize_text_field( $_REQUEST[ $k ] );
-		}
-
-		return apply_filters( 'get_request__' . $k, $value );
-	}
+    return (array) $allowed;
 }
 
-if ( ! function_exists( 'get_full_request_uri' ) ) {
-	function get_full_request_uri() {
-		$uri = 'http';
-		if ( @$_SERVER['HTTPS'] == 'on' ) {
-			$uri .= 's';
-		}
-		$uri .= "://{$_SERVER['SERVER_NAME']}";
-		if ( $_SERVER['SERVER_PORT'] != 80 ) {
-			$uri .= ":{$_SERVER['SERVER_PORT']}";
-		}
-		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$uri .= $_SERVER['REQUEST_URI'];
-		}
-
-		return $uri;
-	}
+function get_allowed_types() {
+    return array( 'catalog' );
 }
 
-if ( ! function_exists( 'check_zip_extension' ) ) {
-	/**
-	 * Zip functions required
-	 */
-	function check_zip_extension() {
-		@exec( "which unzip", $_, $status );
-		$is_zip = @$status === 0 || class_exists( 'ZipArchive' );
-		if ( ! $is_zip ) {
-			Plugin::error( "The PHP extension zip is required." );
-		}
-	}
-}
+function get_upload_dir() {
+    $wp_upload_dir = wp_upload_dir();
 
-if ( ! function_exists( 'filesize_to_bytes' ) ) {
-	function filesize_to_bytes( $filesize ) {
-		switch ( substr( $filesize, - 1 ) ) {
-			case 'G':
-			case 'g':
-				return (int) $filesize * 1000000000;
-			case 'M':
-			case 'm':
-				return (int) $filesize * 1000000;
-			case 'K':
-			case 'k':
-				return (int) $filesize * 1000;
-			default:
-				return $filesize;
-		}
-	}
-}
-
-if ( ! function_exists( 'get_filesize_limit' ) ) {
-	function get_filesize_limit() {
-		// wp_max_upload_size()
-		$file_limits = array(
-			filesize_to_bytes( '10M' ),
-			filesize_to_bytes( ini_get( 'post_max_size' ) ),
-			filesize_to_bytes( ini_get( 'memory_limit' ) ),
-		);
-
-		@exec( "grep ^MemFree: /proc/meminfo", $output, $status );
-		if ( @$status === 0 && $output ) {
-			$output        = preg_split( "/\s+/", $output[0] );
-			$file_limits[] = intval( $output[1] * 1000 * 0.7 );
-		}
-
-		if ( FILE_LIMIT ) {
-			$file_limits[] = filesize_to_bytes( FILE_LIMIT );
-		}
-		$file_limit = min( $file_limits );
-
-		return $file_limit;
-	}
-}
-
-if ( ! function_exists( 'disable_time_limit' ) ) {
-	function disable_time_limit() {
-		$disabled_functions = explode( ',', ini_get( 'disable_functions' ) );
-		if ( ! in_array( 'set_time_limit', $disabled_functions ) ) {
-			@set_time_limit( 0 );
-		}
-	}
-}
-
-if ( ! function_exists( 'check_wp_auth' ) ) {
-	function check_wp_auth() {
-		global $user_id;
-
-		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
-			return;
-		}
-
-		if ( is_user_logged_in() ) {
-			$user = wp_get_current_user();
-			if ( ! $user_id = $user->ID ) {
-				Plugin::error( "Not logged in" );
-			}
-		} elseif ( ! empty( $_COOKIE[ COOKIENAME ] ) ) {
-			$user = wp_validate_auth_cookie( $_COOKIE[ COOKIENAME ], 'auth' );
-			if ( ! $user_id = $user ) {
-				Plugin::error( "Invalid cookie" );
-			}
-		}
-
-		Plugin::check_user_permissions( $user_id );
-	}
-}
-
-if ( ! function_exists( 'esc_cyr' ) ) {
-	/**
-	 * Escape cyrilic chars
-	 */
-	function esc_cyr( $s, $context = 'url' ) {
-		if ( 'url' == $context ) {
-			$s = strip_tags( (string) $s );
-			$s = str_replace( array( "\n", "\r" ), " ", $s );
-			$s = preg_replace( "/\s+/", ' ', $s );
-		}
-
-		$s = trim( $s );
-		$s = function_exists( 'mb_strtolower' ) ? mb_strtolower( $s ) : strtolower( $s );
-		$s = strtr( $s, array(
-			'а' => 'a',
-			'б' => 'b',
-			'в' => 'v',
-			'г' => 'g',
-			'д' => 'd',
-			'е' => 'e',
-			'ё' => 'e',
-			'ж' => 'j',
-			'з' => 'z',
-			'и' => 'i',
-			'й' => 'y',
-			'к' => 'k',
-			'л' => 'l',
-			'м' => 'm',
-			'н' => 'n',
-			'о' => 'o',
-			'п' => 'p',
-			'р' => 'r',
-			'с' => 's',
-			'т' => 't',
-			'у' => 'u',
-			'ф' => 'f',
-			'х' => 'h',
-			'ц' => 'c',
-			'ч' => 'ch',
-			'ш' => 'sh',
-			'щ' => 'shch',
-			'ы' => 'y',
-			'э' => 'e',
-			'ю' => 'yu',
-			'я' => 'ya',
-			'ъ' => '',
-			'ь' => ''
-		) );
-
-		if ( 'url' == $context ) {
-			$s = preg_replace( "/[^0-9a-z-_ ]/i", "", $s );
-			$s = str_replace( " ", "-", $s );
-		}
-
-		return $s;
-	}
+    return apply_filters( Plugin::PREFIX . "get_upload_dir",
+        $wp_upload_dir['basedir'], $wp_upload_dir );
 }
 
 /**
- * Waste?
+ * @param string $dir
+ *
+ * @return bool is make try
  */
+function try_make_dir( $dir = '' ) {
+    if ( ! is_dir( $dir ) ) {
+        @mkdir( $dir, 0777, true ) or Error()->add_message( printf(
+            __( "Sorry but %s not has write permissions", Plugin::DOMAIN ),
+            $dir
+        ), "Error" );
 
-// if( !function_exists('getTaxonomyByExternal') ) {
-//     function getTaxonomyByExternal( $raw_ext_code ) {
-//         global $wpdb;
+        return true;
+    }
 
-//         $rsResult = $wpdb->get_results( $wpdb->prepare("
-//             SELECT wat.*, watm.* FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
-//             INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id
-//             WHERE watm.meta_value = %d
-//             LIMIT 1
-//             ", $raw_ext_code) );
+    return false;
+}
 
-//         if( $rsResult ) {
-//             $res = current($rsResult);
-//             $obResult = new ExchangeAttribute( $res, $res->meta_value );
-//         }
+function check_writable( $dir ) {
+    if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+        Error()->add_message( printf(
+            __( "Sorry but %s not found. Direcory is writable?", Plugin::DOMAIN ),
+            $dir
+        ) );
+    }
+}
 
-//         return $obResult;
-//     }
-// }
+function get_exchange_dir( $namespace = null ) {
+    $path = get_upload_dir() . "/1c-exchange/" . $namespace;
+    $dir = trailingslashit( apply_filters( Plugin::PREFIX . "get_exchange_dir", $path, $namespace ) );
 
-// if( !function_exists('getAttributesMap') ) {
-//     function getAttributesMap() {
-//         global $wpdb;
+    try_make_dir( $dir );
+    check_writable( $dir );
 
-//         $arResult = array();
-//         $rsResult = $wpdb->get_results( "
-//             SELECT wat.*, watm.*, watm.meta_value as ext FROM {$wpdb->prefix}woocommerce_attribute_taxonomies AS wat
-//             INNER JOIN {$wpdb->prefix}woocommerce_attribute_taxonomymeta AS watm ON wat.attribute_id = watm.tax_id" );
+    return realpath( $dir );
+}
 
-//         die();
+function get_exchange_file( $filepath, $namespace = 'catalog' ) {
+    if ( ! empty( $filepath['path'] ) ) {
+        $filepath = $filepath['path'];
+    }
 
-//         foreach ($rsResult as $res)
-//         {
-//             $arResult[ $res->meta_value ] = new ExchangeAttribute( $res, $res->meta_value );
-//         }
+    $file = new \SplFileObject( get_exchange_dir( $namespace ) . '/' . $filepath );
 
-//         return $arResult;
-//     }
-// }
+    if ( $file->isFile() && $file->isReadable() && 'xml' == strtolower( $file->getExtension() ) ) {
+        return $file->getPathname();
+    }
 
-// if( !function_exists('parse_decimal') ) {
-//     function parse_decimal($number) {
-//         $number = str_replace(array(',', ' '), array('.', ''), $number);
+    return false;
+}
 
-//         return (float) $number;
-//     }
-// }
+function get_exchange_files( $filename = null, $namespace = 'catalog' ) {
+    $arResult = array();
 
-// if( !function_exists('sanitize_price') ) {
-//     function sanitize_price($string, $delimiter = '.') {
-//         $price = 0;
+    // Get all folder objects
+    $dir = get_exchange_dir( $namespace );
 
-//         if( $string ) {
-//             $arrPriceStr = explode($delimiter, $string);
-//             foreach ($arrPriceStr as $i => $priceStr)
-//             {
-//                 if( sizeof($arrPriceStr) !== $i + 1 ) {
-//                     $price += (int)preg_replace("/\D/", '', $priceStr);
-//                 }
-//                 else {
-//                     $price += (int)$priceStr / 100;
-//                 }
-//             }
-//         }
+    $objects = new \RecursiveIteratorIterator(
+        new \RecursiveDirectoryIterator( $dir ),
+        \RecursiveIteratorIterator::SELF_FIRST
+    );
 
-//         return $price;
-//     }
-// }
+    /**
+     * Check objects name
+     */
+    foreach ( $objects as $path => $object ) {
 
-// add_action('delete_term', 'wc1c_delete_term', 10, 4);
-// function wc1c_delete_term($term_id, $tt_id, $taxonomy, $deleted_term) {
-//     global $wpdb;
+        if ( ! empty( $filename ) ) {
+            /**
+             * Filename start with search string
+             */
+            if ( 0 === strpos( $object->getBasename(), $filename ) ) {
+                $arResult[] = $path;
+            }
+        } else {
+            /**
+             * Get all xml files
+             */
+            $arResult[] = $path;
+        }
+    }
 
-//     if ($taxonomy != 'product_cat' && strpos($taxonomy, 'pa_') !== 0) return;
-
-//     $wpdb->delete($wpdb->termmeta, array('term_id' => $term_id));
-//     if (function_exists('wc1c_check_wpdb_error')) wc1c_check_wpdb_error();
-// }
-
-// function wc1c_woocommerce_attribute_by_id($attribute_id) {
-//     global $wpdb;
-
-//     $cache_key = "wc1c_woocomerce_attribute_by_id-$attribute_id";
-//     $attribute = wp_cache_get($cache_key);
-//     if ($attribute === false) {
-//         $attribute = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_id = %d", $attribute_id), ARRAY_A);
-//         if (function_exists('wc1c_check_wpdb_error')) wc1c_check_wpdb_error();
-
-//         if ($attribute) {
-//             $attribute['taxonomy'] = wc_attribute_taxonomy_name($attribute['attribute_name']);
-
-//             wp_cache_set($cache_key, $attribute);
-//         }
-//     }
-
-//     return $attribute;
-// }
-
-// function wc1c_delete_woocommerce_attribute($attribute_id) {
-//     global $wpdb;
-
-//     $attribute = wc1c_woocommerce_attribute_by_id($attribute_id);
-
-//     if (!$attribute) return false;
-
-//     delete_option("{$attribute['taxonomy']}_children");
-
-//     $terms = get_terms($attribute['taxonomy'], "hide_empty=0");
-//     foreach ($terms as $term) {
-//         wp_delete_term($term->term_id, $attribute['taxonomy']);
-//     }
-
-//     $wpdb->delete("{$wpdb->prefix}woocommerce_attribute_taxonomies", compact('attribute_id'));
-//     if (function_exists('wc1c_check_wpdb_error')) wc1c_check_wpdb_error();
-// }
+    return $arResult;
+}
 
 /**
- * Utilites
+ * @param int|\WP_User $user User ID or object.
+ *
+ * @return bool
  */
+function has_permissions( $user ) {
+    $permissions = plugin()->get_permissions();
+    if( is_string( $permissions ) ) {
+        $permissions = array( $permissions );
+    }
 
-// function ex_post_id_by_meta($key, $value) {
-//     global $wpdb;
+    if( is_array( $permissions ) ) {
+        foreach ( $permissions as $permission ) {
+            if ( user_can( $user, $permission ) ) {
+                return true;
+            }
+        }
+    }
 
-//     if ($value === null) return;
-
-//     $cache_key = "ex_post_id_by_meta-$key-$value";
-//     $post_id = wp_cache_get($cache_key);
-//     if ($post_id === false) {
-//         $post_id = $wpdb->get_var($wpdb->prepare("
-//             SELECT post_id FROM $wpdb->postmeta
-//             JOIN $wpdb->posts ON post_id = ID
-//             WHERE meta_key = %s AND meta_value = %s",
-//             $key, $value));
-//         ex_check_wpdb_error();
-
-//         if ($post_id) wp_cache_set($cache_key, $post_id);
-//     }
-
-//     return $post_id;
-// }
-
-// function wc1c_term_id_by_meta($key, $value) {
-//     global $wpdb;
-
-//     if ($value === null) return;
-
-//     $cache_key = "wc1c_term_id_by_meta-$key-$value";
-//     $term_id = wp_cache_get($cache_key);
-//     if ($term_id === false) {
-//         $term_id = $wpdb->get_var($wpdb->prepare("SELECT tm.term_id FROM $wpdb->termmeta tm JOIN $wpdb->terms t ON tm.term_id = t.term_id WHERE meta_key = %s AND meta_value = %s", $key, $value));
-//         wc1c_check_wpdb_error();
-
-//         if ($term_id) wp_cache_set($cache_key, $term_id);
-//     }
-
-//     return $term_id;
-// }
-
+    return false;
+}
 
 /**
- * Transaction session
+ * @return \WP_Error|\WP_User
  */
+function check_current_user() {
+    global $user_id;
 
-// function ex_xml_start_element_handler($parser, $name, $attrs) {
-//     global $wc1c_namespace, $wc1c_is_full, $wc1c_names, $wc1c_depth;
+    if ( is_user_logged_in() ) {
+        $user         = wp_get_current_user();
+        $user_id      = $user->ID;
+        $method_error = __( 'User not logged in', Plugin::DOMAIN );
+    } elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
+        $user         = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
+        $user_id      = $user->ID;
+        $method_error = __( 'Invalid cookie', Plugin::DOMAIN );
+    } else {
+        $user_id      = 0;
+        $method_error = __( 'User not identified', Plugin::DOMAIN );
+    }
 
-//     $wc1c_names[] = $name;
-//     $wc1c_depth++;
+    if ( ! $user_id ) {
+        $user = new \WP_Error( 'AUTH_ERROR', $method_error );
+    }
 
-//     call_user_func("wc1c_{$wc1c_namespace}_start_element_handler", $wc1c_is_full, $wc1c_names, $wc1c_depth, $name, $attrs);
+    if ( ! has_permissions( $user_id ) ) {
+        $user = new \WP_Error(
+            'AUTH_ERROR',
+            sprintf(
+                'User %s has not permissions',
+                get_user_meta( $user_id, 'nickname', true )
+            )
+        );
+    }
 
-//     static $element_number = 0;
-//     $element_number++;
-//     if ($element_number > 1000) {
-//         $element_number = 0;
-//         wp_cache_flush();
-//     }
-// }
+    return $user;
+}
 
-// function ex_xml_character_data_handler($parser, $data) {
-//     global $wc1c_namespace, $wc1c_is_full, $wc1c_names, $wc1c_depth;
+function get_message_by_filename( $file_name = '' ) {
+    switch ( true ) {
+        case 0 === strpos( $file_name, 'price' ):
+            return '%s из %s цен обработано.';
 
-//     $name = $wc1c_names[$wc1c_depth];
+        case 0 === strpos( $file_name, 'rest' ):
+            return '%s из %s запасов обработано.';
 
-//     call_user_func("wc1c_{$wc1c_namespace}_character_data_handler", $wc1c_is_full, $wc1c_names, $wc1c_depth, $name, $data);
-// }
+        default:
+            return '%s из %s предложений обработано.';
+    }
+}
 
-// function ex_xml_end_element_handler($parser, $name) {
-//     global $wc1c_namespace, $wc1c_is_full, $wc1c_names, $wc1c_depth;
+function mb_ucfirst( $string, $enc = 'UTF-8' ) {
+    if ( function_exists( 'mb_strtoupper' ) && function_exists( 'mb_substr' ) && function_exists( 'mb_strlen' ) ) {
+        return mb_strtoupper( mb_substr( $string, 0, 1, $enc ), $enc ) .
+               mb_substr( $string, 1, mb_strlen( $string, $enc ), $enc );
+    }
 
-//     call_user_func("wc1c_{$wc1c_namespace}_end_element_handler", $wc1c_is_full, $wc1c_names, $wc1c_depth, $name);
+    return ucfirst( $string );
+}
 
-//     array_pop($wc1c_names);
-//     $wc1c_depth--;
-// }
+function get_time( $time = false ) {
+    return $time === false ? microtime( true ) : microtime( true ) - $time;
+}
 
-// add_action('wp_ajax_exchange_files_upload', __NAMESPACE__ . '\exchange_files_upload' );
-// function exchange_files_upload() {
-//     $file_errors = array(
-//         0 => "There is no error, the file uploaded with success",
-//         1 => "The uploaded file exceeds the upload_max_files in server settings",
-//         2 => "The uploaded file exceeds the MAX_FILE_SIZE from html form",
-//         3 => "The uploaded file uploaded only partially",
-//         4 => "No file was uploaded",
-//         6 => "Missing a temporary folder",
-//         7 => "Failed to write file to disk",
-//         8 => "A PHP extension stoped file to upload",
-//         9 => "File already exists.",
-//         10 => "File is too large. Max file size.",
-//         500 => "Upload Failed.",
-//     );
+function is_debug() {
+    return ( defined( 'WP_DEBUG_SHOW' ) && WP_DEBUG_SHOW ) ||
+        ( ! defined( 'WP_DEBUG_SHOW' ) && defined( 'WP_DEBUG' ) && WP_DEBUG );
+}
 
-//     $posted_data =  isset( $_POST ) ? $_POST : array();
-//     $file_data = isset( $_FILES ) ? $_FILES : array();
-//     $data = array_merge( $posted_data, $file_data );
-//     $response = array();
-//     $need_unpack = false;
+/**
+ * Zip functions required
+ */
+function check_zip_extension() {
+    // @exec( "which unzip", $_, $status );
+    // ! 0 === @$status
 
-//     $upload_path = EX_DATA_DIR . 'catalog/';
+    if ( ! class_exists( 'ZipArchive' ) ) {
+        return new \WP_Error( 'ZIP_ABSENT', 'The PHP extension zip is required.' );
+    }
 
-//     if(!file_exists($upload_path)) mkdir($upload_path);
+    return true;
+}
 
-//     for ($i=0; isset( $data["file_" . $i] ) ; $i++) {
-//         $file = $data["file_" . $i];
+/**
+ * @param array|string $paths for ex. glob("$fld/*.zip")
+ * @param String $dir for ex. EX_DATA_DIR . '/catalog'
+ * @param Boolean $rm is remove after unpack
+ *
+ * @return String|true    error message | all right
+ */
+function unzip( $zip_path, $dir, $nondelete = false ) {
+    $zip    = new \ZipArchive();
+    $result = $zip->open( $zip_path );
+    if ( $result !== true ) {
+        return sprintf( 'Failed open archive %s with error code %d', $zip_path, $result );
+    }
 
-//         /**
-//         * Get sanitized filename
-//         */
-//         $fullname = explode( '.', $file["name"] );
-//         $ext = array_pop( $fullname );
-//         $file_name = implode('.', array_map(array(__NAMESPACE__ . '\Utils', 'esc_cyr'), $fullname));
-//         $file_name .= '.' . $ext;
+    $zip->extractTo( $dir ) or Error()->add_message( sprintf( 'Failed to extract from archive %s', $zip_path ) );
+    $zip->close() or Error()->add_message( sprintf( 'Failed to close archive %s', $zip_path ) );
 
-//         $file_path = $upload_path . $file_name;
+    if ( ! $nondelete ) {
+        unlink( $zip_path );
+    }
 
-//         $response['FILE_' . $i] = array(
-//             'name' => $file_name,
-//             'tmp_name' => $file["tmp_name"],
-//             'size' => $file["size"],
-//             'error' => $file["error"],
-//             'path' => $file_path,
-//             'ext' => $ext,
-//         );
+    return true;
+}
 
-//         if( file_exists($file_path) ) $file_error = 9;
-//         if( get_file_limit() < $file_size ) $file_error = 10;
+function esc_external( $ext ) {
+    $pos = stripos( $ext, '/' );
+    if ( false !== $pos ) {
+        $ext = substr( $ext, $pos );
+    }
 
-//         if($file["error"] > 0) {
-//             $response["response"] = "ERROR";
-//             $response["error"] = $file_errors[ $file_error ];
-//         }
-//     }
+    return $ext;
+}
 
-//     if( "ERROR" !== $response["response"] ) {
-//         for ($i=0; isset( $response['FILE_' . $i] ) ; $i++) {
-//             $sFile = $response['FILE_' . $i];
+/**
+ * Escape cyrillic chars
+ */
+function esc_cyr( $s, $context = 'url' ) {
+    if ( 'url' === $context ) {
+        $s = wp_strip_all_tags( (string) $s );
+        $s = str_replace( array( "\n", "\r" ), ' ', $s );
+        $s = preg_replace( '/\s+/', ' ', $s );
+    }
 
-//             if( move_uploaded_file( $sFile['tmp_name'], $sFile['path'] ) ) {
-//                 $info = pathinfo( $sFile['path'] );
-//                 if( !empty( $info["extension"] ) ) $sFile['ext'] = $info["extension"];
+    $s = trim( $s );
+    $s = function_exists( 'mb_strtolower' ) ? mb_strtolower( $s ) : strtolower( $s );
+    $s = strtr(
+        $s,
+        array(
+            'а' => 'a',
+            'б' => 'b',
+            'в' => 'v',
+            'г' => 'g',
+            'д' => 'd',
+            'е' => 'e',
+            'ё' => 'e',
+            'ж' => 'j',
+            'з' => 'z',
+            'и' => 'i',
+            'й' => 'y',
+            'к' => 'k',
+            'л' => 'l',
+            'м' => 'm',
+            'н' => 'n',
+            'о' => 'o',
+            'п' => 'p',
+            'р' => 'r',
+            'с' => 's',
+            'т' => 't',
+            'у' => 'u',
+            'ф' => 'f',
+            'х' => 'h',
+            'ц' => 'c',
+            'ч' => 'ch',
+            'ш' => 'sh',
+            'щ' => 'shch',
+            'ы' => 'y',
+            'э' => 'e',
+            'ю' => 'yu',
+            'я' => 'ya',
+            'ъ' => '',
+            'ь' => '',
+        )
+    );
 
-//                 if( 'zip' == $sFile['ext'] ) $need_unpack = true;
-//             }
-//             else {
-//                 $response["response"] = "ERROR";
-//                 $response["error"] = $file_errors[ 500 ];
-//                 break;
-//             }
-//         }
-//     }
+    if ( 'url' === $context ) {
+        $s = preg_replace( '/[^0-9a-z-_ ]/i', '', $s );
+        $s = str_replace( ' ', '-', $s );
+    }
 
-//     if( $need_unpack ) {
-//         $zip_paths = glob("$upload_path/*.zip");
+    return $s;
+}
 
-//         if( !empty($zip_paths) ) {
-//             if( true !== ($r = ex_unzip( $zip_paths, $upload_path, $remove = true )) ) {
-//                 $response["response"] = "ERROR";
-//                 $response["error"] = $r;
-//             }
-//         }
-//     }
+function check_mode( $id, $setting ) {
+    switch ( $setting ) {
+        case 'off':
+            return false;
 
-//     if("ERROR" !== $response["response"]) {
-//         $response["response"] = "SUCCESS";
+        case 'create':
+            return ! $id;
 
-//         $ParserFactory = new ParserFactory();
-//         $ParserFactory->clearTerms();
-//         $ParserFactory->clearProducts();
-//     }
+        case 'update':
+            return (bool) $id;
+    }
 
-//     echo wp_json_encode( $response );
-//     die();
-// }
+    return true;
+}
