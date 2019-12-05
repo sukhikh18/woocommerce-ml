@@ -11,7 +11,8 @@ $mode = Request::get_mode();
 $type = Request::get_type();
 
 if ( ! headers_sent() ) {
-    header( 'Content-Type: text/plain; charset=' . CHARSET );
+//    header( 'Content-Type: text/plain; charset=' . EXCHANGE_CHARSET );
+	header( 'Content-Type: text/html; charset=' . EXCHANGE_CHARSET );
 }
 
 Error::set_strict_mode();

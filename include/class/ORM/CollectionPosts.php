@@ -6,7 +6,7 @@ use NikolayS93\Exchange\Model\Abstracts\Term;
 use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\ExchangePost;
-use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\Product;
 use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
 use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
@@ -115,7 +115,7 @@ class CollectionPosts extends Collection {
 		$externals = array();
 
 		/**
-		 * @param ExchangeProduct $product
+		 * @param Product $product
 		 */
 		$this->walk( function ( $product ) use ( &$externals ) {
 			/**
@@ -148,7 +148,7 @@ class CollectionPosts extends Collection {
 			);
 
 			/**
-			 * @param ExchangeProduct $product
+			 * @param Product $product
 			 */
 			$this->walk( function ( $product ) use ( $exists_terms ) {
 				/**

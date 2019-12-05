@@ -6,8 +6,10 @@ use CommerceMLParser\Model\Types\PropertyValue;
 use NikolayS93\Exchange\Model\AttributeValue;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Attribute;
-use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\Product;
 use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Model\Relationship;
+use NikolayS93\Exchange\Model\Property;
 use NikolayS93\Exchange\Model\Warehouse;
 use NikolayS93\Exchange\ORM\Collection;
 use NikolayS93\Exchange\ORM\CollectionAttributes;
@@ -218,7 +220,7 @@ class Parser {
 		$product = $productEvent->getProduct();
 
 		$product_id      = $product->getId();
-		$ExchangeProduct = new ExchangeProduct( array(
+		$ExchangeProduct = new Product( array(
 			'post_title'   => $product->getName(),
 			'post_excerpt' => $product->getDescription(),
 		), $product_id );
@@ -233,27 +235,62 @@ class Parser {
 		 *
 		 * @var String $category External code
 		 */
-		foreach ( $product->getCategories() as $category ) {
-			$ExchangeTerm = new Category( array( 'taxonomy' => 'product_cat' ), $category );
-			$ExchangeProduct->add_category( $ExchangeTerm );
+		foreach ( $product->getCategories() as $source ) {
+			$ExchangeProduct->add_relationship( new Relationship( array(
+				'taxonomy'    => 'product_cat',
+				'term_source' => $source,
+			) ) );
 		}
+
+		$arProperties = array();
 
 		/**
 		 * Set properties
 		 *
 		 * @var \CommerceMLParser\Model\Types\PropertyValue $productProperty
 		 */
-		$parseAttributes = function ( $item ) use ( &$ExchangeProduct ) {
-			$ExchangeProduct->properties[] = (object) array(
-				'id'    => method_exists( $item, 'getId' ) ? $item->getId() : '',
-				'name'  => method_exists( $item, 'getName' ) ? $item->getName() : '',
-				'value' => method_exists( $item, 'getValue' ) ? $item->getValue() : '',
-			);
+		$parseAttributes = function ( $item ) use ( &$ExchangeProduct, &$arProperties ) {
+
+			$property = $this->properties->offsetGet( $item->getId() );
+
+			if( 'select' === $property->get_type() ) {
+
+				$Relationship = new Relationship( array(
+					'taxonomy'    => $property->get_slug(),
+					'term_source' => $item->getId(),
+				) );
+
+				$ExchangeProduct->add_relationship( $Relationship );
+
+				$arProperties[ $property->get_slug() ] = new Property( array(
+					'name'  => $property->get_slug(),
+					'value' => '',
+					'is_taxonomy' => 1,
+				) );
+			}
+			else {
+				$arProperties[ $property->get_name() ] = new Property( array(
+					'name'  => $property->get_name(),
+					'value' => $item->getValue(),
+				) );
+			}
 		};
 
 		array_map( $parseAttributes, $product->getProperties()->fetch() );
-		array_map( $parseAttributes, $product->getRequisites()->fetch() );
-		array_map( $parseAttributes, $product->getManufacturer()->fetch() );
+
+		/**
+		 * @var \CommerceMLParser\Model\Types\RequisiteValue $productProperty
+		 */
+		$parseRequisites = function( $item ) use ( &$arProperties ) {
+			$arProperties[ $item->getName() ] = new Property( array(
+				'name'  => $item->getName(),
+				'value' => $item->getValue(),
+			) );
+		};
+
+		array_map( $parseRequisites, $product->getRequisites()->fetch() );
+
+		$ExchangeProduct->set_meta( '_product_attributes', $arProperties );
 
 		// foreach ($product->getProperties() as $productProperty) {
 		// 	if ( isset( $this->arProperties[ $propertyExternal ] ) ) {
@@ -273,12 +310,15 @@ class Parser {
 //		}
 //		$ExchangeProduct->set_meta( $characteristics );
 		array_map( function ( $excludeRequisite ) use ( $ExchangeProduct ) {
-			$ExchangeProduct->del_meta( $excludeRequisite );
+			$ExchangeProduct->delete_meta( $excludeRequisite );
 		}, $this->requisites_exclude );
+
+		echo "<pre>";
+		print_r( $ExchangeProduct );
+		echo "</pre>";
 
 		// ================================================================= //
 		$this->parse_requisites_as_categories( $ExchangeProduct );
-		// $this->parse_requisites_as_developers( $ExchangeProduct );
 		$this->parse_requisites_as_warehouses( $ExchangeProduct );
 		$this->parse_requisites_as_properties( $ExchangeProduct );
 		// ================================================================= //
@@ -322,7 +362,7 @@ class Parser {
 				$warehouse = new Warehouse( array(), $warehouse_id );
 
 				if ( 0 < $qty ) {
-					$ExchangeOffer->add_warehouse( $warehouse );
+					$ExchangeOffer->add_relation( $warehouse );
 					// @todo else: remove relationship
 				}
 
@@ -361,7 +401,7 @@ class Parser {
 	}
 
 // ====================================================================== //
-	function parse_requisites_as_categories( ExchangeProduct $ExchangeProduct ) {
+	function parse_requisites_as_categories( Product $ExchangeProduct ) {
 		if ( empty( $this->requisites_as_categories ) ) {
 			return;
 		}
@@ -379,16 +419,23 @@ class Parser {
 				// Add term. Sort (unique) by external code
 				$this->categories->add( $term );
 
+				new Relationship( array(
+					'term_id'            => $term->get_id(),
+					'term_source'        => $term->get_external(),
+					'parent_term_id'     => $term->get_id(),
+					'parent_term_source' => $term->get_external(),
+				) );
+
 				// Set product relative
 				$ExchangeProduct->add_category( $term );
 			}
 
 			// Delete replaced or empty
-			$ExchangeProduct->del_meta( $term_name );
+			$ExchangeProduct->delete_meta( $term_name );
 		}
 	}
 
-	function parse_requisites_as_warehouses( ExchangeProduct $ExchangeProduct ) {
+	function parse_requisites_as_warehouses( Product $ExchangeProduct ) {
 		if ( empty( $this->requisites_as_warehouses ) ) {
 			return;
 		}
@@ -410,11 +457,11 @@ class Parser {
 			}
 
 			// Delete replaced or empty
-			$ExchangeProduct->del_meta( $term_name );
+			$ExchangeProduct->delete_meta( $term_name );
 		}
 	}
 
-	function parse_requisites_as_properties( ExchangeProduct $ExchangeProduct ) {
+	function parse_requisites_as_properties( Product $ExchangeProduct ) {
 		if ( empty( $this->requisites_as_properties ) ) {
 			return;
 		}
@@ -480,7 +527,7 @@ class Parser {
 			/**
 			 * Delete replaced or empty
 			 */
-			$ExchangeProduct->del_meta( $taxonomy_name );
+			$ExchangeProduct->delete_meta( $taxonomy_name );
 		}
 	}
 

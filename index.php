@@ -28,32 +28,32 @@ if ( ! defined( __NAMESPACE__ . '\PLUGIN_DIR' ) ) {
 /**
  * Post meta field key (name)
  */
-if ( ! defined( __NAMESPACE__ . '\EXTERNAL_CODE_KEY' ) ) {
-	define( __NAMESPACE__ . '\EXTERNAL_CODE_KEY', '_ext_ID' );
+if ( ! defined( 'EXCHANGE_EXTERNAL_CODE_KEY' ) ) {
+	define( 'EXCHANGE_EXTERNAL_CODE_KEY', '_ext_ID' );
 }
 
 /**
  * Plugin auth cookie name
  */
-if ( ! defined( __NAMESPACE__ . '\COOKIE_NAME' ) ) {
-	define( __NAMESPACE__ . '\COOKIE_NAME', 'ex-auth' );
+if ( ! defined( 'EXCHANGE_COOKIE_NAME' ) ) {
+	define( 'EXCHANGE_COOKIE_NAME', 'ex-auth' );
 }
 
 /**
  * Current timestamp
  */
-if ( ! defined( __NAMESPACE__ . '\START_TIMESTAMP' ) ) {
-	define( __NAMESPACE__ . '\START_TIMESTAMP', time() );
+if ( ! defined( 'EXCHANGE_START_TIMESTAMP' ) ) {
+	define( 'EXCHANGE_START_TIMESTAMP', time() );
 }
 
 /**
  * Work with charset
  */
-if ( ! defined( __NAMESPACE__ . '\CHARSET' ) ) {
-	define( __NAMESPACE__ . '\CHARSET', 'UTF-8' );
+if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
+	define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
-function file_is_readble( $path, $show_error = false ) {
+function file_is_readable( $path, $show_error = false ) {
 	if ( is_file( $path ) && is_readable( $path ) ) {
 		return true;
 	} else {
@@ -75,7 +75,7 @@ function include_plugin_file( $path ) {
 		$path = PLUGIN_DIR . $path;
 	}
 
-	if ( file_is_readble( $path ) ) {
+	if ( file_is_readable( $path ) ) {
 		return require $path;
 	}
 
@@ -105,9 +105,9 @@ if ( ! include_plugin_file( 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) ) 
 			'include/class/Model/Attribute.php',
 			'include/class/Model/AttributeValue.php',
 			'include/class/Model/Category.php',
-			'include/class/Model/ExchangeOffer.php',
-			'include/class/Model/ExchangePost.php',
-			'include/class/Model/ExchangeProduct.php',
+			'include/class/Model/Post.php',
+			'include/class/Model/Offer.php',
+			'include/class/Model/Product.php',
 			'include/class/Model/Warehouse.php',
 			'include/class/Error.php',
 			'include/class/Request.php',

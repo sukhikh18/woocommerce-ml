@@ -8,7 +8,7 @@ use NikolayS93\Exchange\Register;
 /**
  * Works with posts, postmeta
  */
-class ExchangeOffer extends ExchangePost {
+class Offer extends Post {
 	// use ExchangeItemMeta;
 
 	// private $post;

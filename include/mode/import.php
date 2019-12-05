@@ -16,11 +16,11 @@ if( ! isset( $Parser ) ) {
 }
 
 if( ! isset( $update ) ) {
-    $update = null;
+    $update = new Update();
 }
 
 $file = get_exchange_file( Request::get_file() );
-file_is_readble( $file, true );
+file_is_readable( $file, true );
 
 $Parser = new Parser();
 /** @var \CommerceMLParser\Parser $Dispatcher */
@@ -43,11 +43,35 @@ $warehouses = $Parser->get_warehouses();
 /** @var CollectionTerms $attributes */
 $attributes = $Parser->get_properties();
 
-$mode = plugin()->get_mode();
+Transaction()->set_transaction_mode();
 
-if ( null === $update ) {
-    $update = new Update();
-}
+$mode = Request::get_mode();
+
+$categories->fill_exists();
+$warehouses->fill_exists();
+$attributes->fill_exists();
+
+$update->terms( $categories )->term_meta( $categories );
+$update->terms( $warehouses )->term_meta( $warehouses );
+
+echo "<pre>";
+print_r( $products );
+die();
+
+Request::set_mode( 'import_posts', $update->set_status( 'progress' ) );
+
+$update->stop(
+	array(
+		"Обновлено {{UPDATE}} категорий/терминов.",
+		"Обновлено {{META}} мета записей.",
+	)
+);
+
+
+
+// Unreachable statement in theory.
+Request::reset_mode();
+$update->stop();
 
 if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->count() && ! $attributes->count() ) ) {
     if ( $products->count() ) { // update temporary products table
@@ -121,14 +145,9 @@ if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->coun
         } // third step: import posts relationships.
 
 } else { // Update terms
-    Transaction()->set_transaction_mode();
 
-    $categories->fill_exists();
-    $warehouses->fill_exists();
-    $attributes->fill_exists();
 
-    $update->terms( $categories )->term_meta( $categories );
-    $update->terms( $warehouses )->term_meta( $warehouses );
+
 
     // $attribute_values = $attributes->get_all_values();
     // $Update
@@ -136,15 +155,10 @@ if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->coun
     // ->terms( $attributeValues )
     // ->term_meta( $attributeValues );
 //          if ( $products->count() && floatval( $this->version ) < 3 ) {
-        plugin()->set_mode( 'import_posts', $update->set_status( 'progress' ) );
+
 //          }
 
-    $update->stop(
-        array(
-            "Обновлено {$update->results['update']} категорий/терминов.",
-            "Обновлено {$update->results['meta']} мета записей.",
-        )
-    );
+
 }
 
 //      if ( 'import_posts' === $mode || 'import_relationships' === $mode ) {
@@ -155,6 +169,3 @@ if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->coun
 //          }
 //      }
 
-// Unreachable statement in theory.
-plugin()->reset_mode();
-$update->stop();

@@ -29,7 +29,7 @@ update_option( 'exchange_version', '' );
 
 delete_transient( 'wc_attribute_taxonomies' );
 
-Plugin::set_mode( '' );
+Request::set_mode( '' );
 update_option( 'exchange_last-update', current_time( 'mysql' ) );
 
 // if ( is_debug() ) {

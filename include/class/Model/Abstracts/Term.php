@@ -8,7 +8,6 @@ use NikolayS93\Exchange\Model\Interfaces\HasParent;
 use NikolayS93\Exchange\Model\Traits\ItemMeta;
 use function NikolayS93\Exchange\esc_cyr;
 use function NikolayS93\Exchange\esc_external;
-use function NikolayS93\Exchange\Error;
 
 abstract class Term {
 
@@ -218,7 +217,7 @@ abstract class Term {
 //			}
 			return true;
 		} else {
-			Error()
+			\NikolayS93\Exchange\error()
 				->add_message( print_r( $result, 1 ), 'Warning', true )
 				->add_message( print_r( $this, 1 ), 'Target', true );
 		}
@@ -231,7 +230,7 @@ abstract class Term {
 		if ( $result && ! is_wp_error( $result ) ) {
 			return true;
 		} else {
-			Error()
+			\NikolayS93\Exchange\error()
 				->add_message( $result, 'Warning', true )
 				->add_message( $this, 'Target', true );
 		}

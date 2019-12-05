@@ -5,18 +5,18 @@
  * @package Newproject.WordPress.plugin
  */
 
-use NikolayS93\WPListTable as Table;
+// use NikolayS93\WPListTable as Table;
 
-/**
- * WordPress table example
- */
+// /**
+//  * WordPress table example
+//  */
 
-$table = new Table();
-$table->set_columns();
+// $table = new Table();
+// $table->set_columns();
 
-foreach ( get_posts() as $_post ) {
-	$table->set_value( array( 'title' => esc_html( $_post->post_title ) ) );
-}
+// foreach ( get_posts() as $_post ) {
+// 	$table->set_value( array( 'title' => esc_html( $_post->post_title ) ) );
+// }
 
-$table->prepare_items();
-$table->display();
+// $table->prepare_items();
+// $table->display();

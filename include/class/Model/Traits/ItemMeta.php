@@ -36,12 +36,17 @@ trait ItemMeta {
 			}
 		} else {
 			if ( $key && $value ) {
-				$this->meta[ trim( $key ) ] = is_array( $value ) ? array_filter( $value, 'trim' ) : trim( $value );
+				if( is_string( $value ) ) {
+					$value = trim( $value );
+				}
+
+				$this->meta[ trim( $key ) ] = $value;
+				// $this->meta[ trim( $key ) ] = is_array( $value ) ? array_filter( $value, 'trim' ) : trim( $value );
 			}
 		}
 	}
 
-	function del_meta( $key ) {
+	function delete_meta( $key ) {
 		unset( $this->meta[ $key ] );
 	}
 }

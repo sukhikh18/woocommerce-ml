@@ -45,7 +45,7 @@ if ( ! has_permissions( $user ) ) {
     );
 }
 
-$expiration  = START_TIMESTAMP + apply_filters(
+$expiration  = EXCHANGE_START_TIMESTAMP + apply_filters(
     'auth_cookie_expiration',
     DAY_IN_SECONDS,
     $user->ID,
@@ -53,4 +53,4 @@ $expiration  = START_TIMESTAMP + apply_filters(
 );
 $auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
 
-exit( "success\n" . COOKIE_NAME . "\n$auth_cookie" );
+exit( "success\n" . EXCHANGE_COOKIE_NAME . "\n$auth_cookie" );

@@ -16,21 +16,10 @@ use function NikolayS93\Exchange\esc_cyr;
 
 /**
  * Works with posts, term_relationships, post meta
- * Content: {
- *     Variables
- *     Utils
- *     Construct
- *     Relatives
- *     CRUD
- * }
  */
-class ExchangePost implements Identifiable, ExternalCode {
+class Post implements Identifiable, ExternalCode {
 
 	use ItemMeta;
-
-	public $warehouses = array();
-
-	public $properties = array();
 
 	/**
 	 * @var \WP_Post
@@ -38,6 +27,11 @@ class ExchangePost implements Identifiable, ExternalCode {
 	 *      WHERE ID = %d
 	 */
 	private $post;
+
+	/**
+	 * @var Collection;
+	 */
+	public $relationships;
 
 	function prepare( $mode = '' ) {
 		return true;
@@ -94,20 +88,34 @@ class ExchangePost implements Identifiable, ExternalCode {
 		/**
 		 * For no offer defaults
 		 */
-		$meta = wp_parse_args( $meta, array(
-			'_price'         => 0,
-			'_regular_price' => 0,
-			'_manage_stock'  => 'no',
-			'_stock_status'  => 'outofstock',
-			'_stock'         => 0,
-		) );
+//		$meta = wp_parse_args( $meta, array(
+//			'_price'         => 0,
+//			'_regular_price' => 0,
+//			'_manage_stock'  => 'no',
+//			'_stock_status'  => 'outofstock',
+//			'_stock'         => 0,
+//		) );
 
 		/**
 		 * @todo generate guid
 		 */
 		$this->set_meta( $meta );
 
-		$this->warehouses = new Collection();
+		$this->relationships = new Collection();
+	}
+
+	public function get_relationship( $CollectionItemKey = '' ) {
+		$relationship = $CollectionItemKey ?
+			$this->relationships->offsetGet( $CollectionItemKey ) :
+			$this->relationships->first();
+
+		return $relationship;
+	}
+
+	public function add_relationship( $relationship ) {
+		$this->relationships->add( $relationship );
+
+		return $this;
 	}
 
 	public static function get_external_key() {
@@ -197,20 +205,6 @@ class ExchangePost implements Identifiable, ExternalCode {
 		$this->post->post_excerpt = $excerpt;
 
 		return $this;
-	}
-
-	/**************************************************** Relatives ***************************************************/
-
-	public function get_warehouse( $CollectionItemKey = '' ) {
-		$warehouse = $CollectionItemKey ?
-			$this->warehouses->offsetGet( $CollectionItemKey ) :
-			$this->warehouses->first();
-
-		return $warehouse;
-	}
-
-	public function add_warehouse( Warehouse $ExchangeTerm ) {
-		return $this->warehouses->add( $ExchangeTerm );
 	}
 
 	/****************************************************** CRUD ******************************************************/

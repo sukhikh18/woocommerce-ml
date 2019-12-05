@@ -157,7 +157,7 @@ class Register {
 
 		$page->set_assets(
 			function () use ( $plugin ) {
-				$files = $plugin->get_exchange_files();
+				$files = get_exchange_files();
 
 				usort( $files, function ( $a, $b ) {
 					return filemtime( $a ) > filemtime( $b );

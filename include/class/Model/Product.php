@@ -12,27 +12,7 @@ use NikolayS93\Exchange\Plugin;
 use function NikolayS93\Exchange\Error;
 use function NikolayS93\Exchange\Plugin;
 
-/**
- * Content: {
- *     Variables
- *     Utils
- *     Construct
- *     Relatives
- *     CRUD
- * }
- */
-class ExchangeProduct extends ExchangePost {
-	/**
-	 * "Product_cat" type wordpress terms
-	 * @var Collection
-	 */
-	public $categories;
-
-	/**
-	 * Product properties with link by term (has taxonomy/term)
-	 * @var Collection
-	 */
-	public $attributes;
+class Product extends Post {
 
 	/**
 	 * @param \CommerceMLParser\ORM\Collection $base_unit
@@ -56,39 +36,6 @@ class ExchangeProduct extends ExchangePost {
 
 	function __construct( Array $post, $ext = '', $meta = array() ) {
 		parent::__construct( $post, $ext, $meta );
-
-		$this->categories = new Collection();
-		$this->attributes = new Collection();
-	}
-
-	/**************************************************** Relatives ***************************************************/
-
-	public function get_category( $CollectionItemKey = '' ) {
-		$category = $CollectionItemKey ?
-			$this->categories->offsetGet( $CollectionItemKey ) :
-			$this->categories->first();
-
-		return $category;
-	}
-
-	public function add_category( Category $ExchangeTerm ) {
-		$this->categories->add( $ExchangeTerm );
-
-		return $this;
-	}
-
-	public function get_attribute( $CollectionItemKey = '' ) {
-		$attribute = $CollectionItemKey ?
-			$this->attributes->offsetGet( $CollectionItemKey ) :
-			$this->attributes->first();
-
-		return $attribute;
-	}
-
-	public function add_attribute( Attribute $ProductAttribute ) {
-		$this->attributes->add( $ProductAttribute );
-
-		return $this;
 	}
 
 	/****************************************************** CRUD ******************************************************/
