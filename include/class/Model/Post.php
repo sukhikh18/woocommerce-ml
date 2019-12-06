@@ -112,8 +112,16 @@ class Post implements Identifiable, ExternalCode {
 		return $relationship;
 	}
 
-	public function add_relationship( $relationship ) {
-		$this->relationships->add( $relationship );
+	public function add_relationship( $new_relationship ) {
+		foreach ( $this->relationships as $i => $relationship ) {
+			if ( $relationship->term_source === $new_relationship->term_source ) {
+				$this->relationships[ $i ] = $new_relationship;
+
+				return $this;
+			}
+		}
+
+		$this->relationships->add( $new_relationship );
 
 		return $this;
 	}

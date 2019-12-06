@@ -19,7 +19,7 @@ class Register {
 	/**
 	 * Default warehouse taxonomy slug
 	 */
-	const WAREHOUSE_SLUG = 'Warehouse';
+	const WAREHOUSE_SLUG = 'warehouse';
 
 	/**
 	 * Get warehouse taxonomy slug

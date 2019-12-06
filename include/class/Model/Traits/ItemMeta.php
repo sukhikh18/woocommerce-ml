@@ -12,7 +12,7 @@ trait ItemMeta {
 	 *
 	 * @return mixed
 	 */
-	function get_meta( $key = '' ) {
+	function get_meta( $key = '', $missed = '' ) {
 		if ( $key ) {
 
 			if ( isset( $this->meta[ '_' . $key ] ) ) {
@@ -23,7 +23,7 @@ trait ItemMeta {
 				return $this->meta[ $key ];
 			}
 
-			return null;
+			return $missed;
 		}
 
 		return (array) $this->meta;

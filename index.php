@@ -53,6 +53,10 @@ if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
 	define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
+if ( ! defined( 'MERGE_VARIATIONS' ) ) {
+	define( 'MERGE_VARIATIONS', 'Y' );
+}
+
 function file_is_readable( $path, $show_error = false ) {
 	if ( is_file( $path ) && is_readable( $path ) ) {
 		return true;

@@ -66,35 +66,6 @@ class Offer extends Post {
 		}
 	}
 
-	function get_quantity() {
-		$stock = $this->get_meta( 'stock' );
-		// $quantity = $this->getMeta('quantity');
-
-		// if( is_numeric($stock) && is_numeric($quantity) ) {
-		//     $qty = max($stock, $quantity);
-		// }
-		// elseif( is_numeric($stock) ) {
-		//     $qty = $stock;
-		// }
-		// elseif( is_numeric($quantity) ) {
-		//     $qty = $quantity;
-		// }
-
-		return $stock;
-	}
-
-	function set_quantity( $qty ) {
-		if ( null !== $qty ) {
-			$qty = floatval( $qty );
-
-			$this->set_meta( '_manage_stock', 'yes' );
-			$this->set_meta( '_stock_status', $qty ? 'instock' : 'outofstock' );
-			$this->set_meta( '_stock', $qty );
-		}
-
-		return $this;
-	}
-
 	/**
 	 * Only one price coast for simple
 	 *
@@ -102,7 +73,7 @@ class Offer extends Post {
 	 *
 	 * @return int
 	 */
-	public function get_current_price( $prices ) {
+	public static function get_current_price( $prices ) {
 		$price = 0;
 		if ( ! $prices->isEmpty() ) {
 			$price = $prices->current()->getPrice();
@@ -112,16 +83,42 @@ class Offer extends Post {
 	}
 
 	function get_price() {
-		return $this->get_meta( 'price' );
+		return floatval( $this->get_meta( 'price', 0 ) );
 	}
 
-	function set_price( $price ) {
-		$this->set_meta( '_price', $price );
-		$this->set_meta( '_regular_price', $price );
+	function get_regular_price() {
+		return floatval( $this->get_meta( 'regular_price', 0 ) );
+	}
+
+	function set_price( $new_price ) {
+		$new_price = floatval( $new_price );
+
+		$this->set_meta( '_price', max( $new_price, $this->get_price() ) );
+		$this->set_meta( '_regular_price', max( $new_price, $this->get_regular_price() ) );
 
 		return $this;
 	}
 
-	function merge( $args, $product ) {
+	function get_quantity() {
+		$stock = floatval( $this->get_meta( 'stock', 0 ) );
+
+		return $stock;
+	}
+
+	function set_quantity( $qty ) {
+		$status = $this->get_meta( 'stock_status', 'outofstock' );
+		$stock = $this->get_quantity();
+
+		$stock+= floatval( $qty );
+
+		if( $stock ) {
+			$status = 'instock';
+		}
+
+		$this->set_meta( '_manage_stock', 'yes' );
+		$this->set_meta( '_stock_status', $status );
+		$this->set_meta( '_stock', $stock );
+
+		return $this;
 	}
 }

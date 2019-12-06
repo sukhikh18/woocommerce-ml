@@ -11,6 +11,9 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\Exchange\ORM\CollectionPosts;
+use NikolayS93\Exchange\ORM\CollectionTerms;
+
 if( ! isset( $Parser ) ) {
     $Parser = null;
 }
@@ -47,16 +50,15 @@ Transaction()->set_transaction_mode();
 
 $mode = Request::get_mode();
 
+var_dump( $products, $offers );
+die();
+
 $categories->fill_exists();
 $warehouses->fill_exists();
 $attributes->fill_exists();
 
 $update->terms( $categories )->term_meta( $categories );
 $update->terms( $warehouses )->term_meta( $warehouses );
-
-echo "<pre>";
-print_r( $products );
-die();
 
 Request::set_mode( 'import_posts', $update->set_status( 'progress' ) );
 
@@ -66,8 +68,6 @@ $update->stop(
 		"Обновлено {{META}} мета записей.",
 	)
 );
-
-
 
 // Unreachable statement in theory.
 Request::reset_mode();

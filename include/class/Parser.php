@@ -2,12 +2,11 @@
 
 namespace NikolayS93\Exchange;
 
-use CommerceMLParser\Model\Types\PropertyValue;
 use NikolayS93\Exchange\Model\AttributeValue;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\Product;
-use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Model\Offer;
 use NikolayS93\Exchange\Model\Relationship;
 use NikolayS93\Exchange\Model\Property;
 use NikolayS93\Exchange\Model\Warehouse;
@@ -247,13 +246,13 @@ class Parser {
 		/**
 		 * Set properties
 		 *
-		 * @var \CommerceMLParser\Model\Types\PropertyValue $productProperty
+		 * @param \CommerceMLParser\Model\Types\PropertyValue $item
 		 */
 		$parseAttributes = function ( $item ) use ( &$ExchangeProduct, &$arProperties ) {
 
 			$property = $this->properties->offsetGet( $item->getId() );
 
-			if( 'select' === $property->get_type() ) {
+			if ( 'select' === $property->get_type() ) {
 
 				$Relationship = new Relationship( array(
 					'taxonomy'    => $property->get_slug(),
@@ -263,12 +262,11 @@ class Parser {
 				$ExchangeProduct->add_relationship( $Relationship );
 
 				$arProperties[ $property->get_slug() ] = new Property( array(
-					'name'  => $property->get_slug(),
-					'value' => '',
+					'name'        => $property->get_slug(),
+					'value'       => '',
 					'is_taxonomy' => 1,
 				) );
-			}
-			else {
+			} else {
 				$arProperties[ $property->get_name() ] = new Property( array(
 					'name'  => $property->get_name(),
 					'value' => $item->getValue(),
@@ -281,7 +279,7 @@ class Parser {
 		/**
 		 * @var \CommerceMLParser\Model\Types\RequisiteValue $productProperty
 		 */
-		$parseRequisites = function( $item ) use ( &$arProperties ) {
+		$parseRequisites = function ( $item ) use ( &$arProperties ) {
 			$arProperties[ $item->getName() ] = new Property( array(
 				'name'  => $item->getName(),
 				'value' => $item->getValue(),
@@ -313,10 +311,6 @@ class Parser {
 			$ExchangeProduct->delete_meta( $excludeRequisite );
 		}, $this->requisites_exclude );
 
-		echo "<pre>";
-		print_r( $ExchangeProduct );
-		echo "</pre>";
-
 		// ================================================================= //
 		$this->parse_requisites_as_categories( $ExchangeProduct );
 		$this->parse_requisites_as_warehouses( $ExchangeProduct );
@@ -329,17 +323,42 @@ class Parser {
 	function offer_event( Event\OfferEvent $offerEvent ) {
 		/** @var \CommerceMLParser\Model\Offer */
 		$offer = $offerEvent->getOffer();
-		// @list($product_id, $offer_id) = explode('#', $id);
-		$id       = $offer->getId();
+
+		$source_full = $offer->getId();
+
+		if ( defined( 'MERGE_VARIATIONS' ) && 'Y' === MERGE_VARIATIONS ) {
+			// Offer source equal product source.
+			list( $source ) = explode( '#', $source_full );
+		} else {
+			// Its possible?
+//			if ( false === strpos( $source_full, '#' ) ) {
+//				$source_product = $source_full;
+//			    $source = '';
+//			} else {
+//				list( $source_product, $source ) = explode( '#', $source_full );
+//			}
+			// @todo
+			return;
+		}
+
+		$price    = Offer::get_current_price( $offer->getPrices() );
 		$quantity = $offer->getQuantity();
 
-		$ExchangeOffer = new ExchangeOffer( array(
-			'post_title' => $offer->getName(),
-			'post_type'  => 'offer',
-//		    'post_excerpt' => $offer->getDescription(),
-		), $id );
+		/**
+		 * if is have several offers, merge them to single
+		 *
+		 * @var Offer $ExchangeOffer
+		 */
+		if ( defined( 'MERGE_VARIATIONS' ) && 'Y' === MERGE_VARIATIONS ) {
+			$ExchangeOffer = $this->offers->offsetGet( $source );
+		}
 
-		$price = $ExchangeOffer->get_current_price( $offer->getPrices() );
+		if ( ! $ExchangeOffer ) {
+			$ExchangeOffer = new Offer( array(
+				'post_title' => $offer->getName(),
+				'post_type'  => 'offer',
+			), $source );
+		}
 
 		$ExchangeOffer
 			->set_price( $price )
@@ -347,55 +366,30 @@ class Parser {
 
 		/**
 		 * Set warehouses
+		 *
+		 * @todo merge warehouses
 		 * @var \CommerceMLParser\ORM\Collection
 		 */
 		$warehousesCollection = $offer->getWarehouses();
+		$whStock              = $ExchangeOffer->get_meta( 'stock_wh', array() );
 
-		if ( ! $warehousesCollection->isEmpty() ) {
+		foreach ( $warehousesCollection as $warehouse ) {
+			$source = $warehouse->getId();
+			$qty    = floatval( $warehouse->getQuantity() );
 
-			$stock_wh = array();
+			$whStock[ $source ] = floatval( isset( $whStock[ $source ] ) ? $whStock[ $source ] + $qty : $qty );
 
-			foreach ( $warehousesCollection as $warehouse ) {
-				$warehouse_id = $warehouse->getId();
-				$qty          = $warehouse->getQuantity();
+			if ( $qty > 0 ) {
+				$relation = new Relationship( array(
+					'term_source' => $source,
+					'taxonomy'    => Register::WAREHOUSE_SLUG,
+				) );
 
-				$warehouse = new Warehouse( array(), $warehouse_id );
-
-				if ( 0 < $qty ) {
-					$ExchangeOffer->add_relation( $warehouse );
-					// @todo else: remove relationship
-				}
-
-				$stock_wh[ $warehouse->get_external() ] = $qty;
+				$ExchangeOffer->add_relationship( $relation );
 			}
-
-			$ExchangeOffer->set_meta( '_stock_wh', $stock_wh );
 		}
 
-		/** @var string $ext for ex. b9006805-7dde-11e8-80cb-70106fc831cf#d3e195ce-746f-11e8-80cb-70106fc831cf */
-		$ext = $ExchangeOffer->get_raw_external();
-
-		if ( false !== strpos( $ext, '#' ) ) {
-			$offer_ext   = false;
-			$product_ext = $ext;
-		} else {
-			@list( $product_ext, $offer_ext ) = explode( '#', $ext );
-		}
-
-		/**
-		 * if is have several offers, merge them to single
-		 * @todo: check the link
-		 */
-		if ( $offer_ext && defined( 'DISABLE_VARIATIONS' ) && DISABLE_VARIATIONS ) {
-			/** @var ExchangeOffer $definedOffer */
-			$definedOffer = $this->offers->offsetGet( $product_ext );
-			// do not sell all in low price
-			$definedOffer->set_price(
-				max( $definedOffer->get_price(), $ExchangeOffer->get_price() ) );
-			// increase to twice quantity
-			$definedOffer->set_quantity(
-				$definedOffer->get_quantity() + $ExchangeOffer->get_quantity() );
-		}
+		$ExchangeOffer->set_meta( '_stock_wh', $whStock );
 
 		$this->offers->add( $ExchangeOffer );
 	}
@@ -419,15 +413,13 @@ class Parser {
 				// Add term. Sort (unique) by external code
 				$this->categories->add( $term );
 
-				new Relationship( array(
+				$relation = new Relationship( array(
 					'term_id'            => $term->get_id(),
 					'term_source'        => $term->get_external(),
-					'parent_term_id'     => $term->get_id(),
-					'parent_term_source' => $term->get_external(),
 				) );
 
 				// Set product relative
-				$ExchangeProduct->add_category( $term );
+				$ExchangeProduct->add_relationship( $relation );
 			}
 
 			// Delete replaced or empty
