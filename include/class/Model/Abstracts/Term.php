@@ -207,14 +207,15 @@ abstract class Term {
 
 		if ( ! is_wp_error( $result ) ) {
 			$this->set_id( $result['term_id'] );
-// @todo
-//			if( $this instanceof HasParent ) {
-//				foreach ( $termsCollection as &$oTerm ) {
-//					if ( $term->getExternal() === $oTerm->getParentExternal() ) {
-//						$oTerm->set_parent_id( $term->get_id() );
-//					}
-//				}
-//			}
+
+			// if( $this instanceof HasParent ) {
+			// 	foreach ( $termsCollection as &$oTerm ) {
+			// 		if ( $term->getExternal() === $oTerm->getParentExternal() ) {
+			// 			$oTerm->set_parent_id( $term->get_id() );
+			// 		}
+			// 	}
+			// }
+
 			return true;
 		} else {
 			\NikolayS93\Exchange\error()

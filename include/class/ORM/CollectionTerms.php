@@ -49,8 +49,9 @@ class CollectionTerms extends Collection {
 		 */
 		$external_key   = $this->first()->get_external_key();
 		$externals_args = implode( " \t\n OR ", $externals );
+		// tm.meta_id,
 		$exists_query   = "
-            SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug FROM {$wpdb->prefix}termmeta tm
+            SELECT tm.term_id, tm.meta_value, t.name, t.slug FROM {$wpdb->prefix}termmeta tm
                 INNER JOIN {$wpdb->prefix}terms t ON tm.term_id = t.term_id
             WHERE `meta_key` = '$external_key' AND ($externals_args)";
 		$exists         = $wpdb->get_results( $exists_query );
@@ -63,10 +64,10 @@ class CollectionTerms extends Collection {
 
 			if ( $term = $this->offsetGet( $external_from_db ) ) {
 				$term->set_id( $result->term_id );
-				$term->meta_id = $result->meta_id;
+				// $term->meta_id = $result->meta_id;
 
 				if ( $term instanceof HasParent ) {
-					if ( false !== $key = array_search( $term->get_parent_external(),
+					if ( false !== $key = array_search( $term->get_taxonomy() . '/' . $term->get_parent_external(),
 							wp_list_pluck( $exists, 'meta_value' ) ) ) {
 						$term->set_parent_id( $exists[ $key ]->term_id );
 					}

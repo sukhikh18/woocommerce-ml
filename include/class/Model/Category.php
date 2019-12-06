@@ -17,7 +17,7 @@ use function NikolayS93\Exchange\Plugin;
  */
 class Category extends ATerm implements Term, ExternalCode, Identifiable, HasParent {
 	/** @var int for easy external meta update */
-	public $meta_id;
+	// public $meta_id;
 	/** @var string parent external code */
 	private $parent_ext;
 

@@ -75,10 +75,13 @@ function get_exchange_file( $filepath, $namespace = 'catalog' ) {
         $filepath = $filepath['path'];
     }
 
-    $file = new \SplFileObject( get_exchange_dir( $namespace ) . '/' . $filepath );
+    $path = get_exchange_dir( $namespace ) . '/' . $filepath;
+    if( file_is_readable( $path ) ) {
+        $file = new \SplFileObject( $path );
 
-    if ( $file->isFile() && $file->isReadable() && 'xml' == strtolower( $file->getExtension() ) ) {
-        return $file->getPathname();
+        if ( 'xml' == strtolower( $file->getExtension() ) ) {
+            return $file->getPathname();
+        }
     }
 
     return false;
