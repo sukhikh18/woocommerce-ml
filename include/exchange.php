@@ -38,4 +38,6 @@ if ( 'checkauth' !== $mode ) {
     }
 }
 
-include_plugin_file( "include/mode/$mode.php" );
+list( $basemode ) = explode( '_', $mode );
+
+include_plugin_file( "include/mode/$basemode.php" );

@@ -81,41 +81,4 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 
 		return $this;
 	}
-
-	public function update_object_term( $post_id ) {
-		if ( ! $post_id || ! $this->get_id() ) {
-			return false;
-		}
-
-		if ( 'off' === ( $post_relationship = Plugin()->get_setting( 'post_relationship' ) ) ) {
-			return false;
-		}
-
-		$taxonomy = $this->get_taxonomy();
-		$result   = array();
-
-		if ( 'default' == $post_relationship ) {
-			$object_terms    = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'ids' ) );
-			$default_term_id = (int) get_option( 'default_' . $taxonomy );
-
-			// is relatives not exists try set default term
-			if ( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
-				if ( $default_term_id ) {
-					$result = wp_set_object_terms( $post_id, $default_term_id, $taxonomy, $append = false );
-				}
-			}
-		} else {
-			$result = wp_set_object_terms( $post_id, $this->get_id(), $taxonomy, $append = true );
-		}
-
-		if ( $result && ! is_wp_error( $result ) ) {
-			return true;
-		} else {
-			Error()
-				->add_message( $result, 'Warning', true )
-				->add_message( $this, 'Target', true );
-		}
-
-		return false;
-	}
 }

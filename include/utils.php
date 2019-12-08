@@ -14,6 +14,8 @@ function get_allowed_modes() {
             'init',
             'file',
             'import',
+            'import_posts',
+            'import_relations',
             'deactivate',
             'complete',
         )

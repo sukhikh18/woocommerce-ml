@@ -64,6 +64,33 @@ class Register {
 	public static function uninstall() {
 	}
 
+	public function post_type__warehouse() {
+		$warehouseLabels = array(
+			'name'              => __( 'Warehouses', Plugin::DOMAIN ),
+			'singular_name'     => __( 'Warehouse', Plugin::DOMAIN ),
+			'search_items'      => __( 'Search warehouse', Plugin::DOMAIN ),
+			'all_items'         => __( 'All warehouses', Plugin::DOMAIN ),
+			'view_item '        => __( 'View warehouse', Plugin::DOMAIN ),
+			'parent_item'       => __( 'Parent warehouse', Plugin::DOMAIN ),
+			'parent_item_colon' => __( 'Parent warehouse:', Plugin::DOMAIN ),
+			'edit_item'         => __( 'Edit warehouse', Plugin::DOMAIN ),
+			'update_item'       => __( 'Update warehouse', Plugin::DOMAIN ),
+			'add_new_item'      => __( 'Add New warehouse', Plugin::DOMAIN ),
+			'new_item_name'     => __( 'New warehouse', Plugin::DOMAIN ),
+			'menu_name'         => __( 'Warehouses', Plugin::DOMAIN ),
+		);
+
+		register_taxonomy(
+			static::WAREHOUSE_SLUG,
+			array( 'product' ),
+			array(
+				'label'       => $warehouseLabels['name'],
+				'labels'      => $warehouseLabels,
+				'public'      => true,
+			)
+		);
+	}
+
 	/**
 	 * Register new admin menu item
 	 *

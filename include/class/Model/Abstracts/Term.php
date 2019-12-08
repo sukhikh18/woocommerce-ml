@@ -20,37 +20,6 @@ abstract class Term {
 
 	abstract function get_taxonomy_name();
 
-	static function get_structure( $key ) {
-		$structure = array(
-			'terms'         => array(
-				'term_id'    => '%d',
-				'name'       => '%s',
-				'slug'       => '%s',
-				'term_group' => '%d',
-			),
-			'term_taxonomy' => array(
-				'term_taxonomy_id' => '%d',
-				'term_id'          => '%d',
-				'taxonomy'         => '%s',
-				'description'      => '%s',
-				'parent'           => '%d',
-				'count'            => '%d',
-			),
-			'term_meta'     => array(
-				'meta_id'    => '%d',
-				'term_id'    => '%d',
-				'meta_key'   => '%s',
-				'meta_value' => '%s',
-			)
-		);
-
-		if ( isset( $structure[ $key ] ) ) {
-			return $structure[ $key ];
-		}
-
-		return false;
-	}
-
 	static function get_external_key() {
 		return apply_filters( 'ExchangeTerm::get_external_key', EXCHANGE_EXTERNAL_CODE_KEY );
 	}
@@ -221,19 +190,6 @@ abstract class Term {
 			\NikolayS93\Exchange\error()
 				->add_message( print_r( $result, 1 ), 'Warning', true )
 				->add_message( print_r( $this, 1 ), 'Target', true );
-		}
-
-		return false;
-	}
-
-	public function update_object_term( $post_id ) {
-		$result = wp_set_object_terms( $post_id, $this->get_id(), $this->get_taxonomy(), $append = true );
-		if ( $result && ! is_wp_error( $result ) ) {
-			return true;
-		} else {
-			\NikolayS93\Exchange\error()
-				->add_message( $result, 'Warning', true )
-				->add_message( $this, 'Target', true );
 		}
 
 		return false;

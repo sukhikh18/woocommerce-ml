@@ -164,7 +164,7 @@ class Plugin {
 		}
 
 		// Get all defined settings by context.
-		$option = $this->get_setting( null, false, $context );
+		$option = $this->get_setting( null, array(), $context );
 
 		if ( is_array( $prop_name ) ) {
 			$option = array_merge( $option, $prop_name );

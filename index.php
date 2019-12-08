@@ -167,6 +167,8 @@ add_action(
 		// Register //example.com/exchange/ query
 		$register->register_exchange_url();
 
+		add_action( 'init', array( $register, 'post_type__warehouse' ), 10 );
+
 //		add_action( 'woocommerce_attribute_deleted',
 //			array( $register, 'delete_attribute_taxonomy_meta' ), 10, 3 );
 //
@@ -188,16 +190,6 @@ register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'uninstal
 /**
  * Unsorted code
  */
-add_action( 'wp_ajax_1c4wp_exchange', function() {
-	if ( ! wp_verify_nonce( $_REQUEST['exchange_nonce'], Plugin::DOMAIN ) ) {
-		echo 'Ошибка! нарушены правила безопасности';
-		wp_die();
-	}
-
-	do_action( '1c4wp_exchange' );
-	wp_die();
-} );
-
 add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mode ) {
 	if ( 'product' !== $post->post_status ) {
 		return $status;

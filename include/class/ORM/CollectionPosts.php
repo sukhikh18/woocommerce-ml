@@ -108,7 +108,7 @@ class CollectionPosts extends Collection {
 		return $this;
 	}
 
-	public function fill_exists_terms( $Parser = null ) {
+	public function fill_exists_terms() {
 		/** @global \wpdb $wpdb built in wordpress db object */
 		global $wpdb;
 
@@ -118,20 +118,12 @@ class CollectionPosts extends Collection {
 		 * @param Product $product
 		 */
 		$this->walk( function ( $product ) use ( &$externals ) {
-			/**
-			 * @param Term $cat
-			 */
-			$extract_external = function ( $cat ) use ( &$externals ) {
-				$externals[] = $cat->get_external();
-			};
-
-			$product->categories->walk( $extract_external );
-			$product->warehouses->walk( $extract_external );
-			// $product->attributes->get_all_values()->walk( $extract_external );
+			foreach ($product->relationships as $relationship) {
+				array_push($externals, "{$relationship->taxonomy}/{$relationship->term_source}");
+			}
 		} );
 
 		$externals = array_unique( $externals );
-//		$Parser
 
 		if ( ! empty( $externals ) ) {
 			array_walk( $externals, function ( &$external ) {
@@ -139,10 +131,12 @@ class CollectionPosts extends Collection {
 			} );
 
 			$external_key = Category::get_external_key();
-			$exists_terms = wp_list_pluck( $wpdb->get_results( "
+			$query = "
                 SELECT term_id, meta_value FROM {$wpdb->prefix}termmeta
                 WHERE meta_key = '$external_key'
-                    AND (" . implode( " \t\n OR ", $externals ) . ")" ),
+                    AND (" . implode( " \t\n OR ", $externals ) . ")";
+
+			$exists_terms = wp_list_pluck( $wpdb->get_results( $query ),
 				'term_id',
 				'meta_value'
 			);
@@ -151,18 +145,13 @@ class CollectionPosts extends Collection {
 			 * @param Product $product
 			 */
 			$this->walk( function ( $product ) use ( $exists_terms ) {
-				/**
-				 * @param Term $term
-				 */
-				$put_terms = function ( $term ) use ( $exists_terms ) {
-					if ( isset( $exists_terms[ $term->get_external() ] ) ) {
-						$term->set_id( $exists_terms[ $term->get_external() ] );
-					}
-				};
+				foreach ($product->relationships as $relationship) {
+					$key = "{$relationship->taxonomy}/{$relationship->term_source}";
 
-				$product->categories->walk( $put_terms );
-				$product->warehouses->walk( $put_terms );
-				// $product->attributes->get_all_values()->walk( $put_terms );
+					if( isset( $exists_terms[ $key ] ) ) {
+						$relationship->term_id = $exists_terms[ $key ];
+					}
+				}
 			} );
 
 //            if ( ! empty( $this->properties ) ) {

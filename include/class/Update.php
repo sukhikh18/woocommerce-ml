@@ -3,16 +3,16 @@
 namespace NikolayS93\Exchange;
 
 
-use NikolayS93\Exchanger\ORM\CollectionPosts;
-use NikolayS93\Exchanger\ORM\CollectionTerms;
-use NikolayS93\Exchanger\ORM\Collection;
-use NikolayS93\Exchanger\Model\Interfaces\Term;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\Attribute;
-use NikolayS93\Exchanger\Model\Warehouse;
-use NikolayS93\Exchanger\Model\ExchangePost;
-use NikolayS93\Exchanger\Model\ExchangeProduct;
-use NikolayS93\Exchanger\Model\ExchangeOffer;
+use NikolayS93\Exchange\ORM\CollectionPosts;
+use NikolayS93\Exchange\ORM\CollectionTerms;
+use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\Model\Interfaces\Term;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
 
 
 class Update {
@@ -41,7 +41,6 @@ class Update {
 			'create'        => 0,
 			'update'        => 0,
 			'meta'          => 0,
-			'relationships' => 0,
 		);
 	}
 
@@ -76,7 +75,7 @@ class Update {
 
 		$filter_messages = function ( $msg ) {
 			if ( false !== strpos( $msg, '{{' ) ) {
-				$msg = str_replace( array( '{{create}}', '{{update}}', '{{meta}}' ), array(
+				$msg = str_replace( array( '{{CREATE}}', '{{UPDATE}}', '{{META}}' ), array(
 					$this->results['create'],
 					$this->results['update'],
 					$this->results['meta']
@@ -98,7 +97,7 @@ class Update {
 	/**
 	 * @param CollectionPosts $products
 	 */
-	public function update_products( $products ) {
+	public function products( $products ) {
 		// Count products will be updated
 		$this->progress += $products->count();
 
@@ -106,42 +105,38 @@ class Update {
 			return $this;
 		}
 
-//		$products->walk( array($this, 'update_products_step') );
-		$products->walk( function ( $product ) {
-			$product->write_temporary_data();
-		} );
-
-		return $this;
-	}
-
-	/**
-	 * @param ExchangePost $product
-	 */
-	public function update_products_step( $product ) {
-		/** @var string $post_mode use get_option (has cache) */
-		$post_mode = Plugin()->get_setting( 'post_mode' );
-		if ( $product->prepare( $post_mode ) ) {
-			if ( ! $product->get_id() ) {
-				// if is create only
-				if ( 'update' !== $post_mode && $post_id = $product->create() ) {
-					// define ID for use on post meta update
-					$product->set_id( $post_id );
-					$this->results['create'] ++;
-				}
-			} else {
-				// if is update only
-				if ( 'create' !== $post_mode && $product->update() ) {
-					$this->results['update'] ++;
+		/**
+		 * @param ExchangePost $product
+		 */
+		$update_product = function( $product ) {
+			/** @var string $post_mode use get_option (has cache) */
+			$post_mode = Plugin()->get_setting( 'post_mode' );
+			if ( $product->prepare( $post_mode ) ) {
+				if ( ! $product->get_id() ) {
+					// if is create only
+					if ( 'update' !== $post_mode && $post_id = $product->create() ) {
+						// define ID for use on post meta update
+						$product->set_id( $post_id );
+						$this->results['create'] ++;
+					}
+				} else {
+					// if is update only
+					if ( 'create' !== $post_mode && $product->update() ) {
+						$this->results['update'] ++;
+					}
 				}
 			}
-		}
+		};
+
+		$products->walk( $update_product );
+
+		return $this;
 	}
 
 	/**
 	 * @param CollectionPosts $products
 	 */
-	public function update_products_meta( $products ) {
-		return $this;
+	public function products_meta( $products ) {
 
 		/**
 		 * Update post meta
@@ -164,9 +159,12 @@ class Update {
 					// Get list of all meta by product ["_sku"], ["_unit"], ["_tax"], ["{$custom}"]
 					$product_meta = $product->get_product_meta();
 
-					array_map( function ( $k, $v ) use ( $post_id, $is_new, $skip_post_meta ) {
-						$value = is_array( $v ) ? array_filter( $v, 'trim' ) : trim( $v );
+					array_map( function ( $k, $value ) use ( $post_id, $is_new, $skip_post_meta ) {
+						if( is_string( $value ) ) {
+							$value = trim( $value );
+						}
 
+						// @todo check this
 						switch ( true ) {
 							case '_sku' == $k && $skip_post_meta['sku']:
 							case '_unit' == $k && $skip_post_meta['unit']:
@@ -194,7 +192,7 @@ class Update {
 	/**
 	 * @param CollectionPosts $offers
 	 */
-	public function update_offers( $offers ) {
+	public function offers( $offers ) {
 		// Count offers will be updated ($newOffersCount != $offersCount)
 		$this->progress += $offers->count();
 		/**
@@ -211,7 +209,7 @@ class Update {
 	/**
 	 * @param CollectionPosts $offers
 	 */
-	public function update_offers_meta( $offers ) {
+	public function offers_meta( $offers ) {
 		$skip_offer_meta = array(
 			'offer_price'  => Plugin()->get_setting( 'offer_price', false ),
 			'offer_qty'    => Plugin()->get_setting( 'offer_qty', false ),
@@ -295,7 +293,7 @@ class Update {
 		return $this;
 	}
 
-	private static function properties( &$properties = array() ) {
+	public function properties( &$properties = array() ) {
 		global $wpdb;
 
 		$Plugin = Plugin();
@@ -306,7 +304,7 @@ class Update {
 			return $retry;
 		}
 
-		foreach ( $properties as $propSlug => $property ) {
+		foreach ( $properties as $source => $property ) {
 			$slug = $property->get_slug();
 
 			/**
@@ -316,6 +314,9 @@ class Update {
 				$external  = $property->get_external();
 				$attribute = $property->fetch();
 
+				/**
+				 * Insert attribute
+				 */
 				$result = wc_create_attribute( $attribute );
 
 				if ( is_wp_error( $result ) ) {
@@ -326,6 +327,9 @@ class Update {
 					continue;
 				}
 
+				/**
+				 * Create source meta
+				 */
 				$attribute_id = intval( $result );
 				if ( 0 < $attribute_id ) {
 					if ( $external ) {
@@ -369,16 +373,15 @@ class Update {
 
 	/**
 	 * @param CollectionPosts $posts
-	 * @param array $args
 	 */
-	public function relationships( CollectionPosts $posts, $args = array() ) {
+	public function relationships( CollectionPosts $posts ) {
 		/**
 		 * @param ExchangeProduct $post
 		 */
 		$update_relationships = function ( $post ) {
 			if ( $post_id = $post->get_id() ) {
 				if ( method_exists( $post, 'update_object_terms' ) ) {
-					$this->results['relationships'] += $post->update_object_terms();
+					$this->results['update'] += $post->update_object_terms();
 				}
 
 				if ( method_exists( $post, 'update_attributes' ) ) {

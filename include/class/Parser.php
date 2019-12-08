@@ -261,13 +261,13 @@ class Parser {
 
 				$ExchangeProduct->add_relationship( $Relationship );
 
-				$arProperties[ $property->get_slug() ] = new Property( array(
+				$arProperties[ $property->get_slug() ] = (array) new Property( array(
 					'name'        => $property->get_slug(),
 					'value'       => '',
 					'is_taxonomy' => 1,
 				) );
 			} else {
-				$arProperties[ $property->get_name() ] = new Property( array(
+				$arProperties[ $property->get_name() ] = (array) new Property( array(
 					'name'  => $property->get_name(),
 					'value' => $item->getValue(),
 				) );
@@ -280,7 +280,7 @@ class Parser {
 		 * @var \CommerceMLParser\Model\Types\RequisiteValue $productProperty
 		 */
 		$parseRequisites = function ( $item ) use ( &$arProperties ) {
-			$arProperties[ $item->getName() ] = new Property( array(
+			$arProperties[ $item->getName() ] = (array) new Property( array(
 				'name'  => $item->getName(),
 				'value' => $item->getValue(),
 			) );

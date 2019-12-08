@@ -35,60 +35,122 @@ $Dispatcher->addListener( 'WarehouseEvent', array( $Parser, 'warehouse_event' ) 
 $Dispatcher->addListener( 'PropertyEvent', array( $Parser, 'property_event' ) );
 $Dispatcher->parse( $file );
 
-/** @var CollectionPosts $products */
-$products = $Parser->get_products();
-/** @var  $offers */
-$offers = $Parser->get_offers();
 /** @var CollectionTerms $categories */
 $categories = $Parser->get_categories();
 /** @var CollectionTerms $warehouses */
 $warehouses = $Parser->get_warehouses();
-/** @var CollectionTerms $attributes */
+/** @var CollectionAttributes $attributes */
 $attributes = $Parser->get_properties();
 
 Transaction()->set_transaction_mode();
 
 $mode = Request::get_mode();
 
-var_dump( $products, $offers );
+if( 'import' === $mode && (! $categories->is_empty() || ! $warehouses->is_empty() || $attributes->is_empty()) ) {
+    $categories->fill_exists();
+    $warehouses->fill_exists();
+    $attributes->fill_exists();
+
+    $update->terms( $categories )->term_meta( $categories );
+    $update->terms( $warehouses )->term_meta( $warehouses );
+
+    $update->properties( $attributes );
+    $update_attribute_terms = function ( $attribute ) use ( $update ) {
+        if( "select" === $attribute->get_type() ) {
+            $attribute_terms = $attribute->get_values();
+
+            $update->terms( $attribute_terms )->term_meta( $attribute_terms );
+        }
+    };
+
+    $attributes->walk( $update_attribute_terms );
+
+    Request::set_mode( 'import_posts', $update->set_status( 'progress' ) );
+
+    $update->stop(
+        array(
+            __( 'Обновлено {{update}} категорий/терминов.', Plugin::DOMAIN ),
+            __( 'Обновлено {{meta}} мета записей.', Plugin::DOMAIN ),
+        )
+    );
+}
+
+/** @var CollectionPosts $products */
+$products = $Parser->get_products();
+/** @var  $offers */
+$offers = $Parser->get_offers();
+
+if( 'import_posts' === $mode ) {
+    if ( $products_count = $products->count() ) {
+        Transaction()->set_transaction_mode();
+
+        $products       = $products->slice( $update->progress, $update->offset['product'] );
+
+        $products
+            ->fill_exists();
+
+        $update
+            ->products( $products )
+            ->products_meta( $products );
+
+        // Set mode for retry.
+        $update->set_status( 'progress' );
+
+        $update->set_progress(0);
+        echo "<pre>";
+        var_dump( sizeof($products), $update->progress, $products_count );
+        echo "</pre>";
+        die();
+
+        if ( $update->progress >= $products_count ) {
+            $update->set_progress(0);
+            // Go next.
+            Request::set_mode( 'import_relations', $update );
+        }
+
+        $update->stop(
+            array(
+                sprintf( __( 'Обновлено {{update}} из %d товаров.', Plugin::DOMAIN ), $products_count ),
+                __( 'Обновлено {{meta}} мета записей.', Plugin::DOMAIN ),
+            )
+        );
+    }
+}
+
+if( 'import_relations' === $mode ) {
+    if ( $products->count() ) {
+        Transaction()->set_transaction_mode();
+
+        $products
+            ->fill_exists()
+            ->fill_exists_terms();
+
+        $update->relationships( $products );
+
+        $update->set_status( 'success' );
+        Request::reset_mode();
+
+        $update->stop(
+            array(
+                __( 'Обновлено {{update}} зависимостей.', Plugin::DOMAIN ),
+            )
+        );
+    }
+}
+
+echo "<pre>";
+var_dump( $mode );
+echo "</pre>";
 die();
 
-$categories->fill_exists();
-$warehouses->fill_exists();
-$attributes->fill_exists();
 
-$update->terms( $categories )->term_meta( $categories );
-$update->terms( $warehouses )->term_meta( $warehouses );
-
-Request::set_mode( 'import_posts', $update->set_status( 'progress' ) );
-
-$update->stop(
-	array(
-		"Обновлено {{UPDATE}} категорий/терминов.",
-		"Обновлено {{META}} мета записей.",
-	)
-);
 
 // Unreachable statement in theory.
 Request::reset_mode();
 $update->stop();
 
 if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->count() && ! $attributes->count() ) ) {
-    if ( $products->count() ) { // update temporary products table
-        Transaction()->set_transaction_mode();
 
-        $products
-            ->fill_exists()
-            ->fill_exists_terms( $Parser );
-
-        $update
-            ->update_products( $products )
-            ->update_products_meta( $products );
-
-        plugin()->reset_mode();
-
-        $update->stop( array( 'Записаны временные данные товаров' ) );
-    }
 
     $offers_count = $offers->count();
     $offers       = $offers->slice( $update->progress, $update->offset['offer'] );
@@ -107,9 +169,9 @@ if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->coun
         // second step: import posts with post meta.
 //              if ( 'import_relationships' !== $mode ) {
 //                  $update
-//                      ->update_offers( $offers )
+//                      ->offers( $offers )
 //                      ->relationships( $offers )
-//                      ->update_offers_meta( $offers );
+//                      ->offers_meta( $offers );
 //
 //                  if ( $update->progress < $offers_count ) {
 //                      // Set mode for retry.

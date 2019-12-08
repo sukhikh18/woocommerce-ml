@@ -6,6 +6,7 @@ namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\Model\Abstracts\Term;
 use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\check_mode;
 
 class AttributeValue extends Term {
 

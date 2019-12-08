@@ -39,104 +39,29 @@ class Product extends Post {
 	}
 
 	/****************************************************** CRUD ******************************************************/
-	public function fetch( $key = null ) {
-		$data                       = parent::fetch();
-		$data['term_relationships'] = array();
+	// public function fetch( $key = null ) {
+	// 	$data                       = parent::fetch();
+	// 	$data['term_relationships'] = array();
 
-		$fetch = function ( Identifiable $item ) use ( &$data ) {
-			if ( $this->get_id() && $item->get_id() ) {
-				$data['term_relationships'][] = array(
-					'object_id'        => $this->get_id(),
-					'term_taxonomy_id' => $item->get_id(),
-					'term_order'       => 0,
-				);
-			}
-		};
+	// 	$fetch = function ( Identifiable $item ) use ( &$data ) {
+	// 		if ( $this->get_id() && $item->get_id() ) {
+	// 			$data['term_relationships'][] = array(
+	// 				'object_id'        => $this->get_id(),
+	// 				'term_taxonomy_id' => $item->get_id(),
+	// 				'term_order'       => 0,
+	// 			);
+	// 		}
+	// 	};
 
-		array_map( $fetch, $this->categories->fetch() );
-		array_map( $fetch, $this->attributes->fetch() );
+	// 	array_map( $fetch, $this->relationships->fetch() );
+	// 	// array_map( $fetch, $this->attributes->fetch() );
 
-		if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
-			return $data;
-		}
+	// 	if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
+	// 		return $data;
+	// 	}
 
-		return $data[ $key ];
-	}
-
-	function update_attributes() {
-
-		/**
-		 * Set attribute properties
-		 */
-//        $arAttributes = array();
-//
-//        if ( 'off' === ( $post_attribute_mode = Plugin()->get_setting( 'post_attribute' ) ) ) {
-//            return;
-//        }
-//
-//        foreach ( $this->properties as $property ) {
-//            $label          = $property->get_name();
-//            $external_code  = $property->get_external();
-//            $property_value = $property->get_value();
-//            $taxonomy       = $property->get_slug();
-//            $type           = $property->get_type();
-//            $is_visible     = 0;
-//
-//            /**
-//             * I can write relation if term exists (term as value)
-//             */
-//            if ( $property_value instanceof Category ) {
-//                $arAttributes[ $taxonomy ] = array(
-//                    'name'         => $taxonomy,
-//                    'value'        => '',
-//                    'position'     => 10,
-//                    'is_visible'   => 0,
-//                    'is_variation' => 0,
-//                    'is_taxonomy'  => 1,
-//                );
-//            } else {
-//                // Try set as text if term is not exists
-//                // @todo check this
-//                if ( 'text' != $type && 'text' == $post_attribute_mode && $taxonomy && $external_code ) {
-//                    $is_visible = 0;
-//
-//                    /**
-//                     * Try set attribute name by exists terms
-//                     * Get all properties from parser
-//                     */
-//                    if ( empty( $allProperties ) ) {
-//                        $Parser        = Parser::get_instance();
-//                        $allProperties = $Parser->get_properties();
-//                    }
-//
-//                    foreach ( $allProperties as $_property ) {
-//                        if ( $_property->get_slug() == $taxonomy && ( $_terms = $_property->get_terms() ) ) {
-//                            if ( isset( $_terms[ $external_code ] ) ) {
-//                                $_term = $_terms[ $external_code ];
-//
-//                                if ( $_term instanceof Category ) {
-//                                    $label = $_property->get_name();
-//                                    $property->set_value( $_term->get_name() );
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                $arAttributes[ $taxonomy ] = array(
-//                    'name'         => $label ? $label : $taxonomy,
-//                    'value'        => $property->get_value(),
-//                    'position'     => 10,
-//                    'is_visible'   => $is_visible,
-//                    'is_variation' => 0,
-//                    'is_taxonomy'  => 0,
-//                );
-//            }
-//        }
-//
-//        update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
-	}
+	// 	return $data[ $key ];
+	// }
 
 	function update_object_terms() {
 		$product_id = $this->get_id();
@@ -146,52 +71,66 @@ class Product extends Post {
 		 * @param Term $term
 		 */
 		$update_object_terms = function ( $term ) use ( $product_id, &$count ) {
-			if ( $term->update_object_term( $product_id ) ) {
+			if ( ! $product_id || ! $term->term_id ) {
+				// @todo add error log
+				return false;
+			}
+
+			if( 'product_cat' === $term->taxonomy ) {
+				$result = null;
+
+				if ( 'off' === ( $post_relationship = Plugin()->get_setting( 'post_relationship' ) ) ) {
+					return false;
+				}
+
+				if ( 'default' == $post_relationship ) {
+					$object_terms    = wp_get_object_terms( $product_id, $term->taxonomy, array( 'fields' => 'ids' ) );
+					$default_term_id = (int) get_option( 'default_' . $term->taxonomy );
+
+					// is relatives not exists try set default term
+					if ( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
+						if ( $default_term_id ) {
+							$result = wp_set_object_terms( $product_id, $default_term_id, $term->taxonomy, $append = false );
+						}
+					}
+				} else {
+					$result = wp_set_object_terms( $product_id, $term->term_id, $term->taxonomy, $append = true );
+				}
+
+				return;
+			}
+			elseif( 0 === strpos($term->taxonomy, 'pa_') ) {
+				// @todo
+				echo "<pre>";
+				var_dump( $term );
+				echo "</pre>";
+				die();
+
+				// @todo disable text attributes on this mode.
+				if ( 'off' === ( $post_attribute_mode = Plugin()->get_setting( 'post_attribute' ) ) ) {
+					return;
+				}
+			}
+			else {
+				// @todo
+				echo "<pre>";
+				var_dump( $term );
+				echo "</pre>";
+				die();
+			}
+
+			// as default:
+			$result = wp_set_object_terms( $product_id, $term->term_id, $term->taxonomy, $append = true );
+			if ( $result && ! is_wp_error( $result ) ) {
 				$count ++;
+			} else {
+				\NikolayS93\Exchange\error()
+					->add_message( $result, 'Warning', true )
+					->add_message( $this, 'Target', true );
 			}
 		};
 
-		$this->categories->walk( $update_object_terms );
-		// @todo
-//        if ( ! $this->attributes->isEmpty() ) {
-//            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {
-//                /**
-//                 * @param Attribute $attribute
-//                 */
-//                $update_object_attribute_terms = function ($attribute) use ($update_object_terms) {
-//                    /** @var AttributeValue $attribute_value */
-//                    $attribute_value = $attribute->get_value();
-//                    $attribute_value->walk( $update_object_terms );
-//                };
-//
-//                $this->attributes->walk( $update_object_attribute_terms );
-//            }
-//        }
-//
-//        /**
-//         * Update product's properties
-//         */
-//        if ( ! $this->properties->isEmpty() ) {
-//            $terms_id = array();
-//
-//            /** @var Attribute attribute */
-//            foreach ( $this->properties as $attribute ) {
-//                if ( $taxonomy = $attribute->getSlug() ) {
-//                    if ( ! isset( $terms_id[ $taxonomy ] ) ) {
-//                        $terms_id[ $taxonomy ] = array();
-//                    }
-//
-//                    $value = $attribute->getValue();
-//                    if ( $term_id = $value->get_id() ) {
-//                        $terms_id[ $taxonomy ][] = $term_id;
-//                    }
-//                }
-//            }
-//
-//            foreach ( $terms_id as $tax => $terms ) {
-//                $count += $this->update_object_term( $product_id, $terms, $tax );
-//            }
-//        }
+		$this->relationships->walk( $update_object_terms );
 
 		return $count;
 	}
