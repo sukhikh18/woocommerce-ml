@@ -408,7 +408,7 @@ class REST_Controller {
 
 			$Update->set_status( 'progress' );
 			Request::set_session_args( array('step' => static::STEP_TMP_DATA) );
-			exit( "{$update->status}\n" . implode( ' -- ', array(
+			exit( "{$Update->status}\n" . implode( ' -- ', array(
 				"{$Update->results['create']} terms created.",
 				"{$Update->results['update']} categories/terms updated.",
 				"{$Update->results['meta']} meta updated.",
@@ -444,7 +444,7 @@ class REST_Controller {
 		}
 
 		Request::set_session_args( array('step' => '') );
-		exit( "{$update->status}\nUpdate temporary table complete." );
+		exit( "{$Update->status}\nUpdate temporary table complete." );
 	}
 
 	/**
