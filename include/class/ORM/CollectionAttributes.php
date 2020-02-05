@@ -14,9 +14,6 @@ use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
  * Class CollectionAttributes
  */
 class CollectionAttributes extends Collection {
-	/** @var Collection $attribute_values */
-	private $attribute_values;
-
 	/**
 	 * @param Collection $terms
 	 * @param bool $orphaned_only @todo get data for items who not has id
@@ -106,18 +103,14 @@ class CollectionAttributes extends Collection {
 		return $this;
 	}
 
-	public function get_all_values() {
-		$this->attribute_values = new Collection();
+	public function get_terms() {
+		$terms = new Collection();
 
-		/**
-		 * @param Attribute $attribute
-		 */
-		$closure = function ( $attribute ) {
-			$this->attribute_values->add( $attribute->get_values() );
-		};
+		$this->walk( function ( $attribute ) use ( $terms ) {
+			/** @var $attribute Attribute */
+			$terms->add( $attribute->get_values() );
+		} );
 
-		$this->walk( $closure );
-
-		return $this->attribute_values;
+		return $terms;
 	}
 }
