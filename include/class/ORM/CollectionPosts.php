@@ -125,8 +125,14 @@ class CollectionPosts extends Collection {
 				$externals[] = $cat->get_external();
 			};
 
-			$product->categories->walk( $extract_external );
-			$product->warehouses->walk( $extract_external );
+			if( isset($product->categories) ) {
+				$product->categories->walk( $extract_external );
+			}
+
+			if( isset($product->warehouses) ) {
+				$product->warehouses->walk( $extract_external );
+			}
+
 			// $product->attributes->get_all_values()->walk( $extract_external );
 		} );
 
@@ -160,8 +166,14 @@ class CollectionPosts extends Collection {
 					}
 				};
 
-				$product->categories->walk( $put_terms );
-				$product->warehouses->walk( $put_terms );
+				if( isset($product->categories) ) {
+					$product->categories->walk( $put_terms );
+				}
+
+				if( isset($product->warehouses) ) {
+					$product->warehouses->walk( $put_terms );
+				}
+
 				// $product->attributes->get_all_values()->walk( $put_terms );
 			} );
 
@@ -184,5 +196,7 @@ class CollectionPosts extends Collection {
 //                }
 //            }
 		}
+
+		return $this;
 	}
 }

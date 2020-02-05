@@ -11,6 +11,8 @@ use NikolayS93\Exchanger\Register;
 class ExchangeOffer extends ExchangePost {
 	// use ExchangeItemMeta;
 
+	public $warehouses = array();
+
 	// private $post;
 
 	// function __construct( Array $post, $ext = '', $meta = array() )
@@ -38,50 +40,6 @@ class ExchangeOffer extends ExchangePost {
 	//     $this->post = new WP_Post( (object) $args );
 	//     $this->setMeta($meta);
 	// }
-	function fill_relative_post() {
-		global $wpdb;
-
-		$table = Register::get_exchange_table_name();
-		$ext   = $this->get_external();
-
-		$res = $wpdb->get_row( "
-			SELECT * FROM $table
-			WHERE `xml` = '$ext'
-			LIMIT 1
-		" );
-
-		if( !empty($res) ) {
-			if ( ! empty( $res->name ) ) {
-				$this->set_title( $res->name );
-			}
-
-//			if ( ! empty( $res->desc ) ) {
-//				$this->set_title( $res->name );
-//			}
-
-			$meta = unserialize( $res->meta_list );
-			$this->set_meta( $meta );
-			// reset status
-			$this->set_quantity( $this->get_quantity() );
-		}
-	}
-
-	function get_quantity() {
-		$stock = $this->get_meta( 'stock' );
-		// $quantity = $this->getMeta('quantity');
-
-		// if( is_numeric($stock) && is_numeric($quantity) ) {
-		//     $qty = max($stock, $quantity);
-		// }
-		// elseif( is_numeric($stock) ) {
-		//     $qty = $stock;
-		// }
-		// elseif( is_numeric($quantity) ) {
-		//     $qty = $quantity;
-		// }
-
-		return $stock;
-	}
 
 	function set_quantity( $qty ) {
 		if ( null !== $qty ) {
@@ -111,10 +69,6 @@ class ExchangeOffer extends ExchangePost {
 		return $price;
 	}
 
-	function get_price() {
-		return $this->get_meta( 'price' );
-	}
-
 	function set_price( $price ) {
 		$this->set_meta( '_price', $price );
 		$this->set_meta( '_regular_price', $price );
@@ -122,6 +76,57 @@ class ExchangeOffer extends ExchangePost {
 		return $this;
 	}
 
-	function merge( $args, $product ) {
+	/**
+	 * @param  CollectionAttributes $offers [description]
+	 * @return [type]         [description]
+	 */
+	function merge( $offers ) {
+		$current_xml = $this->get_raw_external();
+		if( false !== ($pos = strpos($current_xml, '#') ) ) {
+			$current_xml = substr($current_xml, $pos);
+		}
+
+		$offers->walk( function( &$offer ) use ( &$offers, $current_xml ) {
+			$xml = $offer->get_raw_external();
+			if( false !== ($pos = strpos($xml, '#') ) ) {
+				$xml = substr($xml, $pos);
+			}
+
+			if( $xml === $current_xml ) {
+				$this->set_external( $xml );
+				// Merge this.
+				$this->set_quantity( $this->get_quantity() + $offer->get_quantity() );
+				$this->set_price( max( $this->get_price(), $offer->get_price() ) );
+				// @todo merge warehouses quantity.
+				// $offers->remove( $offer );
+			}
+		} );
+
+		return $this;
+	}
+
+	public function write_temporary_data() {
+		global $wpdb;
+
+		$table = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
+		$update = array();
+
+		if( $price = $this->get_price() ) {
+			$update['price'] = $price;
+		}
+
+		if( $qty = $this->get_quantity() ) {
+			$update['qty'] = $qty;
+		}
+
+		$this->warehouses->walk( function ( $term ) use ( &$update ) {
+			$update['warehouses'][ $term->get_raw_external() ] = $term->get_id();
+		} );
+
+		$update['warehouses'] = serialize($update['warehouses']);
+
+		return $wpdb->update( $table, $update, array(
+			'code' => $this->get_raw_external(),
+		) );
 	}
 }

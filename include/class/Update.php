@@ -72,25 +72,7 @@ class Update {
 		return $this;
 	}
 
-	function stop( $messages = array() ) {
-		$messages = (array) $messages;
-
-		$filter_messages = function ( $msg ) {
-			if ( false !== strpos( $msg, '{{' ) ) {
-				$msg = str_replace( array( '{{create}}', '{{update}}', '{{meta}}' ), array(
-					$this->results['create'],
-					$this->results['update'],
-					$this->results['meta']
-				), $msg );
-			}
-
-			return $msg;
-		};
-
-		exit( "$this->status\n" . implode( ' -- ', array_filter( $messages, $filter_messages ) ) );
-	}
-
-	function update_meta( $post_id, $property_key, $property ) {
+	public function update_meta( $post_id, $property_key, $property ) {
 		if ( update_post_meta( $post_id, $property_key, $property ) ) {
 			$this->results['meta'] ++;
 		}
@@ -296,28 +278,19 @@ class Update {
 		return $this;
 	}
 
-	private static function properties( &$properties = array() ) {
+	public function properties( $attributes ) {
 		global $wpdb;
 
-		$Plugin = Plugin();
+		foreach ( $attributes as $attribute ) {
+			if ( 'select' !== $attribute->get_type() ) {
+				continue;
+			}
 
-		$retry = false;
+			$attribute_id = $attribute->get_id();
+			$attribute_slug = $attribute->get_slug();
 
-		if ( 'off' === ( $attribute_mode = $Plugin->get_setting( 'attribute_mode' ) ) ) {
-			return $retry;
-		}
-
-		foreach ( $properties as $propSlug => $property ) {
-			$slug = $property->get_slug();
-
-			/**
-			 * Register Property's Taxonomies;
-			 */
-			if ( 'select' == $property->get_type() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
-				$external  = $property->get_external();
-				$attribute = $property->fetch();
-
-				$result = wc_create_attribute( $attribute );
+			if( ! $attribute_id && ! taxonomy_exists( $attribute_slug ) ) {
+				$result = wc_create_attribute( $attribute->fetch() );
 
 				if ( is_wp_error( $result ) ) {
 					Error()
@@ -327,11 +300,13 @@ class Update {
 					continue;
 				}
 
+				$external = $attribute->get_external();
 				$attribute_id = intval( $result );
-				if ( 0 < $attribute_id ) {
-					if ( $external ) {
-						$property->set_id( $attribute_id );
 
+				if( $attribute_id > 0 ) {
+					if ( $external ) {
+						$attribute->set_id( $attribute_id );
+						// Insert attribute ID map.
 						$insert = $wpdb->insert(
 							$wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
 							array(
@@ -347,25 +322,11 @@ class Update {
 							->add_message( "Empty attr insert or attr external", "Warning", true )
 							->add_message( $attribute, "Target", true );
 					}
+
+					register_taxonomy( $attribute_slug, 'product' );
 				}
-
-				/**
-				 * @var bool
-				 * Почему то термины не вставляются сразу же после вставки таксономии (proccess_add_attribute)
-				 * Нужно будет пройтись еще раз и вставить термины.
-				 */
-				$retry = true;
-			}
-
-			if ( ! taxonomy_exists( $slug ) ) {
-				/**
-				 * For exists imitation
-				 */
-				register_taxonomy( $slug, 'product' );
 			}
 		}
-
-		return $retry;
 	}
 
 	/**

@@ -23,7 +23,7 @@ class AttributeValue extends Term {
 		/** @var Int $term_id WP_Term->term_id */
 		$term_id = $this->get_id();
 
-		if ( check_mode( $term_id, $Plugin->get_setting( 'attribute_mode' ) ) ) {
+		// if ( check_mode( $term_id, $Plugin->get_setting( 'attribute_mode' ) ) ) {
 			// Do not update name?
 			switch ( $Plugin->get_setting( 'pa_name' ) ) {
 				case false:
@@ -33,12 +33,12 @@ class AttributeValue extends Term {
 					break;
 			}
 
-			if ( ! check_mode( $term_id, $Plugin->get_setting( 'pa_desc' ) ) ) {
-				$this->unset_description();
-			}
+			// if ( ! check_mode( $term_id, $Plugin->get_setting( 'pa_desc' ) ) ) {
+			// 	$this->unset_description();
+			// }
 
 			return true;
-		}
+		// }
 
 		return false;
 	}

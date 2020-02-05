@@ -28,10 +28,6 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 	use ItemMeta;
 
-	public $warehouses = array();
-
-	public $properties = array();
-
 	/**
 	 * @var \WP_Post
 	 * @sql FROM $wpdb->posts
@@ -280,48 +276,18 @@ class ExchangePost implements Identifiable, ExternalCode {
 	 * @return Int insert post ID or 0
 	 */
 	public function create() {
-		if ( $_post = $this->fetch( 'post' ) ) {
-			return wp_insert_post( $_post );
-		}
-
-		return 0;
+		return ( $_post = $this->fetch( 'post' ) ) ? wp_insert_post( $_post ) : 0;
 	}
 
-	public function write_temporary_data() {
-		global $wpdb;
+	function get_quantity() {
+		return $this->get_meta( 'stock', 0 );
+	}
 
-		$table = Register::get_exchange_table_name();
+	function get_price() {
+		return $this->get_meta( 'price', 0 );
+	}
 
-		$product_id         = $this->get_id() ? intval( $this->get_id() ) : 0;
-		$xml                = $this->get_external();
-		$name               = $this->get_title();
-		$desc               = $this->get_content();
-		$meta_list          = serialize( $this->get_meta() );
-		$relationships_list = array();
-
-		/**
-		 * @param Term $term
-		 */
-		$term_list_pluck = function ( $term ) use ( &$relationships_list ) {
-			$relationships_list[ $term->get_id() ] = $term->get_external();
-		};
-
-		// @todo set tax relative
-		$this->categories->walk( $term_list_pluck );
-		// $this->attributes->walk( $term_list_pluck );
-		$this->warehouses->walk( $term_list_pluck );
-
-		$relationships_list = serialize( $relationships_list );
-
-		$columns = array( 'product_id', 'xml', 'name', 'desc', 'meta_list', 'relationships_list' );
-		// $values_args  = implode( ', ', array_map( function ( $value ) {
-		// 	return "'$value'";
-		// }, $values ) );
-		// $columns_args = implode( ", \r\n", array_map( function ( $column ) {
-		// 	return "`$column` = VALUES(`$column`)";
-		// }, $columns ) );
-
-		// $wpdb->query( "INSERT INTO $table VALUES ($values_args) ON DUPLICATE KEY UPDATE $columns_args;" );
-		$q = $wpdb->insert( $table, compact( $columns ) );
+	function get_tax() {
+		return $this->get_meta( 'tax', 0 );
 	}
 }

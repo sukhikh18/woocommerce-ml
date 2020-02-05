@@ -11,27 +11,6 @@ use function NikolayS93\Exchanger\error;
 
 trait IO {
 
-	/**
-	 * Get plugin url
-	 *
-	 * @param string $path
-	 *
-	 * @return string
-	 */
-	public function get_url( $path = '' ) {
-		$url = plugins_url( basename( $this->get_dir() ) ) . '/' . ltrim( $path, '/' );
-
-		return apply_filters( static::PREFIX . 'get_url', $url, $path );
-	}
-
-	public function get_dir( $path = '' ) {
-		return PLUGIN_DIR . ltrim( $path, DIRECTORY_SEPARATOR );
-	}
-
-	public function get_file( $dir_path, $filename ) {
-		return $this->get_dir( $dir_path ) . '/' . trim( $filename, DIRECTORY_SEPARATOR );
-	}
-
 	public function get_upload_dir() {
 		$wp_upload_dir = wp_upload_dir();
 
@@ -122,25 +101,5 @@ trait IO {
 		}
 
 		return $arResult;
-	}
-
-	/**
-	 * Get plugin template path
-	 *
-	 * @param  [type]  $template [description]
-	 *
-	 * @return string|false
-	 */
-	public function get_template( $template ) {
-		if ( ! pathinfo( $template, PATHINFO_EXTENSION ) ) {
-			$template .= '.php';
-		}
-
-		$path = $this->get_dir() . ltrim( $template, '/' );
-		if ( file_exists( $path ) && is_readable( $path ) ) {
-			return $path;
-		}
-
-		return false;
 	}
 }

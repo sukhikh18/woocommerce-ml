@@ -248,4 +248,40 @@ class ExchangeProduct extends ExchangePost {
 
 		return $count;
 	}
+
+	public function write_temporary_data() {
+		global $wpdb;
+
+		$table = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
+		$meta = $this->get_meta();
+		unset( $meta['_stock'], $meta['_price'], $meta['_regular_price'], $meta['_manage_stock'],
+			$meta['_stock_status'], $meta['_tax'] );
+
+		$categories = array();
+		$this->categories->walk( function ( $term ) use ( &$categories ) {
+			$categories[ $term->get_raw_external() ] = $term->get_id();
+		} );
+
+		$warehouses = array();
+
+		$attributes = array();
+		$this->attributes->walk( function ( $term ) use ( &$attributes ) {
+			$attributes[ $term->get_external() ] = $term->get_id();
+		} );
+
+		return $wpdb->insert( $table, array(
+			'product_id'  => $this->get_id() ? intval( $this->get_id() ) : 0,
+			'code'        => $this->get_raw_external(),
+			'name'        => $this->get_title(),
+			'slug'        => $this->get_slug(),
+			'qty'         => $this->get_quantity(),
+			'price'       => $this->get_price(),
+			'tax'         => $this->get_tax(),
+			'description' => $this->get_content(),
+			'meta'        => serialize( $meta ),
+			'cats'        => count( $categories ) ? serialize( $categories ) : '',
+			'warehouses'  => count( $warehouses ) ? serialize( $warehouses ) : '',
+			'attributes'  => count( $attributes ) ? serialize( $attributes ) : '',
+		) );
+	}
 }

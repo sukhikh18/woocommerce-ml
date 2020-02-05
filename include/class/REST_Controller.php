@@ -12,7 +12,10 @@ use function NikolayS93\Exchange\the_statistic_table;
 
 class REST_Controller {
 
-	const OPTION_VERSION = 'exchange_version';
+	const STEP_UNZIP = '1';
+	const STEP_TMP_DATA = '2';
+	const STEP_DEACTIVATE = '3';
+	const STEP_COMPLETE = '4';
 
 	/**
 	 * The namespace for the REST API routes.
@@ -26,9 +29,14 @@ class REST_Controller {
 	 */
 	public $version;
 
+	public $step;
+
+	public $date_start;
+
 	function __construct() {
-		// Set CommerceML protocol version
-		$this->version = get_option( self::OPTION_VERSION, '' );
+		$this->version = Request::get_session_arg('version');
+		$this->step = Request::get_session_arg('step');
+		$this->date_start = Request::get_session_arg('date_start');
 	}
 
 	/**
@@ -182,7 +190,7 @@ class REST_Controller {
 			Error()->add_message( 'Type no support' );
 		}
 
-		if ( ! $mode = plugin()->get_mode() ) {
+		if ( ! $mode = Request::get_mode() ) {
 			Error()->add_message( 'Mode no support' );
 		}
 
@@ -194,18 +202,12 @@ class REST_Controller {
 				Error()->add_message( $user );
 			}
 
-			$route = array(
-				$this,
-				false !== ( $pos = strpos( $mode, '_' ) ) ? substr( $mode, 0, $pos ) : $mode,
-			);
-
-			if ( is_callable( $route ) ) {
-				// init();
-				// file();
-				// import();
-				// deactivate();
-				// complete();
-				call_user_func( $route );
+			switch ( $mode ) {
+				case 'init': $this->init(); break;
+				case 'file': $this->file(); break;
+				case 'import': $this->import( new Parser(), new Update() ); break;
+				case 'deactivate': $this->deactivate(); break;
+				case 'complete': $this->complete(); break;
 			}
 		}
 	}
@@ -275,33 +277,24 @@ class REST_Controller {
 	 * zip=yes|no - Сервер поддерживает Zip
 	 * file_limit=<число> - максимально допустимый размер файла в байтах для передачи за один запрос
 	 */
-	public function init( $skip_zip_checks = false ) {
-		if ( ! $skip_zip_checks ) {
-			$is_zip = check_zip_extension();
-			if ( is_wp_error( $is_zip ) ) {
-				error()->add_message( $is_zip );
-			}
+	public function init() {
+		$is_zip = check_zip_extension();
+		if ( is_wp_error( $is_zip ) ) {
+			error()->add_message( $is_zip );
 		}
 
-		/**
-		 * Option is empty then exchange end
-		 *
-		 * @var [type]
-		 */
-		if ( ! $start = get_option( 'exchange_start-date', '' ) ) {
-			/**
-			 * Refresh exchange version
-			 *
-			 * @var float isset($_GET['version']) ? ver >= 3.0 : ver <= 2.99
-			 */
-			update_option( 'exchange_version', ! empty( $_GET['version'] ) ? $_GET['version'] : '' );
+		// Start exchange session as first request.
+		if( ! $this->date_start ) {
+			global $wpdb;
 
-			/**
-			 * Set start wp date sql format
-			 */
-			update_option( 'exchange_start-date', current_time( 'mysql' ) );
+			$table_name = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
+			$wpdb->query( "TRUNCATE TABLE $table_name" );
 
-			plugin()->reset_mode();
+			Request::set_session_args( array(
+				'step'       => '',
+				'version'    => ! empty( $_GET['version'] ) ? sanitize_text_field( $_GET['version'] ) : '1',
+				'date_start' => current_time( 'mysql' ),
+			) );
 		}
 
 		exit( "zip=yes\nfile_limit=" . wp_max_upload_size() );
@@ -318,24 +311,32 @@ class REST_Controller {
 	 * @print string 'success'
 	 */
 	public function file( $requested = 'php://input' ) {
-		$Plugin = Plugin();
-		$file   = Request::get_file();
+		$file = Request::get_file();
+		$type = Request::get_type();
 		// get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
-		$path_dir = $Plugin->get_exchange_dir( Request::get_type() );
+		$path_dir = Plugin()->get_exchange_dir( $type );
 		$path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
-		print_r( $path, $path_dir );
 
-		$from     = fopen( $requested, 'r' );
-		$resource = fopen( $path, 'a' );
-		stream_copy_to_stream( $from, $resource );
-		fclose( $from );
-		fclose( $resource );
+		if( static::STEP_UNZIP === Request::get_session_arg('step') ) {
+			unzip( $path, $path_dir );
 
-		unzip( $path, $path_dir );
-
-		if ( 'catalog' == Request::get_type() ) {
-			exit( "success\n" );
+			if ( 'catalog' == $type ) {
+				exit( "success\n" );
+			}
 		}
+		else {
+			$from     = fopen( $requested, 'r' );
+			$resource = fopen( $path, 'a' );
+			// @todo Do you want to get ВерсияСхемы or ДатаФормирования?
+			stream_copy_to_stream( $from, $resource );
+			fclose( $from );
+			fclose( $resource );
+
+			Request::set_session_args( array('step' => static::STEP_UNZIP) );
+			exit( "progress\n" );
+		}
+
+		exit( "failure\n" );
 	}
 
 	/**
@@ -345,7 +346,7 @@ class REST_Controller {
 	public function query() {
 	}
 
-	private function get_message_by_filename( $file_name = '' ) {
+	function get_message_by_filename( $file_name = '' ) {
 		switch ( true ) {
 			case 0 === strpos( $file_name, 'price' ):
 				return '%s из %s цен обработано.';
@@ -363,152 +364,87 @@ class REST_Controller {
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
 	 *
 	 * @param Parser $Parser
-	 * @param \CommerceMLParser\Parser $Dispatcher
-	 * @param Update $update
+	 * @param Update $Update
 	 *
 	 * @print 'progress|success|failure'
 	 */
-	public function import( $Parser = null, $update = null ) {
+	public function import( $Parser, $Update ) {
 
 		$file = Plugin()->get_exchange_file( Request::get_file() );
 		file_is_readble( $file, true );
 
-		$Parser = new Parser();
-
 		$Dispatcher = Dispatcher();
-		$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
-		$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
 		$Dispatcher->addListener( 'CategoryEvent', array( $Parser, 'category_event' ) );
 		$Dispatcher->addListener( 'WarehouseEvent', array( $Parser, 'warehouse_event' ) );
 		$Dispatcher->addListener( 'PropertyEvent', array( $Parser, 'property_event' ) );
+
+		if( static::STEP_TMP_DATA === $this->step ) {
+			$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
+			$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
+		}
+
 		$Dispatcher->parse( $file );
+
+		/** @var CollectionTerms $categories */
+		$categories = $Parser->get_categories()->fill_exists();
+		/** @var CollectionTerms $warehouses */
+		$warehouses = $Parser->get_warehouses()->fill_exists();
+		/** @var CollectionTerms $attributes */
+		$attributes = $Parser->get_properties()->fill_exists();
+
+		$has_terms = $categories->count() || $warehouses->count() || $attributes->count();
+		if ( static::STEP_TMP_DATA !== $this->step && $has_terms ) {
+			// Update terms.
+			Transaction()->set_transaction_mode();
+
+			$Update->terms( $categories )->term_meta( $categories );
+			$Update->terms( $warehouses )->term_meta( $warehouses );
+
+			$Update->properties( $attributes );
+			$attribute_terms = $attributes->get_terms();
+			$Update
+				->terms( $attribute_terms )
+				->term_meta( $attribute_terms );
+
+			$Update->set_status( 'progress' );
+			Request::set_session_args( array('step' => static::STEP_TMP_DATA) );
+			exit( "{$update->status}\n" . implode( ' -- ', array(
+				"{$Update->results['create']} terms created.",
+				"{$Update->results['update']} categories/terms updated.",
+				"{$Update->results['meta']} meta updated.",
+			) ) );
+		}
 
 		/** @var CollectionPosts $products */
 		$products = $Parser->get_products();
-		/** @var  $offers */
+		/** @var CollectionPosts $offers */
 		$offers = $Parser->get_offers();
-		/** @var CollectionTerms $categories */
-		$categories = $Parser->get_categories();
-		/** @var CollectionTerms $warehouses */
-		$warehouses = $Parser->get_warehouses();
-		/** @var CollectionTerms $attributes */
-		$attributes = $Parser->get_properties();
 
-		$mode = plugin()->get_mode();
-
-		if ( null === $update ) {
-			$update = new Update();
-		}
-
-		if ( 'import_posts' === $mode || ( ! $categories->count() && ! $warehouses->count() && ! $attributes->count() ) ) {
-			if ( $products->count() ) { // update temporary products table
-				Transaction()->set_transaction_mode();
-
-				$products
-					->fill_exists()
-					->fill_exists_terms( $Parser );
-
-				$update
-					->update_products( $products )
-					->update_products_meta( $products );
-
-				plugin()->reset_mode();
-
-				$update->stop( array( 'Записаны временные данные товаров' ) );
-			}
-
-			$offers_count = $offers->count();
-			$offers       = $offers->slice( $update->progress, $update->offset['offer'] );
-
-			if ( $offers_count ) {
-				Transaction()->set_transaction_mode();
-
-//				$offers->fill_exists();
-				foreach ( $offers as $offer ) {
-					$offer->fill_relative_post();
-				}
-
-				print_r($offers);
-				die();
-
-				// second step: import posts with post meta.
-//				if ( 'import_relationships' !== $mode ) {
-//					$update
-//						->update_offers( $offers )
-//						->relationships( $offers )
-//						->update_offers_meta( $offers );
-//
-//					if ( $update->progress < $offers_count ) {
-//						// Set mode for retry.
-//						$update->set_status( 'progress' );
-//					} elseif ( 'success' === $update->status ) {
-//						if ( floatval( $this->version ) < 3 ) {
-//							plugin()->set_mode( 'deactivate', $update->set_status( 'progress' ) );
-//						}
-//					}
-//
-//					$update->stop(
-//						array(
-//							sprintf(
-//								$this->get_message_by_filename( Request::get_file()['name'] ),
-//								$update->progress,
-//								$offers_count
-//							),
-//							$update->results['meta'] . ' произвольных записей товаров обновлено.',
-//						)
-//					);
-//
-//					$update
-//						->stop(
-//							printf(
-//								'%d зависимостей %d предложений обновлено (всего %d из %d обработано).',
-//								$update->results['relationships'],
-//								$offers->count(),
-//								$update->progress,
-//								$offers_count
-//							)
-//						);
-
-				} // third step: import posts relationships.
-
-		} else { // Update terms
+		if ( ( $products_count = $products->count() ) || ( $offers_count = $offers->count() ) ) {
+			// Update temporary data.
 			Transaction()->set_transaction_mode();
 
-			$categories->fill_exists();
-			$warehouses->fill_exists();
-			$attributes->fill_exists();
-
-			$update->terms( $categories )->term_meta( $categories );
-			$update->terms( $warehouses )->term_meta( $warehouses );
-
-			// $attribute_values = $attributes->get_all_values();
-			// $Update
-			// ->properties( $attributes )
-			// ->terms( $attributeValues )
-			// ->term_meta( $attributeValues );
-//			if ( $products->count() && floatval( $this->version ) < 3 ) {
-				plugin()->set_mode( 'import_posts', $update->set_status( 'progress' ) );
-//			}
-
-			$update->stop(
-				array(
-					"Обновлено {$update->results['update']} категорий/терминов.",
-					"Обновлено {$update->results['meta']} мета записей.",
-				)
-			);
+			if( $products_count ) {
+				$products
+					->fill_exists()
+					->fill_exists_terms( $Parser )
+					->walk( function ( $product ) {
+						$product->write_temporary_data();
+					} );
+			}
+			// products.xml or offers.xml
+			elseif( $offers_count ) {
+				$offers
+					->fill_exists_terms( $Parser )
+					->walk( function( $offer ) use ( &$offers ) {
+						$offer->merge( $offers );
+						$offer->write_temporary_data();
+					} );
+			}
 		}
 
-//		if ( 'import_posts' === $mode || 'import_relationships' === $mode ) {
-//			if ( $offers->count() ) {
-//				Transaction()->set_transaction_mode();
-//
-//				$offers->fill_exists();
-//			}
-//		}
-
-		// Unreachable statement in theory.
-		plugin()->reset_mode();
-		$update->stop();
+		Request::set_session_args( array('step' => '') );
+		exit( "{$update->status}\nUpdate temporary table complete." );
 	}
 
 	/**
@@ -517,202 +453,62 @@ class REST_Controller {
 	 *
 	 * @print 'progress|success|failure'
 	 * @note We need always update post_modified for true deactivate
-	 * @since  3.0
+	 * @since CommerceML 3.0
 	 */
 	public function deactivate() {
-
-		global $wpdb;
-
-		$start_date = get_option( 'exchange_start-date', false );
-
-		/**
-		 * Чистим и пересчитываем количество записей в терминах
-		 */
-		if ( ! $start_date ) {
-			return;
+		$is_full = false;
+		if( $is_full ) {
+			// delete_diff
+			// $all_products_id = wp_list_pluck( $wpdb->get_results( "
+			// 	SELECT ID, post_title FROM $wpdb->posts p
+			// 	WHERE p.post_type = 'product'
+			// " ), 'ID' );
 		}
 
-		$Plugin = Plugin();
-		/**
-		 * move .xml files from exchange folder
-		 */
-		$path_dir = $Plugin->get_exchange_dir();
-		$files    = $Plugin->get_exchange_files();
-
-		if ( ! empty( $files ) ) {
-			reset( $files );
-
-			/**
-			 * Meta data from any finded file
-			 *
-			 * @var array { version: float, is_full: bool }
-			 */
-			$summary = Plugin::get_summary_meta( current( $files ) );
-
-			/**
-			 * Need deactivate deposits products
-			 * $summary['version'] < 3 && $version < 3 &&
-			 */
-			if ( true === $summary['is_full'] ) {
-				$post_lost = Plugin::get( 'post_lost' );
-
-				if ( ! $post_lost ) {
-					// $postmeta['_stock'] = 0; // required?
-					$wpdb->query(
-						"
-                        UPDATE $wpdb->postmeta pm SET pm.meta_value = 'outofstock'
-                        WHERE pm.meta_key = '_stock_status' AND pm.post_id IN (
-                                  SELECT p.ID FROM $wpdb->posts p
-                                  WHERE p.post_type = 'product'
-                                        AND p.post_modified < '$start_date'
-                        ) "
-					);
-				} elseif ( 'delete' == $post_lost ) {
-					// delete query
-				}
-			}
-		}
-
-		/**
-		 * Set pending status when post no has price meta
-		 * Most probably no has offer (or code error in last versions)
-		 *
-		 * @var array $notExistsPrice List of objects
-		 */
-		$notExistsPrice = $wpdb->get_results(
-			"
-                SELECT p.ID, p.post_type, p.post_status
-                FROM $wpdb->posts p
-                WHERE
-                    p.post_type = 'product'
-                    AND p.post_status = 'publish'
-                    AND p.post_modified > '$start_date'
-                    AND NOT EXISTS (
-                        SELECT pm.post_id, pm.meta_key FROM $wpdb->postmeta pm
-                        WHERE p.ID = pm.post_id AND pm.meta_key = '_price'
-                    )
-            "
-		);
-
-		// Collect Ids
-		$notExistsPriceIDs = array_map( 'intval', wp_list_pluck( $notExistsPrice, 'ID' ) );
-
-		/**
-		 * Set pending status when post has a less price meta (null value)
-		 *
-		 * @var array $nullPrice List of objects
-		 */
-		$nullPrice = $wpdb->get_results(
-			"
-                SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-                FROM $wpdb->postmeta pm
-                INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-                WHERE   p.post_type   = 'product'
-                    AND p.post_status = 'publish'
-                    AND p.post_modified > '$start_date'
-                    AND pm.meta_key = '_price'
-                    AND pm.meta_value = 0
-            "
-		);
-
-		// Collect Ids
-		$nullPriceIDs = array_map( 'intval', wp_list_pluck( $nullPrice, 'post_id' ) );
-
-		// Merge Ids
-		$deactivateIDs = array_unique( array_merge( $notExistsPriceIDs, $nullPriceIDs ) );
-
-		$price_lost = Plugin::get( 'price_lost' );
-
-		/**
-		 * Deactivate
-		 */
-		if ( ! $price_lost && sizeof( $deactivateIDs ) ) {
-			/**
-			 * Execute query (change post status to pending)
-			 */
-			$wpdb->query(
-				"UPDATE $wpdb->posts SET post_status = 'pending'
-                    WHERE ID IN (" . implode( ',', $deactivateIDs ) . ')'
-			);
-		} elseif ( 'delete' == $price_lost ) {
-			// delete query
-		}
-
-		/**
-		 * @todo how define time rengу one exhange (if exchange mode complete clean date before new part of offers)
-		 * Return post status if product has a better price (only new)
-		 */
-		// $betterPrice = $wpdb->get_results( "
-		// SELECT pm.post_id, pm.meta_key, pm.meta_value, p.post_type, p.post_status
-		// FROM $wpdb->postmeta pm
-		// INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
-		// WHERE   p.post_type   = 'product'
-		// AND p.post_status = 'pending'
-		// AND p.post_modified = p.post_date
-		// AND pm.meta_key = '_price'
-		// AND pm.meta_value > 0
-		// " );
-
-		// // Collect Ids
-		// $betterPriceIDs = array_map('intval', wp_list_pluck( $betterPrice, 'ID' ));
-
-		// if( sizeof($betterPriceIDs) ) {
-		// $wpdb->query(
-		// "UPDATE $wpdb->posts SET post_status = 'publish'
-		// WHERE ID IN (". implode(',', $betterPriceIDs) .")"
-		// );
-		// }
-
-		$msg = 'Деактивация товаров завершена';
-
-		if ( floatval( $this->version ) < 3 ) {
-			plugin()->set_mode( 'complete', new Update() );
-			exit( "progress\n$msg" );
-		}
-
-		exit( "success\n$msg" );
+		exit("success\n");
 	}
 
 	/**
 	 * F. Завершающее событие загрузки данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=complete
 	 *
-	 * @since  3.0
+	 * @since CommerceML 3.0
 	 */
 	public function complete() {
-		/**
-		 * Insert count the number of records in a category
-		 * /
-		 * Update::update_term_counts();
-		 */
-		// flush_rewrite_rules();
+		global $wpdb;
 
-		/**
-		 * Reset start date
-		 *
-		 * @todo @fixit (check between)
-		 */
-		update_option( 'exchange_start-date', '' );
+		$table = Register::get_exchange_table_name();
 
-		/**
-		 * Refresh version
-		 */
-		update_option( 'exchange_version', '' );
+		$res = $wpdb->get_results( "
+			SELECT * FROM $table
+			LIMIT 500
+		" );
 
-		delete_transient( 'wc_attribute_taxonomies' );
+		$all_products_id = wp_list_pluck( $wpdb->get_results( "
+			SELECT ID, post_title FROM $wpdb->posts p
+			WHERE p.post_type = 'product'
+		" ), 'ID' );
 
-		Plugin::set_mode( '' );
-		update_option( 'exchange_last-update', current_time( 'mysql' ) );
+		foreach ($res as $item) {
+			$post = new ExchangePost( array(
+				'ID'             => $item->product_id,
+				'post_content'   => $item->description,
+				'post_title'     => $item->name,
+				'post_name'      => $item->slug,
+			), $item->code, array(
+				'_price'         => $item->price,
+				'_regular_price' => $item->price,
+				'_manage_stock'  => 'yes',
+				'_stock_status'  => $item->qty > 0 ? 'instock' : 'outofstock',
+				'_stock'         => $item->qty,
+			) );
 
-		// if ( is_debug() ) {
-		// $Plugin = Plugin();
-		// $file   = Request::get_file();
-		// get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
-		// $path = $Plugin->get_exchange_dir( Request::get_type() ) . '/' . date( 'YmdH' ) . '_debug';
-		// @mkdir( $path );
-		// @rename( $zip_path, $path . '/' . $file['name'] . '.' . $file['ext'] );
-		// }
+			if( ! $item->qty || ! $item->price ) {
+				// $item->product_id
+			}
+		}
 
-		exit( "success\nВыгрузка данных завершена" );
+		var_dump( $res );
+		die();
 	}
 }

@@ -52,6 +52,10 @@ if ( ! defined( 'EXCHANGE_CHARSET' ) ) {
 	define( 'EXCHANGE_CHARSET', 'UTF-8' );
 }
 
+if ( ! defined( 'EXCHANGE_TMP_TABLENAME' ) ) {
+	define( 'EXCHANGE_TMP_TABLENAME', 'exchange' );
+}
+
 if ( ! function_exists( 'file_is_readble' ) ) {
 	function file_is_readble( $path, $show_error = false ) {
 		if ( is_file( $path ) && is_readable( $path ) ) {
@@ -77,9 +81,7 @@ if ( ! function_exists( 'include_plugin_file' ) ) {
 			$path = PLUGIN_DIR . $path;
 		}
 
-		if ( file_is_readble( $path ) ) {
-			require $path; // phpcs:ignore
-		}
+		return file_is_readble( $path ) ? require_once $path : false;
 	}
 }
 
@@ -92,7 +94,8 @@ array_map( __NAMESPACE__ . '\include_plugin_file', array(
 	'include/statistic.php'
 ) );
 
-if ( ! include_once PLUGIN_DIR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php' ) {
+// When no have autoload.
+if ( ! include_plugin_file( 'vendor/autoload.php' ) ) {
 	array_map(
 		__NAMESPACE__ . '\include_plugin_file',
 		array(
@@ -196,9 +199,9 @@ add_action(
 	20
 );
 
-register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'activate' ) );
-register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'deactivate' ) );
-register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Register', 'uninstall' ) );
+register_activation_hook( __FILE__, function() {
+	return include_plugin_file( '.activate.php' );
+} );
 
 add_action( 'wp_ajax_1c4wp_exchange', __NAMESPACE__ . '\ajax_1c4wp_exchange' );
 function ajax_1c4wp_exchange() {
