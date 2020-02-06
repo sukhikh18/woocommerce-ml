@@ -201,13 +201,11 @@ class Parser {
 		), $property->getId() );
 
 		// Fill ExchangeTerm values
-		foreach ( $property->getValues() as $term_id => $name ) {
-			$newTerm = new AttributeValue( array(
+		foreach ( $property->getValues() as $code => $name ) {
+			$attribute->add_value( new AttributeValue( array(
 				'name'     => $name,
 				'taxonomy' => $attribute->get_slug(),
-			), $term_id );
-
-			$attribute->add_value( $newTerm );
+			), $code ) );
 		}
 
 		$this->properties->add( $attribute );
@@ -244,11 +242,10 @@ class Parser {
 		 * @var \CommerceMLParser\Model\Types\PropertyValue $productProperty
 		 */
 		$parseAttributes = function ( $item ) use ( &$ExchangeProduct ) {
-			$ExchangeProduct->properties[] = (object) array(
-				'id'    => method_exists( $item, 'getId' ) ? $item->getId() : '',
+			$ExchangeProduct->attributes->add( new AttributeValue( array(
 				'name'  => method_exists( $item, 'getName' ) ? $item->getName() : '',
 				'value' => method_exists( $item, 'getValue' ) ? $item->getValue() : '',
-			);
+			), method_exists( $item, 'getId' ) ? $item->getId() : '' ) );
 		};
 
 		array_map( $parseAttributes, $product->getProperties()->fetch() );

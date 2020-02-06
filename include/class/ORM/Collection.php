@@ -182,7 +182,9 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 
 		$item = $items;
 
-		if ( ( $positions = $this->has( $item ) ) !== false ) {
+		if ( $item instanceof ExternalCode ) {
+			unset( $this->items[ $item->get_external() ] );
+		} elseif ( ( $positions = $this->has( $item ) ) !== false ) {
 			array_splice( $this->items, $positions, 1 );
 		}
 

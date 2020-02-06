@@ -278,6 +278,7 @@ class Update {
 		return $this;
 	}
 
+	// @todo delete taxonomy meta when delete taxonomy
 	public function properties( $attributes ) {
 		global $wpdb;
 
@@ -327,6 +328,8 @@ class Update {
 				}
 			}
 		}
+
+		return $this;
 	}
 
 	/**

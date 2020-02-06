@@ -57,16 +57,22 @@ if ( ! defined( 'EXCHANGE_TMP_TABLENAME' ) ) {
 }
 
 if ( ! function_exists( 'file_is_readble' ) ) {
+	/**
+	 * Check is file and is readble.
+	 *
+	 * @param string $path path to file
+	 * @param boolean $show_error
+	 *
+	 * @return boolean
+	 */
 	function file_is_readble( $path, $show_error = false ) {
 		if ( is_file( $path ) && is_readable( $path ) ) {
 			return true;
-		} else {
-			if ( $show_error ) {
-				Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
-			}
-
-			return false;
+		} elseif ( $show_error ) {
+			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
 		}
+
+		return false;
 	}
 }
 
@@ -199,8 +205,12 @@ add_action(
 	20
 );
 
-register_activation_hook( __FILE__, function() {
-	return include_plugin_file( '.activate.php' );
+register_activation_hook( __FILE__, function () {
+	return include_plugin_file( '.install.php' );
+} );
+
+register_deactivation_hook( __FILE__, function () {
+	return include_plugin_file( '.uninstall.php' );
 } );
 
 add_action( 'wp_ajax_1c4wp_exchange', __NAMESPACE__ . '\ajax_1c4wp_exchange' );

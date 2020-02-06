@@ -212,6 +212,7 @@ class Register {
 
 	static function get_exchange_table_name() {
 		global $wpdb;
+
 		return $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
 	}
 }

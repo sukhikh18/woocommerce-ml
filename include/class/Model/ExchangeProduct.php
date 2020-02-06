@@ -8,7 +8,10 @@ use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
 use NikolayS93\Exchanger\Parser;
 use NikolayS93\Exchanger\Model\Category;
 use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\ORM\CollectionTerms;
+use NikolayS93\Exchanger\ORM\CollectionAttributes;
 use NikolayS93\Exchanger\Plugin;
+use NikolayS93\Exchanger\Register;
 use function NikolayS93\Exchanger\Error;
 use function NikolayS93\Exchanger\Plugin;
 
@@ -57,8 +60,8 @@ class ExchangeProduct extends ExchangePost {
 	function __construct( Array $post, $ext = '', $meta = array() ) {
 		parent::__construct( $post, $ext, $meta );
 
-		$this->categories = new Collection();
-		$this->attributes = new Collection();
+		$this->categories = new CollectionTerms();
+		$this->attributes = new CollectionAttributes();
 	}
 
 	/**************************************************** Relatives ***************************************************/
@@ -92,29 +95,29 @@ class ExchangeProduct extends ExchangePost {
 	}
 
 	/****************************************************** CRUD ******************************************************/
-	public function fetch( $key = null ) {
-		$data                       = parent::fetch();
-		$data['term_relationships'] = array();
+	// public function fetch( $key = null ) {
+	// 	$data                       = parent::fetch();
+	// 	$data['term_relationships'] = array();
 
-		$fetch = function ( Identifiable $item ) use ( &$data ) {
-			if ( $this->get_id() && $item->get_id() ) {
-				$data['term_relationships'][] = array(
-					'object_id'        => $this->get_id(),
-					'term_taxonomy_id' => $item->get_id(),
-					'term_order'       => 0,
-				);
-			}
-		};
+	// 	$fetch = function ( Identifiable $item ) use ( &$data ) {
+	// 		if ( $this->get_id() && $item->get_id() ) {
+	// 			$data['term_relationships'][] = array(
+	// 				'object_id'        => $this->get_id(),
+	// 				'term_taxonomy_id' => $item->get_id(),
+	// 				'term_order'       => 0,
+	// 			);
+	// 		}
+	// 	};
 
-		array_map( $fetch, $this->categories->fetch() );
-		array_map( $fetch, $this->attributes->fetch() );
+	// 	array_map( $fetch, $this->categories->fetch() );
+	// 	array_map( $fetch, $this->attributes->fetch() );
 
-		if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
-			return $data;
-		}
+	// 	if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
+	// 		return $data;
+	// 	}
 
-		return $data[ $key ];
-	}
+	// 	return $data[ $key ];
+	// }
 
 	function update_attributes() {
 
@@ -252,8 +255,8 @@ class ExchangeProduct extends ExchangePost {
 	public function write_temporary_data() {
 		global $wpdb;
 
-		$table = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
-		$meta = $this->get_meta();
+		$table = Register::get_exchange_table_name();
+		$meta  = $this->get_meta();
 		unset( $meta['_stock'], $meta['_price'], $meta['_regular_price'], $meta['_manage_stock'],
 			$meta['_stock_status'], $meta['_tax'] );
 

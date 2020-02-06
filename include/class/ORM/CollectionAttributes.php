@@ -36,7 +36,7 @@ class CollectionAttributes extends Collection {
 			$attributeRequired = false;
 
 			foreach ( $attribute->get_values() as $attributeValue ) {
-				if ( ! $attribute->get_id() && $val_ext = $attributeValue->get_external() ) {
+				if ( ! $attributeValue->get_id() && $val_ext = $attributeValue->get_external() ) {
 					$attributeRequired = true;
 					$term_externals[]  = "`meta_value` = '" . $val_ext . "'";
 				}
@@ -49,8 +49,10 @@ class CollectionAttributes extends Collection {
 
 		$this->walk( $build_query );
 
-		$externals = array_unique( $externals );
+		$externals         = array_unique( $externals );
+		$term_externals    = array_unique( $term_externals );
 		$exists_attributes = array();
+		$exists_terms      = array();
 
 		if ( ! empty( $externals ) ) {
 			$external_key   = Attribute::get_external_key();
@@ -64,8 +66,6 @@ class CollectionAttributes extends Collection {
 			$exists_attributes = $wpdb->get_results( $exists_query );
 		}
 
-		$term_externals = array_unique( $term_externals );
-		$exists_terms   = array();
 		if ( ! empty( $term_externals ) ) {
 			// @todo
 			$external_key   = AttributeValue::get_external_key();

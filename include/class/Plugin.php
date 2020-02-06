@@ -125,7 +125,7 @@ class Plugin {
 	 * Get plugin setting from cache or database
 	 *
 	 * @param string $prop_name Option key or null (for a full request).
-	 * @param mixed  $default What's return if field value not defined.
+	 * @param mixed $default What's return if field value not defined.
 	 * @param string $context suffix option name. @see get_option_name().
 	 *
 	 * @return mixed
@@ -155,8 +155,8 @@ class Plugin {
 	 * Set new plugin setting
 	 *
 	 * @param string|array $prop_name Option key || array.
-	 * @param string       $value prop_name key => value.
-	 * @param string       $context suffix option name. @see get_option_name().
+	 * @param string $value prop_name key => value.
+	 * @param string $context suffix option name. @see get_option_name().
 	 *
 	 * @return bool                   Is updated @see update_option()
 	 */

@@ -28,6 +28,8 @@ class ExchangePost implements Identifiable, ExternalCode {
 
 	use ItemMeta;
 
+	public $warehouses = array();
+
 	/**
 	 * @var \WP_Post
 	 * @sql FROM $wpdb->posts
@@ -91,12 +93,28 @@ class ExchangePost implements Identifiable, ExternalCode {
 		 * For no offer defaults
 		 */
 		$meta = wp_parse_args( $meta, array(
-			'_price'         => 0,
-			'_regular_price' => 0,
-			'_manage_stock'  => 'no',
-			'_stock_status'  => 'outofstock',
-			'_stock'         => 0,
+			'total_sales'        => 0,
+			'_price'             => 0,
+			'_regular_price'     => 0,
+			'_manage_stock'      => 'yes',
+			'_stock'             => 0,
+			'_stock_status'      => 'outofstock',
+			'_tax_status'        => 'taxable',
+			'_tax_class'         => '',
+			'_backorders'        => 'no',
+			'_sold_individually' => 'no',
+			'_virtual'           => 'no',
+			'_downloadable'      => 'no',
+			'_download_limit'    => - 1,
+			'_download_expiry'   => '-1',
+			'_wc_average_rating' => 0,
+			'_product_version'   => '3.8.1',
 		) );
+
+		$meta['_regular_price'] = $meta['_price'];
+		if ( $meta['_stock'] > 0 ) {
+			$meta['_stock_status'] = 'instock';
+		}
 
 		/**
 		 * @todo generate guid
@@ -210,66 +228,81 @@ class ExchangePost implements Identifiable, ExternalCode {
 	}
 
 	/****************************************************** CRUD ******************************************************/
-	function fetch( $key = null ) {
-		$data = array(
-			'post'     => array(
-				'post_author'    => $this->post->post_author,
-				'post_content'   => $this->post->post_content,
-				'post_title'     => $this->post->post_title,
-				'post_excerpt'   => $this->post->post_excerpt,
-				'post_status'    => $this->post->post_status,
-				'post_name'      => $this->post->post_name,
-				'post_type'      => $this->post->post_type,
-				'post_mime_type' => $this->post->post_mime_type,
-			),
-			'postmeta' => $this->get_meta(),
-		);
+	function fetch( $full = false ) {
+		$postdata                      = $this->post->to_array();
+		$postdata['post_modified']     = current_time( 'mysql' );
+		$postdata['post_modified_gmt'] = current_time( 'mysql', 1 );
 
-		if ( null === $key || ( $key && ! isset( $data[ $key ] ) ) ) {
-			return $data;
+		if ( $full ) {
+			$postdata['meta_input'] = $this->get_meta();
+
+			if ( isset( $this->categories ) && ! $this->categories->isEmpty() ) {
+				$postdata['tax_input']['product_cat'] = array();
+
+				foreach ( $this->categories as $category ) {
+					array_push( $postdata['tax_input']['product_cat'], intval( $category->get_id() ) );
+				}
+			}
+
+			if ( isset( $this->warehouses ) && ! $this->warehouses->isEmpty() ) {
+				$tax                           = Register::get_warehouse_taxonomy_slug();
+				$postdata['tax_input'][ $tax ] = array();
+
+				foreach ( $this->warehouses as $warehouse ) {
+					array_push( $postdata['tax_input'][ $tax ], intval( $warehouse->get_id() ) );
+				}
+			}
+
+			// @todo add atrributes
+		} else {
+			$price                                    = $this->get_price();
+			$stock                                    = $this->get_quantity();
+			$postdata['meta_input']['_price']         = $price;
+			$postdata['meta_input']['_regular_price'] = $price;
+			$postdata['meta_input']['_stock']         = $stock;
+			$postdata['meta_input']['_stock_status']  = $stock ? 'instock' : 'outofstock';
 		}
 
-		return $data[ $key ];
+		return $postdata;
 	}
 
-	public function update() {
+	public function insert() {
+		if ( $this->get_id() ) {
+			$postdata = $this->fetch( true );
+			unset( $postdata['post_date'], $postdata['post_date_gmt'] );
+		} else {
+			$postdata                  = $this->fetch( true );
+			$postdata['post_date']     = $postdata['post_modified'];
+			$postdata['post_date_gmt'] = $postdata['post_modified_gmt'];
+		}
+
+		return wp_insert_post( $postdata );
+	}
+
+	public function delete() {
 		// global $wpdb;
 
-		// @todo add title/content..
+		// $method = 'delete';
+
+		// if( 'delete' == $method ) {
+		// }
+		// else {
+		// 	wp_update_post(array(
+		// 		'ID'    =>  $postid,
+		// 		'post_status'   =>  'draft'
+		// 	));
+		// }
+
 		// $wpdb->update(
 		// 	$wpdb->posts,
 		// 	// set
-		// 	array(
-		// 		'post_status'       => 'publish',
-		// 		'post_modified'     => current_time( 'mysql' ),
-		// 		'post_modified_gmt' => current_time( 'mysql', 1 )
-		// 	),
+		// 	array( 'post_status' => 'draft' ),
 		// 	// where
 		// 	array(
 		// 		'post_mime_type' => $this->get_external(),
+		// 		'post_status'    => 'publish',
 		// 	)
 		// );
-
-		if ( $_post = $this->fetch( 'post' ) ) {
-			return wp_update_post( $_post );
-		}
-
-		return 0;
-	}
-
-	public function deactivate() {
-		global $wpdb;
-
-		$wpdb->update(
-			$wpdb->posts,
-			// set
-			array( 'post_status' => 'draft' ),
-			// where
-			array(
-				'post_mime_type' => $this->get_external(),
-				'post_status'    => 'publish',
-			)
-		);
 	}
 
 	/**

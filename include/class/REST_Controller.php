@@ -2,9 +2,12 @@
 
 namespace NikolayS93\Exchanger;
 
+use NikolayS93\Exchanger\Model\ExchangePost;
 use NikolayS93\Exchanger\Model\ExchangeOffer;
 use NikolayS93\Exchanger\Model\ExchangeProduct;
+use NikolayS93\Exchanger\Model\Category;
 use NikolayS93\Exchanger\ORM\Collection;
+use NikolayS93\Exchanger\ORM\CollectionAttributes;
 use NikolayS93\Exchanger\ORM\CollectionPosts;
 use NikolayS93\Exchanger\ORM\CollectionTerms;
 use WP_REST_Server;
@@ -34,9 +37,9 @@ class REST_Controller {
 	public $date_start;
 
 	function __construct() {
-		$this->version = Request::get_session_arg('version');
-		$this->step = Request::get_session_arg('step');
-		$this->date_start = Request::get_session_arg('date_start');
+		$this->version    = Request::get_session_arg( 'version' );
+		$this->step       = Request::get_session_arg( 'step' );
+		$this->date_start = Request::get_session_arg( 'date_start' );
 	}
 
 	/**
@@ -129,7 +132,6 @@ class REST_Controller {
 	}
 
 	public function status() {
-		the_statistic_table();
 	}
 
 	/**
@@ -203,11 +205,21 @@ class REST_Controller {
 			}
 
 			switch ( $mode ) {
-				case 'init': $this->init(); break;
-				case 'file': $this->file(); break;
-				case 'import': $this->import( new Parser(), new Update() ); break;
-				case 'deactivate': $this->deactivate(); break;
-				case 'complete': $this->complete(); break;
+				case 'init':
+					$this->init();
+					break;
+				case 'file':
+					$this->file();
+					break;
+				case 'import':
+					$this->import( new Parser(), new Update() );
+					break;
+				case 'deactivate':
+					$this->deactivate();
+					break;
+				case 'complete':
+					$this->complete();
+					break;
 			}
 		}
 	}
@@ -284,7 +296,7 @@ class REST_Controller {
 		}
 
 		// Start exchange session as first request.
-		if( ! $this->date_start ) {
+		if ( ! $this->date_start ) {
 			global $wpdb;
 
 			$table_name = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
@@ -317,14 +329,13 @@ class REST_Controller {
 		$path_dir = Plugin()->get_exchange_dir( $type );
 		$path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
 
-		if( static::STEP_UNZIP === Request::get_session_arg('step') ) {
+		if ( static::STEP_UNZIP === Request::get_session_arg( 'step' ) ) {
 			unzip( $path, $path_dir );
 
 			if ( 'catalog' == $type ) {
 				exit( "success\n" );
 			}
-		}
-		else {
+		} else {
 			$from     = fopen( $requested, 'r' );
 			$resource = fopen( $path, 'a' );
 			// @todo Do you want to get ВерсияСхемы or ДатаФормирования?
@@ -332,7 +343,7 @@ class REST_Controller {
 			fclose( $from );
 			fclose( $resource );
 
-			Request::set_session_args( array('step' => static::STEP_UNZIP) );
+			Request::set_session_args( array( 'step' => static::STEP_UNZIP ) );
 			exit( "progress\n" );
 		}
 
@@ -377,22 +388,25 @@ class REST_Controller {
 		$Dispatcher->addListener( 'CategoryEvent', array( $Parser, 'category_event' ) );
 		$Dispatcher->addListener( 'WarehouseEvent', array( $Parser, 'warehouse_event' ) );
 		$Dispatcher->addListener( 'PropertyEvent', array( $Parser, 'property_event' ) );
-
-		if( static::STEP_TMP_DATA === $this->step ) {
-			$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
-			$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
-		}
-
+		$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
+		$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
 		$Dispatcher->parse( $file );
 
 		/** @var CollectionTerms $categories */
 		$categories = $Parser->get_categories()->fill_exists();
 		/** @var CollectionTerms $warehouses */
 		$warehouses = $Parser->get_warehouses()->fill_exists();
-		/** @var CollectionTerms $attributes */
+		/** @var CollectionAttributes $attributes */
 		$attributes = $Parser->get_properties()->fill_exists();
+		/** @var CollectionPosts $products */
+		$products = $Parser->get_products();
+		/** @var CollectionPosts $offers */
+		$offers = $Parser->get_offers();
 
-		$has_terms = $categories->count() || $warehouses->count() || $attributes->count();
+		$has_terms      = $categories->count() || $warehouses->count() || $attributes->count();
+		$products_count = $products->count();
+		$offers_count   = $offers->count();
+
 		if ( static::STEP_TMP_DATA !== $this->step && $has_terms ) {
 			// Update terms.
 			Transaction()->set_transaction_mode();
@@ -406,8 +420,13 @@ class REST_Controller {
 				->terms( $attribute_terms )
 				->term_meta( $attribute_terms );
 
-			$Update->set_status( 'progress' );
-			Request::set_session_args( array('step' => static::STEP_TMP_DATA) );
+			$step = '';
+			if ( $products_count || $offers_count ) {
+				$Update->set_status( 'progress' );
+				$step = static::STEP_TMP_DATA;
+			}
+
+			Request::set_session_args( array('step' => $step) );
 			exit( "{$Update->status}\n" . implode( ' -- ', array(
 				"{$Update->results['create']} terms created.",
 				"{$Update->results['update']} categories/terms updated.",
@@ -415,16 +434,11 @@ class REST_Controller {
 			) ) );
 		}
 
-		/** @var CollectionPosts $products */
-		$products = $Parser->get_products();
-		/** @var CollectionPosts $offers */
-		$offers = $Parser->get_offers();
-
-		if ( ( $products_count = $products->count() ) || ( $offers_count = $offers->count() ) ) {
+		if ( $products_count || $offers_count ) {
 			// Update temporary data.
 			Transaction()->set_transaction_mode();
 
-			if( $products_count ) {
+			if ( $products_count ) {
 				$products
 					->fill_exists()
 					->fill_exists_terms( $Parser )
@@ -432,13 +446,25 @@ class REST_Controller {
 						$product->write_temporary_data();
 					} );
 			}
-			// products.xml or offers.xml
-			elseif( $offers_count ) {
+
+			if ( $offers_count ) {
 				$offers
 					->fill_exists_terms( $Parser )
-					->walk( function( $offer ) use ( &$offers ) {
-						$offer->merge( $offers );
-						$offer->write_temporary_data();
+					->walk( function ( $offer ) use ( &$offers ) {
+						$external = $offer->get_external();
+						$merged   = false;
+
+						if ( false !== ( $pos = strpos( $external, '#' ) ) ) {
+							if ( $global_offer = $offers->offsetGet( substr( $external, 0, $pos ) ) ) {
+								$global_offer->merge( $offer );
+								$offers->remove( $offer );
+								$merged = true;
+							}
+						}
+
+						if ( ! $merged ) {
+							$offer->write_temporary_data();
+						}
 					} );
 			}
 		}
@@ -456,16 +482,37 @@ class REST_Controller {
 	 * @since CommerceML 3.0
 	 */
 	public function deactivate() {
+		global $wpdb;
+
+		$table = Register::get_exchange_table_name();
+
+		$wpdb->delete( $table, array(
+			'product_id' => 0,
+			'qty'        => 0
+		) );
+
+		$wpdb->delete( $table, array(
+			'product_id' => 0,
+			'price'      => 0
+		) );
+
+		// Why do not work?
+		// require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+		// dbDelta( "DELETE FROM `{$table}` WHERE
+		// 	`product_id` = 0 AND (qty <= 0 OR price <= 0);" );
+		// $wpdb->query( "DELETE FROM `{$table}` WHERE
+		// 	`product_id` = 0 AND (qty <= 0 OR price <= 0);" );
+
 		$is_full = false;
-		if( $is_full ) {
-			// delete_diff
+		if ( $is_full ) {
+			// delete diff.
 			// $all_products_id = wp_list_pluck( $wpdb->get_results( "
-			// 	SELECT ID, post_title FROM $wpdb->posts p
+			// 	SELECT ID FROM $wpdb->posts p
 			// 	WHERE p.post_type = 'product'
 			// " ), 'ID' );
 		}
 
-		exit("success\n");
+		exit( "success\n" );
 	}
 
 	/**
@@ -479,36 +526,51 @@ class REST_Controller {
 
 		$table = Register::get_exchange_table_name();
 
-		$res = $wpdb->get_results( "
+		$temporary_items = $wpdb->get_results( "
 			SELECT * FROM $table
 			LIMIT 500
 		" );
 
-		$all_products_id = wp_list_pluck( $wpdb->get_results( "
-			SELECT ID, post_title FROM $wpdb->posts p
-			WHERE p.post_type = 'product'
-		" ), 'ID' );
+		Transaction()->set_transaction_mode();
 
-		foreach ($res as $item) {
-			$post = new ExchangePost( array(
-				'ID'             => $item->product_id,
-				'post_content'   => $item->description,
-				'post_title'     => $item->name,
-				'post_name'      => $item->slug,
-			), $item->code, array(
-				'_price'         => $item->price,
-				'_regular_price' => $item->price,
-				'_manage_stock'  => 'yes',
-				'_stock_status'  => $item->qty > 0 ? 'instock' : 'outofstock',
-				'_stock'         => $item->qty,
-			) );
+		$offset = 100;
 
-			if( ! $item->qty || ! $item->price ) {
-				// $item->product_id
+		$items_count     = count( $temporary_items );
+		$temporary_items = array_slice( $temporary_items, 0, $offset );
+
+		foreach ( $temporary_items as $item ) {
+			$product = new ExchangeProduct( array(
+				'ID'           => $item->product_id,
+				'post_content' => $item->description,
+				'post_title'   => $item->name,
+				'post_name'    => $item->slug,
+			), $item->code, array_merge( unserialize( $item->meta ), array(
+				'_price' => $item->price,
+				'_stock' => $item->qty,
+			) ) );
+
+			$categories = unserialize( $item->cats );
+			foreach ( $categories as $category_code => $category_id ) {
+				$category = new Category( array(
+					'term_id'  => $category_id,
+					'taxonomy' => 'product_cat'
+				), $category_code );
+				$product->add_category( $category );
 			}
+
+			if ( $item->delete ) {
+				$product->delete();
+			} else {
+				$product->insert();
+			}
+
+			$wpdb->delete( $table, array( 'code' => $item->code ) );
 		}
 
-		var_dump( $res );
-		die();
+		if ( $items_count > $offset ) {
+			exit( "progress\n" );
+		}
+
+		exit( "success\n" );
 	}
 }

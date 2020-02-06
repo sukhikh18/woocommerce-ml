@@ -55,7 +55,7 @@ function create_temporary_exchange_table() {
 
 	// If table not exists
 	if ( $wpdb->get_var( "SHOW TABLES LIKE '$tmp_exchange_table_name'" ) != $tmp_exchange_table_name ) {
-		/** Required for dbDelta */
+		// Required for dbDelta.
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 		dbDelta( "CREATE TABLE {$tmp_exchange_table_name} (
@@ -70,7 +70,8 @@ function create_temporary_exchange_table() {
             `meta` longtext NULL,
             `cats` longtext NULL,
             `warehouses` longtext NULL,
-            `attributes` longtext NULL
+            `attributes` longtext NULL,
+            `delete` tinyint(1) NULL
         ) {$charset_collate};" );
 
 		$wpdb->query( "

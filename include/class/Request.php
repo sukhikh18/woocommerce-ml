@@ -89,29 +89,29 @@ class Request {
 	 * @return bool
 	 */
 	static function is_session_started() {
-	    if ( 'cli' !== php_sapi_name() ) {
-	        if ( version_compare(phpversion(), '5.4.0', '>=') ) {
-	            return session_status() === PHP_SESSION_ACTIVE;
-	        } else {
-	            return session_id() !== '';
-	        }
-	    }
+		if ( 'cli' !== php_sapi_name() ) {
+			if ( version_compare( phpversion(), '5.4.0', '>=' ) ) {
+				return session_status() === PHP_SESSION_ACTIVE;
+			} else {
+				return session_id() !== '';
+			}
+		}
 
-	    return FALSE;
+		return false;
 	}
 
 	static function set_session_args( $args ) {
-		if( ! static::is_session_started() ) {
+		if ( ! static::is_session_started() ) {
 			session_start();
 		}
 
-		foreach ($args as $key => $value) {
+		foreach ( $args as $key => $value ) {
 			$_SESSION[ 'exchange_' . $key ] = $value;
 		}
 	}
 
 	static function get_session_arg( $key, $default = null ) {
-		if( ! static::is_session_started() ) {
+		if ( ! static::is_session_started() ) {
 			session_start();
 		}
 
@@ -119,13 +119,13 @@ class Request {
 	}
 
 	static function clear_session() {
-		if( ! static::is_session_started() ) {
+		if ( ! static::is_session_started() ) {
 			session_start();
 		}
 
-		foreach ($_SESSION as $key => $value) {
-			if( 0 === strpos($key, 'exchange_') ) {
-				usnet($_SESSION[$key]);
+		foreach ( $_SESSION as $key => $value ) {
+			if ( 0 === strpos( $key, 'exchange_' ) ) {
+				usnet( $_SESSION[ $key ] );
 			}
 		}
 	}

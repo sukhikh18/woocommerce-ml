@@ -11,8 +11,6 @@ use NikolayS93\Exchanger\Register;
 class ExchangeOffer extends ExchangePost {
 	// use ExchangeItemMeta;
 
-	public $warehouses = array();
-
 	// private $post;
 
 	// function __construct( Array $post, $ext = '', $meta = array() )
@@ -76,46 +74,24 @@ class ExchangeOffer extends ExchangePost {
 		return $this;
 	}
 
-	/**
-	 * @param  CollectionAttributes $offers [description]
-	 * @return [type]         [description]
-	 */
-	function merge( $offers ) {
-		$current_xml = $this->get_raw_external();
-		if( false !== ($pos = strpos($current_xml, '#') ) ) {
-			$current_xml = substr($current_xml, $pos);
-		}
-
-		$offers->walk( function( &$offer ) use ( &$offers, $current_xml ) {
-			$xml = $offer->get_raw_external();
-			if( false !== ($pos = strpos($xml, '#') ) ) {
-				$xml = substr($xml, $pos);
-			}
-
-			if( $xml === $current_xml ) {
-				$this->set_external( $xml );
-				// Merge this.
-				$this->set_quantity( $this->get_quantity() + $offer->get_quantity() );
-				$this->set_price( max( $this->get_price(), $offer->get_price() ) );
-				// @todo merge warehouses quantity.
-				// $offers->remove( $offer );
-			}
-		} );
-
-		return $this;
+	function merge( $offer ) {
+		// Merge this.
+		$this->set_quantity( $this->get_quantity() + $offer->get_quantity() );
+		$this->set_price( max( $this->get_price(), $offer->get_price() ) );
+		// @todo merge warehouses quantity.
 	}
 
 	public function write_temporary_data() {
 		global $wpdb;
 
-		$table = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
+		$table  = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
 		$update = array();
 
-		if( $price = $this->get_price() ) {
+		if ( $price = $this->get_price() ) {
 			$update['price'] = $price;
 		}
 
-		if( $qty = $this->get_quantity() ) {
+		if ( $qty = $this->get_quantity() ) {
 			$update['qty'] = $qty;
 		}
 
@@ -123,7 +99,7 @@ class ExchangeOffer extends ExchangePost {
 			$update['warehouses'][ $term->get_raw_external() ] = $term->get_id();
 		} );
 
-		$update['warehouses'] = serialize($update['warehouses']);
+		$update['warehouses'] = serialize( $update['warehouses'] );
 
 		return $wpdb->update( $table, $update, array(
 			'code' => $this->get_raw_external(),

@@ -30,7 +30,7 @@ class Transaction {
 
 	function transaction_shutdown_function() {
 		$error     = error_get_last();
-		$is_commit = $error['type'] > E_PARSE;
+		$is_commit = null === $error || $error['type'] > E_PARSE;
 
 		$this->wpdb_stop( $is_commit );
 	}

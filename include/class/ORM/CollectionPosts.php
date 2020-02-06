@@ -125,19 +125,20 @@ class CollectionPosts extends Collection {
 				$externals[] = $cat->get_external();
 			};
 
-			if( isset($product->categories) ) {
+			if ( isset( $product->categories ) ) {
 				$product->categories->walk( $extract_external );
 			}
 
-			if( isset($product->warehouses) ) {
+			if ( isset( $product->warehouses ) ) {
 				$product->warehouses->walk( $extract_external );
 			}
 
-			// $product->attributes->get_all_values()->walk( $extract_external );
+			if ( isset( $product->attributes ) ) {
+				$product->attributes->walk( $extract_external );
+			}
 		} );
 
 		$externals = array_unique( $externals );
-//		$Parser
 
 		if ( ! empty( $externals ) ) {
 			array_walk( $externals, function ( &$external ) {
@@ -166,35 +167,18 @@ class CollectionPosts extends Collection {
 					}
 				};
 
-				if( isset($product->categories) ) {
+				if ( isset( $product->categories ) ) {
 					$product->categories->walk( $put_terms );
 				}
 
-				if( isset($product->warehouses) ) {
+				if ( isset( $product->warehouses ) ) {
 					$product->warehouses->walk( $put_terms );
 				}
 
-				// $product->attributes->get_all_values()->walk( $put_terms );
+				if ( isset( $product->attributes ) ) {
+					$product->attributes->walk( $put_terms );
+				}
 			} );
-
-//            if ( ! empty( $this->properties ) ) {
-//                /** @var Attribute $property */
-//                foreach ( $this->properties as &$property ) {
-//                    if ( $property instanceof Attribute ) {
-//                        foreach ( $property->get_values() as &$term ) {
-//                            $ext = $term->get_external();
-//                            if ( ! empty( $arTerms[ $ext ] ) ) {
-//                                $term->set_id( $arTerms[ $ext ] );
-//                            }
-//                        }
-//                    } else {
-//                        // exit with error
-//                        Error()
-//                            ->add_message( 'Property not has attribute instance', 'Error', true )
-//                            ->add_message( $property, 'Target' );
-//                    }
-//                }
-//            }
 		}
 
 		return $this;
