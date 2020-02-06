@@ -99,7 +99,9 @@ class ExchangeOffer extends ExchangePost {
 			$update['warehouses'][ $term->get_raw_external() ] = $term->get_id();
 		} );
 
-		$update['warehouses'] = serialize( $update['warehouses'] );
+		if( isset($update['warehouses']) ) {
+			$update['warehouses'] = serialize( $update['warehouses'] );
+		}
 
 		return $wpdb->update( $table, $update, array(
 			'code' => $this->get_raw_external(),

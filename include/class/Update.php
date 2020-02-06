@@ -251,7 +251,9 @@ class Update {
 		/** @var \NikolayS93\Exchanger\Model\Abstracts\Term $term */
 		$closure = function ( $term, $offset ) {
 			if ( $term->prepare() ) {
-				$this->results['update'] += (int) $term->update();
+				if( false !== ( $update_result = $term->update() ) ) {
+					$this->results[$update_result] += 1;
+				}
 			}
 		};
 

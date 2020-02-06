@@ -76,19 +76,23 @@ class AttributeValue implements ExternalCode { // extends Term
 		if ( $term_id = $this->get_id() ) {
 			$term['name'] = $this->name;
 			$result       = wp_update_term( $term_id, $taxonomy, $term );
+			$msg = 'update';
 		} else {
 			$result = wp_insert_term( $this->name, $taxonomy, $term );
+			$msg = 'create';
 		}
 
 		if ( ! is_wp_error( $result ) ) {
 			$this->set_id( $result['term_id'] );
 
-			return true;
+			return $msg;
 		} else {
 			Error()
 				->add_message( print_r( $result, 1 ), 'Warning', true )
 				->add_message( print_r( $this, 1 ), 'Target', true );
 		}
+
+		return false;
 	}
 
 	public function get_taxonomy_name() {

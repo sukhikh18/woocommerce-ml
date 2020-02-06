@@ -220,6 +220,10 @@ class REST_Controller {
 				case 'complete':
 					$this->complete();
 					break;
+
+				default:
+					Error()->add_message( 'Mode no support' );
+					break;
 			}
 		}
 	}
@@ -462,7 +466,10 @@ class REST_Controller {
 							}
 						}
 
-						if ( ! $merged ) {
+						if( $merged ) {
+							$global_offer->write_temporary_data();
+						}
+						else {
 							$offer->write_temporary_data();
 						}
 					} );
@@ -558,6 +565,12 @@ class REST_Controller {
 				$product->add_category( $category );
 			}
 
+			$attributes = unserialize( $item->attributes );
+
+			echo "<pre>";
+			var_dump( $attributes );
+			echo "</pre>";
+			die();
 			if ( $item->delete ) {
 				$product->delete();
 			} else {

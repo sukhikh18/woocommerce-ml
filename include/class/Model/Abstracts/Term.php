@@ -202,8 +202,10 @@ abstract class Term {
 
 		if ( $term_id = $this->get_id() ) {
 			$result = wp_update_term( $term_id, $this->get_taxonomy(), $term );
+			$success = 'update';
 		} else {
 			$result = wp_insert_term( $this->get_name(), $this->get_taxonomy(), $term );
+			$success = 'create';
 		}
 
 		if ( ! is_wp_error( $result ) ) {
@@ -216,7 +218,7 @@ abstract class Term {
 //					}
 //				}
 //			}
-			return true;
+			return $success;
 		} else {
 			Error()
 				->add_message( print_r( $result, 1 ), 'Warning', true )

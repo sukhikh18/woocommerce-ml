@@ -263,7 +263,6 @@ class Parser {
 		// 	}
 		// }
 
-
 //		$characteristics = array();
 //		foreach ( $product->getCharacteristics() as $characteristic ) {
 //			$characteristics[] = $characteristic->getId();
