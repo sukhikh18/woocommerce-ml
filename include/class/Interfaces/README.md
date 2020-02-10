@@ -1,3 +1,4 @@
+```php
 <?php
 
 $Register
@@ -47,3 +48,4 @@ $WP_REST_Controller
                 ->terms( $termsCollection )
                 ->term_meta( $terms )
                 ->relationships( $posts, $args = array() );
+```
