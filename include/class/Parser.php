@@ -242,10 +242,35 @@ class Parser {
 		 * @var \CommerceMLParser\Model\Types\PropertyValue $productProperty
 		 */
 		$parseAttributes = function ( $item ) use ( &$ExchangeProduct ) {
-			$ExchangeProduct->attributes->add( new AttributeValue( array(
-				'name'  => method_exists( $item, 'getName' ) ? $item->getName() : '',
-				'value' => method_exists( $item, 'getValue' ) ? $item->getValue() : '',
-			), method_exists( $item, 'getId' ) ? $item->getId() : '' ) );
+			$attribute = null;
+
+			switch ( get_class($item) ) {
+				case 'CommerceMLParser\Model\Types\RequisiteValue':
+					$arItem = array(
+						'name' => $item->getName(),
+						'value' => $item->getValue(),
+					);
+
+					if( ! in_array( $arItem['name'], $this->requisites_exclude, true ) ) {
+						$code = isset( $this->requisites_as_properties[ $arItem['name'] ] ) ?
+							$this->requisites_as_properties[ $arItem['name'] ] : false;
+
+						if( $code ) {
+							$attribute = new AttributeValue( $arItem, $code );
+							$attribute->set_taxonomy( Attribute::sanitize_slug( $code ) );
+						}
+						else {
+							// @todo
+						}
+					}
+					break;
+
+				default:
+					// @todo
+					break;
+			}
+
+			$ExchangeProduct->attributes->add( $attribute );
 		};
 
 		array_map( $parseAttributes, $product->getProperties()->fetch() );
@@ -268,15 +293,15 @@ class Parser {
 //			$characteristics[] = $characteristic->getId();
 //		}
 //		$ExchangeProduct->set_meta( $characteristics );
-		array_map( function ( $excludeRequisite ) use ( $ExchangeProduct ) {
-			$ExchangeProduct->del_meta( $excludeRequisite );
-		}, $this->requisites_exclude );
+		// array_map( function ( $excludeRequisite ) use ( $ExchangeProduct ) {
+		// 	$ExchangeProduct->del_meta( $excludeRequisite );
+		// }, $this->requisites_exclude );
 
 		// ================================================================= //
-		$this->parse_requisites_as_categories( $ExchangeProduct );
+		// $this->parse_requisites_as_categories( $ExchangeProduct );
 		// $this->parse_requisites_as_developers( $ExchangeProduct );
-		$this->parse_requisites_as_warehouses( $ExchangeProduct );
-		$this->parse_requisites_as_properties( $ExchangeProduct );
+		// $this->parse_requisites_as_warehouses( $ExchangeProduct );
+		// $this->parse_requisites_as_properties( $ExchangeProduct );
 		// ================================================================= //
 
 		$this->products->add( $ExchangeProduct );
@@ -478,5 +503,7 @@ class Parser {
 			 */
 			$ExchangeProduct->del_meta( $taxonomy_name );
 		}
+
+		die();
 	}
 }

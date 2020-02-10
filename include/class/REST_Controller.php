@@ -567,10 +567,6 @@ class REST_Controller {
 
 			$attributes = unserialize( $item->attributes );
 
-			echo "<pre>";
-			var_dump( $attributes );
-			echo "</pre>";
-			die();
 			if ( $item->delete ) {
 				$product->delete();
 			} else {

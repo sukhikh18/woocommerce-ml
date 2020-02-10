@@ -1,7 +1,7 @@
 {
   "autoload": {
     "psr-4": {
-      "NikolayS93\\Exchanger\\": "include\\class"
+      "NikolayS93\\Exchange\\": "include\\class"
     }
   },
   "require": {

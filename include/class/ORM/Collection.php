@@ -109,7 +109,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 			foreach ( $item as $i ) {
 				$this->add( $i );
 			}
-		} else {
+		} elseif( ! empty( $item ) ) {
 			if ( $item instanceof ExternalCode ) {
 				$this->items[ $item->get_external() ] = $item;
 			} elseif ( $item instanceof Identifiable && $item_id = $item->get_id() ) {

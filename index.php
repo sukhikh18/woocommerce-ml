@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Woocommerce ML2
- * Plugin URI: https://github.com/nikolays93/woocommerce-ml2/
- * Description: Exchange data between Woocommerce and 1С:Enterprise (1С:Предприятие, CommerceML2)
- * Version: 0.3.2
+ * Plugin Name: WooCommerce ML
+ * Plugin URI: https://github.com/nikolays93/woocommerce-ml/
+ * Description: Exchange data between WooCommerce and 1С:Enterprise (1С:Предприятие, CommerceML2/3)
+ * Version: 0.3
  * Author: NikolayS93
  * Author URI: https://vk.com/nikolays_93
  * Author EMAIL: NikolayS93@ya.ru
