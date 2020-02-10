@@ -1,5 +1,4 @@
 ```php
-<?php
 
 $Register
     ->register_plugin_page()
@@ -7,12 +6,15 @@ $Register
 
 $WP_REST_Controller
     ->exchange()
-        ->checkauth() // or
-        ->init() // or
-        ->file( $requested = 'php://input' ) // or
-        ->query() // or
-        ->import( $Parser = null, $Update = null ); // or
+        ->checkauth()
 
+        ->init()
+
+        ->file( $requested = 'php://input' )
+
+        ->query()
+
+        ->import( $Parser = null, $Update = null, function() {
             $Parser
                 ->get_categories()
                 ->get_warehouses()
@@ -33,11 +35,11 @@ $WP_REST_Controller
                 ->fill_exists_terms()
                 ->merge()
                 ->write_temporary_data();
+        } )
 
-$WP_REST_Controller
-        ->deactivate() // or
-        ->complete();
+        ->deactivate()
 
+        ->complete( function() {
             $Update
                 ->update_meta( $post_id, $property_key, $property )
                 ->update_products( $products )
@@ -48,4 +50,5 @@ $WP_REST_Controller
                 ->terms( $termsCollection )
                 ->term_meta( $terms )
                 ->relationships( $posts, $args = array() );
+        } );
 ```
