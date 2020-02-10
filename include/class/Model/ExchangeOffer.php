@@ -1,9 +1,9 @@
 <?php
 
-namespace NikolayS93\Exchanger\Model;
+namespace NikolayS93\Exchange\Model;
 
-use NikolayS93\Exchanger\ORM\Collection;
-use NikolayS93\Exchanger\Register;
+use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\Register;
 
 /**
  * Works with posts, postmeta

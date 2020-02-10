@@ -1,11 +1,11 @@
 <?php
 /**
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchanger\Traits\Singleton;
+use NikolayS93\Exchange\Traits\Singleton;
 
 class Error {
 

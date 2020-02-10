@@ -2,7 +2,7 @@
 /**
  * This file for update languages only (Do not include)
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
 __( 'New plugin' );

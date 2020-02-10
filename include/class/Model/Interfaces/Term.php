@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NikolayS93\Exchanger\Model\Interfaces;
+namespace NikolayS93\Exchange\Model\Interfaces;
 
 
 interface Term {

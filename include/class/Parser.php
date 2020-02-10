@@ -1,18 +1,18 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 use CommerceMLParser\Model\Types\PropertyValue;
-use NikolayS93\Exchanger\Model\AttributeValue;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\Attribute;
-use NikolayS93\Exchanger\Model\ExchangeProduct;
-use NikolayS93\Exchanger\Model\ExchangeOffer;
-use NikolayS93\Exchanger\Model\Warehouse;
-use NikolayS93\Exchanger\ORM\Collection;
-use NikolayS93\Exchanger\ORM\CollectionAttributes;
-use NikolayS93\Exchanger\ORM\CollectionPosts;
-use NikolayS93\Exchanger\ORM\CollectionTerms;
+use NikolayS93\Exchange\Model\AttributeValue;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\ORM\CollectionAttributes;
+use NikolayS93\Exchange\ORM\CollectionPosts;
+use NikolayS93\Exchange\ORM\CollectionTerms;
 use CommerceMLParser\Event;
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -2,10 +2,10 @@
 /**
  * Class PluginTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 require __DIR__ . '/helper.php';
 
@@ -15,16 +15,16 @@ require __DIR__ . '/helper.php';
 class ExchangerPluginTest extends \WP_UnitTestCase {
 
 	public function testDefinitions() {
-		$this->assertTrue( defined( '\NikolayS93\Exchanger\PLUGIN_DIR' ) );
-		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_EXTERNAL_CODE_KEY' ) );
-		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_COOKIE_NAME' ) );
-		$this->assertTrue( defined( '\NikolayS93\Exchanger\EXCHANGE_CHARSET' ) );
+		$this->assertTrue( defined( '\NikolayS93\Exchange\PLUGIN_DIR' ) );
+		$this->assertTrue( defined( '\NikolayS93\Exchange\EXCHANGE_EXTERNAL_CODE_KEY' ) );
+		$this->assertTrue( defined( '\NikolayS93\Exchange\EXCHANGE_COOKIE_NAME' ) );
+		$this->assertTrue( defined( '\NikolayS93\Exchange\EXCHANGE_CHARSET' ) );
 	}
 
 	public function testCallInstanceFunctions() {
-		$this->assertInstanceOf( 'NikolayS93\Exchanger\Plugin', plugin() );
-		$this->assertInstanceOf( 'NikolayS93\Exchanger\Error', error() );
-		$this->assertInstanceOf( 'NikolayS93\Exchanger\Transaction', transaction() );
+		$this->assertInstanceOf( 'NikolayS93\Exchange\Plugin', plugin() );
+		$this->assertInstanceOf( 'NikolayS93\Exchange\Error', error() );
+		$this->assertInstanceOf( 'NikolayS93\Exchange\Transaction', transaction() );
 	}
 
 	public function testInclude_plugin_file() {

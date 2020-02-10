@@ -1,19 +1,19 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 
-use NikolayS93\Exchanger\ORM\CollectionPosts;
-use NikolayS93\Exchanger\ORM\CollectionTerms;
-use NikolayS93\Exchanger\ORM\Collection;
-use NikolayS93\Exchanger\Model\Interfaces\Term;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\Developer;
-use NikolayS93\Exchanger\Model\Attribute;
-use NikolayS93\Exchanger\Model\Warehouse;
-use NikolayS93\Exchanger\Model\ExchangePost;
-use NikolayS93\Exchanger\Model\ExchangeProduct;
-use NikolayS93\Exchanger\Model\ExchangeOffer;
+use NikolayS93\Exchange\ORM\CollectionPosts;
+use NikolayS93\Exchange\ORM\CollectionTerms;
+use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\Model\Interfaces\Term;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\Developer;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
 
 
 class Update {
@@ -248,7 +248,7 @@ class Update {
 	 * @param Collection $termsCollection
 	 */
 	public function terms( $termsCollection ) {
-		/** @var \NikolayS93\Exchanger\Model\Abstracts\Term $term */
+		/** @var \NikolayS93\Exchange\Model\Abstracts\Term $term */
 		$closure = function ( $term, $offset ) {
 			if ( $term->prepare() ) {
 				if( false !== ( $update_result = $term->update() ) ) {

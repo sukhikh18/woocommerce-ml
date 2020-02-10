@@ -1,14 +1,14 @@
 <?php
 
 
-namespace NikolayS93\Exchanger\Model\Abstracts;
+namespace NikolayS93\Exchange\Model\Abstracts;
 
 
-use NikolayS93\Exchanger\Model\Interfaces\HasParent;
-use NikolayS93\Exchanger\Model\Traits\ItemMeta;
-use function NikolayS93\Exchanger\esc_cyr;
-use function NikolayS93\Exchanger\esc_external;
-use function NikolayS93\Exchanger\Error;
+use NikolayS93\Exchange\Model\Interfaces\HasParent;
+use NikolayS93\Exchange\Model\Traits\ItemMeta;
+use function NikolayS93\Exchange\esc_cyr;
+use function NikolayS93\Exchange\esc_external;
+use function NikolayS93\Exchange\Error;
 
 abstract class Term {
 

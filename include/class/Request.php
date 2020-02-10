@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 
 // static

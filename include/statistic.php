@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 if ( ! function_exists( __NAMESPACE__ . '\the_statistic_table' ) ) {
 	function the_statistic_table( Parser $Parser ) {

@@ -2,11 +2,11 @@
 /**
  * Class PluginTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-use NikolayS93\Exchanger\Request;
-use const NikolayS93\Exchanger\PLUGIN_DIR;
+use NikolayS93\Exchange\Request;
+use const NikolayS93\Exchange\PLUGIN_DIR;
 
 require __DIR__ . '/../../helper.php';
 

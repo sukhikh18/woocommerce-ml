@@ -2,11 +2,11 @@
 /**
  * Class RegisterTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-use NikolayS93\Exchanger\Register;
-use const NikolayS93\Exchanger\PLUGIN_DIR;
+use NikolayS93\Exchange\Register;
+use const NikolayS93\Exchange\PLUGIN_DIR;
 
 require __DIR__ . '/../../helper.php';
 

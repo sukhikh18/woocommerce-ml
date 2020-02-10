@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 /**
  * Maybe insert posts mime_type INDEX if is not exists

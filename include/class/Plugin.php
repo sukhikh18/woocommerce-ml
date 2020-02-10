@@ -2,13 +2,13 @@
 /**
  * Main singleton plugin class
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchanger\Traits\Singleton;
-use NikolayS93\Exchanger\Traits\IO;
+use NikolayS93\Exchange\Traits\Singleton;
+use NikolayS93\Exchange\Traits\IO;
 
 /**
  * Class Plugin
@@ -26,12 +26,12 @@ class Plugin {
 	/**
 	 * Uniq plugin slug name.
 	 */
-	const DOMAIN = 'w1ce';
+	const DOMAIN = 'wml2';
 
 	/**
 	 * Uniq plugin prefix.
 	 */
-	const PREFIX = 'w1ce_';
+	const PREFIX = 'wml2_';
 
 	/**
 	 * The capability required to use this plugin.

@@ -2,10 +2,10 @@
 /**
  * Class ErrorTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-use NikolayS93\Exchanger\Error;
+use NikolayS93\Exchange\Error;
 
 require __DIR__ . '/../../helper.php';
 

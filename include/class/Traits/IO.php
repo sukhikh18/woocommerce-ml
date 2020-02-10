@@ -4,10 +4,10 @@
  * @TODO
  */
 
-namespace NikolayS93\Exchanger\Traits;
+namespace NikolayS93\Exchange\Traits;
 
-use const NikolayS93\Exchanger\PLUGIN_DIR;
-use function NikolayS93\Exchanger\error;
+use const NikolayS93\Exchange\PLUGIN_DIR;
+use function NikolayS93\Exchange\error;
 
 trait IO {
 

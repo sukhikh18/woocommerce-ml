@@ -1,15 +1,15 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchanger\Model\ExchangePost;
-use NikolayS93\Exchanger\Model\ExchangeOffer;
-use NikolayS93\Exchanger\Model\ExchangeProduct;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\ORM\Collection;
-use NikolayS93\Exchanger\ORM\CollectionAttributes;
-use NikolayS93\Exchanger\ORM\CollectionPosts;
-use NikolayS93\Exchanger\ORM\CollectionTerms;
+use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeOffer;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\ORM\Collection;
+use NikolayS93\Exchange\ORM\CollectionAttributes;
+use NikolayS93\Exchange\ORM\CollectionPosts;
+use NikolayS93\Exchange\ORM\CollectionTerms;
 use WP_REST_Server;
 use function NikolayS93\Exchange\the_statistic_table;
 

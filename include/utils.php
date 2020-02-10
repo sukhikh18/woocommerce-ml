@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 if ( ! function_exists( 'get_time' ) ) {
 	function get_time( $time = false ) {

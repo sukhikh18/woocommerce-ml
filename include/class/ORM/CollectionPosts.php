@@ -1,18 +1,18 @@
 <?php
 
-namespace NikolayS93\Exchanger\ORM;
+namespace NikolayS93\Exchange\ORM;
 
-use NikolayS93\Exchanger\Model\Abstracts\Term;
-use NikolayS93\Exchanger\Model\Attribute;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\ExchangePost;
-use NikolayS93\Exchanger\Model\ExchangeProduct;
-use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchanger\Model\Interfaces\HasParent;
-use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
-use NikolayS93\Exchanger\Model\Warehouse;
-use NikolayS93\Exchanger\Plugin;
-use function NikolayS93\Exchanger\Error;
+use NikolayS93\Exchange\Model\Abstracts\Term;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\HasParent;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
+use NikolayS93\Exchange\Model\Warehouse;
+use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\Error;
 
 /**
  * Class CollectionPosts

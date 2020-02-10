@@ -2,17 +2,17 @@
 /**
  * Class PluginTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-use NikolayS93\Exchanger\Plugin;
-use const NikolayS93\Exchanger\PLUGIN_DIR;
+use NikolayS93\Exchange\Plugin;
+use const NikolayS93\Exchange\PLUGIN_DIR;
 
 require __DIR__ . '/../../helper.php';
 
 class PluginTest extends WP_UnitTestCase {
 
-	/** @var \NikolayS93\Exchanger\Plugin */
+	/** @var \NikolayS93\Exchange\Plugin */
 	private $plugin;
 
 	public function setUp() {

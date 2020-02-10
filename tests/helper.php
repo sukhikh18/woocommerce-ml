@@ -2,7 +2,7 @@
 /**
  * Class PluginTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
 if ( ! class_exists( 'WP_UnitTestCase' ) ) {

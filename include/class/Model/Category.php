@@ -1,16 +1,16 @@
 <?php
 
-namespace NikolayS93\Exchanger\Model;
+namespace NikolayS93\Exchange\Model;
 
-use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchanger\Model\Interfaces\HasParent;
-use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
-use NikolayS93\Exchanger\Model\Interfaces\Term;
-use NikolayS93\Exchanger\Model\Abstracts\Term as ATerm;
-use NikolayS93\Exchanger\Plugin;
-use function NikolayS93\Exchanger\check_mode;
-use function NikolayS93\Exchanger\Error;
-use function NikolayS93\Exchanger\Plugin;
+use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\HasParent;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
+use NikolayS93\Exchange\Model\Interfaces\Term;
+use NikolayS93\Exchange\Model\Abstracts\Term as ATerm;
+use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\check_mode;
+use function NikolayS93\Exchange\Error;
+use function NikolayS93\Exchange\Plugin;
 
 /**
  * Works with terms, term_taxonomy, term_relationships, term-meta

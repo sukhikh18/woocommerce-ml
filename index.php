@@ -1,21 +1,21 @@
 <?php
 /**
- * Plugin Name: Woocommerce 1c Exchanger
- * Plugin URI: https://github.com/nikolays93
- * Description: Передача данных для актуализации информации на сайте
- * Version: 0.3.1
+ * Plugin Name: Woocommerce ML2
+ * Plugin URI: https://github.com/nikolays93/woocommerce-ml2/
+ * Description: Exchange data between Woocommerce and 1С:Enterprise (1С:Предприятие, CommerceML2)
+ * Version: 0.3.2
  * Author: NikolayS93
  * Author URI: https://vk.com/nikolays_93
  * Author EMAIL: NikolayS93@ya.ru
  * License: GNU General Public License v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: w1ce
+ * Text Domain: wml2
  * Domain Path: /languages/
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );

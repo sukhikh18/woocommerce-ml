@@ -1,14 +1,14 @@
 <?php
 
 
-namespace NikolayS93\Exchanger\Model;
+namespace NikolayS93\Exchange\Model;
 
 
-use NikolayS93\Exchanger\Model\Abstracts\Term;
-use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchanger\Plugin;
-use function NikolayS93\Exchanger\check_mode;
-use function NikolayS93\Exchanger\error;
+use NikolayS93\Exchange\Model\Abstracts\Term;
+use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Plugin;
+use function NikolayS93\Exchange\check_mode;
+use function NikolayS93\Exchange\error;
 
 class AttributeValue implements ExternalCode { // extends Term
 

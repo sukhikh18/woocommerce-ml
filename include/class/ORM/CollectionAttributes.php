@@ -1,14 +1,14 @@
 <?php
 
-namespace NikolayS93\Exchanger\ORM;
+namespace NikolayS93\Exchange\ORM;
 
-use NikolayS93\Exchanger\Model\Abstracts\Term;
-use NikolayS93\Exchanger\Model\Attribute;
-use NikolayS93\Exchanger\Model\AttributeValue;
-use NikolayS93\Exchanger\Model\Category;
-use NikolayS93\Exchanger\Model\Interfaces\ExternalCode;
-use NikolayS93\Exchanger\Model\Interfaces\HasParent;
-use NikolayS93\Exchanger\Model\Interfaces\Identifiable;
+use NikolayS93\Exchange\Model\Abstracts\Term;
+use NikolayS93\Exchange\Model\Attribute;
+use NikolayS93\Exchange\Model\AttributeValue;
+use NikolayS93\Exchange\Model\Category;
+use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
+use NikolayS93\Exchange\Model\Interfaces\HasParent;
+use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 
 /**
  * Class CollectionAttributes

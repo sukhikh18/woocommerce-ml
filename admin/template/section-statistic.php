@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 $Parser = new Parser();
 ?>

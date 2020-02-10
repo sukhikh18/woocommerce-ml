@@ -1,6 +1,6 @@
 <?php
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 use NikolayS93\WPAdminForm\Form as Form;
 

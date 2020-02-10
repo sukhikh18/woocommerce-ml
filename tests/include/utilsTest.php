@@ -2,10 +2,10 @@
 /**
  * Class UtilsTest
  *
- * @package Woocommerce.1c.Exchanger
+ * @package woocommerce-ml
  */
 
-namespace NikolayS93\Exchanger;
+namespace NikolayS93\Exchange;
 
 require __DIR__ . '/../helper.php';
 

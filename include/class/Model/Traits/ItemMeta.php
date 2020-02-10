@@ -1,8 +1,8 @@
 <?php
 
-namespace NikolayS93\Exchanger\Model\Traits;
+namespace NikolayS93\Exchange\Model\Traits;
 
-use NikolayS93\Exchanger\Error;
+use NikolayS93\Exchange\Error;
 
 trait ItemMeta {
 	private $meta = array();

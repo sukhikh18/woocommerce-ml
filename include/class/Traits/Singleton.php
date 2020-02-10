@@ -6,7 +6,7 @@
  * @package Newproject.WordPress.plugin
  */
 
-namespace NikolayS93\Exchanger\Traits;
+namespace NikolayS93\Exchange\Traits;
 
 use ReflectionClass;
 use ReflectionException;
