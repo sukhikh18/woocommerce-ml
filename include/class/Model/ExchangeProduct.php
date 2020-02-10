@@ -238,8 +238,10 @@ class ExchangeProduct extends ExchangePost {
 //                    }
 //
 //                    $value = $attribute->getValue();
-//                    if ( $term_id = $value->get_id() ) {
-//                        $terms_id[ $taxonomy ][] = $term_id;
+//                    if ( is_object( $value ) && method_exists( $value, 'get_id' ) ) {
+//                        if( $term_id = $value->get_id() ) {
+//                            $terms_id[ $taxonomy ][] = $term_id;
+//                        }
 //                    }
 //                }
 //            }
