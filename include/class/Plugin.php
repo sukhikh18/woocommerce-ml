@@ -539,6 +539,11 @@ class Plugin {
 
 		return $result;
 	}
+
+	public static function exit( $message ) {
+		write_log(PLUGIN_DIR . "/logs/results.log", str_replace("\n", ', ', $message));
+		exit( $message );
+	}
 }
 
 // Back compat

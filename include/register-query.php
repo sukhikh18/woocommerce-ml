@@ -6,13 +6,17 @@ if ( ! function_exists( 'write_log' ) ) {
 	function write_log($file, $args, $advanced = array()) {
 		if( empty($args) ) return;
 
-		$arRes = array();
-		foreach ($args as $key => $value) {
-			$arRes[] = "$key=$value";
+		if( is_array( $args ) ) {
+			$arRes = array();
+			foreach ($args as $key => $value) {
+				$arRes[] = "$key=$value";
+			}
+
+			$args = implode(', ', $arRes);
 		}
 
 		$fw = fopen($file, "a");
-		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . implode(', ', $arRes) . implode(', ', $advanced) . "\n");
+		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . $args . implode(', ', $advanced) . "\r\n");
 		fclose($fw);
 	}
 }

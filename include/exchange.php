@@ -82,7 +82,7 @@ function do_exchange() {
 		$expiration  = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false );
 		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
 
-		exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
+		Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
 	}
 
 	check_wp_auth();
@@ -121,7 +121,7 @@ function do_exchange() {
 				Plugin::set_mode( '' );
 			}
 
-			exit( "zip=yes\nfile_limit=" . get_filesize_limit() );
+			Plugin::exit( "zip=yes\nfile_limit=" . get_filesize_limit() );
 			break;
 
 		/**
@@ -183,7 +183,7 @@ function do_exchange() {
 			}
 
 			if ( 'catalog' == Plugin::get_type() ) {
-				exit( "success\nФайл принят." );
+				Plugin::exit( "success\nФайл принят." );
 			}
 			break;
 
@@ -308,7 +308,7 @@ function do_exchange() {
 
 					$msg = implode( ' -- ', $status );
 
-					exit( "progress\n$msg" );
+					Plugin::exit( "progress\n$msg" );
 				}
 
 				/** @recursive update if is $offersCount > $offset */
@@ -355,7 +355,7 @@ function do_exchange() {
 						$msg = "$progress из $offersCount предложений обработано.";
 					}
 
-					exit( "$answer\n$msg" );
+					Plugin::exit( "$answer\n$msg" );
 				}
 			}
 
@@ -378,7 +378,7 @@ function do_exchange() {
 					/** Require retry */
 					if ( $progress < $productsCount ) {
 						Plugin::set_mode( 'relationships', array( 'progress' => (int) $progress ) );
-						exit( "progress\n$msg" );
+						Plugin::exit( "progress\n$msg" );
 					}
 				}
 
@@ -395,20 +395,20 @@ function do_exchange() {
 					/** Require retry */
 					if ( $progress < $offersCount ) {
 						Plugin::set_mode( 'relationships', array( 'progress' => (int) $progress ) );
-						exit( "progress\n$msg" );
+						Plugin::exit( "progress\n$msg" );
 					}
 
 					if ( floatval( $version ) < 3 ) {
 						Plugin::set_mode( 'deactivate' );
-						exit( "progress\n$msg" );
+						Plugin::exit( "progress\n$msg" );
 					}
 				}
 
 				Plugin::set_mode( '' );
-				exit( "success\n$msg" );
+				Plugin::exit( "success\n$msg" );
 			}
 
-			exit( "success" ); // \n$mode
+			Plugin::exit( "success" ); // \n$mode
 			break;
 
 		/**
@@ -424,7 +424,7 @@ function do_exchange() {
 			 */
 			if ( ! $start_date = get_option( 'exchange_start-date', '' ) ) {
 				Plugin::set_mode( 'complete' );
-				exit( "success\nDeactivate not required." );
+				Plugin::exit( "success\nDeactivate not required." );
 			}
 
 			/**
@@ -563,10 +563,10 @@ function do_exchange() {
 
 			if ( floatval( $version ) < 3 ) {
 				Plugin::set_mode( 'complete' );
-				exit( "progress\n$msg" );
+				Plugin::exit( "progress\n$msg" );
 			}
 
-			exit( "success\n$msg" );
+			Plugin::exit( "success\n$msg" );
 			break;
 
 		/**
@@ -598,13 +598,13 @@ function do_exchange() {
 			Plugin::set_mode( '' );
 			update_option( 'exchange_last-update', current_time( 'mysql' ) );
 
-			exit( "success\nВыгрузка данных завершена" );
+			Plugin::exit( "success\nВыгрузка данных завершена" );
 			break;
 
 		case 'success':
 			// ex_mode__success($_REQUEST['type']);
 
-			exit( "success\n" );
+			Plugin::exit( "success\n" );
 			break;
 
 		default:
