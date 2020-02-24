@@ -152,9 +152,11 @@ class Update {
 			}
 		}
 
-		$wpdb->query( "UPDATE $wpdb->posts
-            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
-            WHERE ID in (" . implode( ",", $updated ) . ")" );
+		if( sizeof( $updated ) ) {
+			$wpdb->query( "UPDATE $wpdb->posts
+	            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
+	            WHERE ID in (" . implode( ",", $updated ) . ")" );	
+		}
 
 		return $results;
 	}
