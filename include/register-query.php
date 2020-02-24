@@ -2,6 +2,21 @@
 
 namespace NikolayS93\Exchange;
 
+if ( ! function_exists( 'write_log' ) ) {
+	function write_log($file, $args, $advanced = array()) {
+		if( empty($args) ) return;
+
+		$arRes = array();
+		foreach ($args as $key => $value) {
+			$arRes[] = "$key=$value";
+		}
+
+		$fw = fopen($file, "a");
+		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . implode(', ', $arRes) . implode(', ', $advanced) . "\n");
+		fclose($fw);
+	}
+}
+
 /**
  * Register //example.com/exchange/ query
  */
@@ -34,6 +49,16 @@ function template_redirect() {
 	}
 
 	if ( $value == 'exchange' ) {
+		session_start();
+
+		write_log(PLUGIN_DIR . "/logs/get.log", $_GET);
+		write_log(PLUGIN_DIR . "/logs/post.log", $_POST);
+		write_log(PLUGIN_DIR . "/logs/cookie.log", $_COOKIE);
+		write_log(PLUGIN_DIR . "/logs/session.log", $_SESSION, array(
+			'session_name=' . session_name(),
+			'session_id=' . session_id(),
+		));
+
 		do_action( '1c4wp_exchange' );
 	}
 	// elseif ($value == 'clean') {
