@@ -423,7 +423,8 @@ function do_exchange() {
 			 * Чистим и пересчитываем количество записей в терминах
 			 */
 			if ( ! $start_date = get_option( 'exchange_start-date', '' ) ) {
-				return;
+				Plugin::set_mode( 'complete' );
+				exit( "success\nDeactivate not required." );
 			}
 
 			/**
