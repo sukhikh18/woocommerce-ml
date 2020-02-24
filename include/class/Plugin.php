@@ -310,12 +310,11 @@ class Plugin {
 	static function get_mode() {
 		$mode = save_get_request( 'mode' );
 
-
-		if ( ! in_array( $mode, array(
-				'checkauth',
-				'init'
-			) ) && $ownMode = Plugin::get( 'mode', 'false', 'status' ) ) {
-			$mode = $ownMode;
+		if( 'import' === $mode ) {
+			$ownMode = Plugin::get( 'mode', 'false', 'status' );
+			if( $ownMode && 'false' !== $ownMode ) {
+				$mode = $ownMode;
+			}
 		}
 
 		return $mode;
