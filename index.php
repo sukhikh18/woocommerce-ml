@@ -136,6 +136,18 @@ function metas_exchange_posts_import_offset( $offset, $productsCount, $offersCou
 	return $offset;
 }
 
+add_action( 'plugins_loaded', function() {
+	if( 0 === strpos($_SERVER['REQUEST_URI'], '/exchange/') ) {
+		ob_start();
+	}
+}, -1 );
+
+add_action( 'init', function() {
+	if( 0 === strpos($_SERVER['REQUEST_URI'], '/exchange/') ) {
+		ob_clean();
+	}
+}, 99 );
+
 add_action( '1c4wp_exchange', __NAMESPACE__ . '\do_exchange', 10 );
 
 
