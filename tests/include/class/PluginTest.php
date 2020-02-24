@@ -120,21 +120,21 @@ class PluginTest extends WP_UnitTestCase {
 	public function testGet_setting() {
 		$this->testSet_setting();
 
-		$this->assertEquals( $this->plugin->get_setting( 'test', false ), 1 );
-		$this->assertEquals( $this->plugin->get_setting( 'test', false, 'context' ), 2 );
-		$this->assertEquals( $this->plugin->get_setting( 'test2', false ), 3 );
+		$this->assertEquals( $this->plugin->get( 'test', false ), 1 );
+		$this->assertEquals( $this->plugin->get( 'test', false, 'context' ), 2 );
+		$this->assertEquals( $this->plugin->get( 'test2', false ), 3 );
 		$this->resetOptions();
 
-		$this->assertFalse( $this->plugin->get_setting( 'test', false ) );
-		$this->assertNull( $this->plugin->get_setting( 'test', null, 'context' ) );
-		$this->assertTrue( $this->plugin->get_setting( 'test2', true ) );
+		$this->assertFalse( $this->plugin->get( 'test', false ) );
+		$this->assertNull( $this->plugin->get( 'test', null, 'context' ) );
+		$this->assertTrue( $this->plugin->get( 'test2', true ) );
 	}
 
 	public function testSet_setting() {
-		$this->assertTrue( $this->plugin->set_setting( 'test', 1 ) );
-		$this->assertFalse( $this->plugin->set_setting( 'test', 1 ) );
-		$this->assertTrue( $this->plugin->set_setting( 'test', 2, 'context' ) );
-		$this->assertTrue( $this->plugin->set_setting( array( 'test2' => 3 ) ) );
+		$this->assertTrue( $this->plugin->set( 'test', 1 ) );
+		$this->assertFalse( $this->plugin->set( 'test', 1 ) );
+		$this->assertTrue( $this->plugin->set( 'test', 2, 'context' ) );
+		$this->assertTrue( $this->plugin->set( array( 'test2' => 3 ) ) );
 	}
 
 	/**

@@ -5,6 +5,7 @@ $Register
     ->register_exchange_url();
 
 $WP_REST_Controller
+    ->exchange_preparing()
     ->exchange()
         ->checkauth()
 
@@ -34,9 +35,11 @@ $WP_REST_Controller
             $offer
                 ->fill_exists_terms()
                 ->merge()
+                // @todo import required.
                 ->write_temporary_data();
         } )
 
+        // @todo how can i goto deactivate before CommerceML 3.0 ver.
         ->deactivate()
 
         ->complete( function() {

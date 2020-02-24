@@ -2,6 +2,7 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\ExchangePost;
 use NikolayS93\Exchange\Model\ExchangeOffer;
 use NikolayS93\Exchange\Model\ExchangeProduct;
@@ -11,7 +12,8 @@ use NikolayS93\Exchange\ORM\CollectionAttributes;
 use NikolayS93\Exchange\ORM\CollectionPosts;
 use NikolayS93\Exchange\ORM\CollectionTerms;
 use WP_REST_Server;
-use function NikolayS93\Exchange\the_statistic_table;
+use WP_User;
+use XMLExchange\Model\Product;
 
 class REST_Controller {
 
@@ -27,19 +29,24 @@ class REST_Controller {
 	 */
 	public $namespace = 'exchange/v1';
 
+	public $date_start;
+
 	/**
 	 * @var string (float value)
 	 */
 	public $version;
-
 	public $step;
 
-	public $date_start;
+	public $type;
+	public $mode;
 
 	function __construct() {
-		$this->version    = Request::get_session_arg( 'version' );
-		$this->step       = Request::get_session_arg( 'step' );
-		$this->date_start = Request::get_session_arg( 'date_start' );
+		$this->date_start = plugin()->get( 'date_start', null, 'exchange' );
+
+		$this->type    = Request::get_type();
+		$this->mode    = Request::get_mode();
+		$this->version = floatval( Request::get_session_arg( 'version' ) );
+		$this->step    = Request::get_session_arg( 'step' );
 	}
 
 	/**
@@ -47,7 +54,7 @@ class REST_Controller {
 	 *
 	 * @return bool
 	 */
-	public function has_permissions( $user ) {
+	public function check_permissions( $user ) {
 		foreach ( plugin()->get_permissions() as $permission ) {
 			if ( user_can( $user, $permission ) ) {
 				return true;
@@ -65,7 +72,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'status' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -77,7 +84,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'init' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -89,7 +96,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'file' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -101,7 +108,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'import' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -113,7 +120,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'deactivate' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -125,7 +132,7 @@ class REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'complete' ),
-					'permission_callback' => array( $this, 'has_permissions' ),
+					'permission_callback' => array( $this, 'check_permissions' ),
 				),
 			)
 		);
@@ -134,48 +141,7 @@ class REST_Controller {
 	public function status() {
 	}
 
-	/**
-	 * @return \WP_Error|\WP_User
-	 */
-	private function check_current_user() {
-		global $user_id;
-
-		if ( is_user_logged_in() ) {
-			$user         = wp_get_current_user();
-			$user_id      = $user->ID;
-			$method_error = __( 'User not logged in', Plugin::DOMAIN );
-		} elseif ( ! empty( $_COOKIE[ EXCHANGE_COOKIE_NAME ] ) ) {
-			$user         = wp_validate_auth_cookie( $_COOKIE[ EXCHANGE_COOKIE_NAME ], 'auth' );
-			$user_id      = $user->ID;
-			$method_error = __( 'Invalid cookie', Plugin::DOMAIN );
-		} else {
-			$user_id      = 0;
-			$method_error = __( 'User not identified', Plugin::DOMAIN );
-		}
-
-		if ( ! $user_id ) {
-			$user = new \WP_Error( 'AUTH_ERROR', $method_error );
-		}
-
-		if ( ! $this->has_permissions( $user_id ) ) {
-			$user = new \WP_Error(
-				'AUTH_ERROR',
-				sprintf(
-					'User %s has not permissions',
-					get_user_meta( $user_id, 'nickname', true )
-				)
-			);
-		}
-
-		return $user;
-	}
-
-	/**
-	 * Route 1c modes
-	 *
-	 * @url http://v8.1c.ru/edi/edi_stnd/131/
-	 */
-	function exchange() {
+	function exchange_preparing() {
 		if ( ! headers_sent() ) {
 			header( 'Content-Type: text/plain; charset=' . EXCHANGE_CHARSET );
 		}
@@ -188,44 +154,78 @@ class REST_Controller {
 			parse_str( $query, $_GET );
 		}
 
-		if ( ! ( $type = Request::get_type() ) || ! in_array( $type, array( 'catalog' ) ) ) {
+		if ( ! $this->type || ! in_array( $this->type, array( 'catalog' ) ) ) {
 			Error()->add_message( 'Type no support' );
 		}
 
-		if ( ! $mode = Request::get_mode() ) {
+		if ( ! $this->mode ) {
 			Error()->add_message( 'Mode no support' );
-		}
+		} elseif( 'checkauth' !== $this->mode ) {
+			$user_id = $this->get_current_user_id();
 
-		if ( 'checkauth' === $mode ) {
-			$this->checkauth();
-		} else {
-			$user = $this->check_current_user();
-			if ( is_wp_error( $user ) ) {
-				Error()->add_message( $user );
+			if ( is_wp_error( $user_id ) ) {
+				Error()->add_message( $user_id );
 			}
 
-			switch ( $mode ) {
-				case 'init':
-					$this->init();
-					break;
-				case 'file':
-					$this->file();
-					break;
-				case 'import':
-					$this->import( new Parser(), new Update() );
-					break;
-				case 'deactivate':
-					$this->deactivate();
-					break;
-				case 'complete':
-					$this->complete();
-					break;
-
-				default:
-					Error()->add_message( 'Mode no support' );
-					break;
+			if ( ! $this->check_permissions( $user_id ) ) {
+				Error()->add_message(sprintf( 'Permissions failed (UID: %d)', $user_id ));
 			}
 		}
+	}
+
+	/**
+	 * Route 1c modes
+	 *
+	 * @url http://v8.1c.ru/edi/edi_stnd/131/
+	 */
+	function exchange() {
+		switch ( $this->mode ) {
+			case 'checkauth':
+				$this->checkauth();
+				break;
+			case 'init':
+				$this->init();
+				break;
+			case 'file':
+				$this->file();
+				break;
+			case 'import':
+				$this->import( new Parser(), new Update() );
+				break;
+			case 'deactivate':
+				$this->deactivate();
+				break;
+			case 'complete':
+				$this->complete();
+				break;
+		}
+
+		Error()->add_message( 'Mode no support' );
+	}
+
+	/**
+	 * @return \WP_Error|Int
+	 *
+	 * Запускается перед каждым запросом для проверки авторизации пользователя.
+	 */
+	private function get_current_user_id() {
+		if ( is_user_logged_in() ) {
+			/** @var $user WP_User */
+			$user         = wp_get_current_user();
+			if( ! $user->ID ) {
+				return new \WP_Error( 'AUTH_ERROR', __( 'User not logged in', Plugin::DOMAIN ) );
+			}
+		} elseif ( ! empty( $_SESSION[ EXCHANGE_COOKIE_NAME ] ) ) {
+			/** @var $user Int */
+			if( ! $user = wp_validate_auth_cookie( $_SESSION[ EXCHANGE_COOKIE_NAME ], 'auth' ) ) {
+				return new \WP_Error( 'AUTH_ERROR', __( 'Invalid cookie', Plugin::DOMAIN ) );
+			}
+		}
+		else {
+			return new \WP_Error('AUTH_ERROR', __( 'User not identified', Plugin::DOMAIN ));;
+		}
+
+		return is_a($user, 'WP_User') ? $user->ID : $user;
 	}
 
 	/**
@@ -256,14 +256,16 @@ class REST_Controller {
 			}
 
 			$user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
-			if ( is_wp_error( $user ) ) {
-				Error()->add_message( $user );
-			}
 		} else {
 			$user = wp_get_current_user();
 		}
 
-		if ( ! $this->has_permissions( $user ) ) {
+		if ( is_wp_error( $user ) ) {
+			Error()->add_message( $user );
+			exit( "failure\n" );
+		}
+
+		if ( ! $this->check_permissions( $user ) ) {
 			Error()->add_message(
 				sprintf(
 					'No %s user permissions',
@@ -273,14 +275,22 @@ class REST_Controller {
 		}
 
 		$expiration  = EXCHANGE_START_TIMESTAMP + apply_filters(
-				'auth_cookie_expiration',
-				DAY_IN_SECONDS,
-				$user->ID,
-				false
-			);
-		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
+			'auth_cookie_expiration',
+			DAY_IN_SECONDS,
+			$user->ID,
+			false
+		);
 
-		exit( "success\n" . EXCHANGE_COOKIE_NAME . "\n$auth_cookie" );
+		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
+		$_SESSION[ EXCHANGE_COOKIE_NAME ] = $auth_cookie;
+
+		// exit( "success\n" . EXCHANGE_COOKIE_NAME . "\n$auth_cookie" );
+		exit( implode("\n", array(
+			'success',
+			session_name(),
+			session_id(),
+			'timestamp=' . time()
+		)) . "\n" );
 	}
 
 	/**
@@ -306,10 +316,10 @@ class REST_Controller {
 			$table_name = $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
 			$wpdb->query( "TRUNCATE TABLE $table_name" );
 
+			plugin()->set( 'date_start', current_time( 'mysql' ), 'exchange' );
 			Request::set_session_args( array(
 				'step'       => '',
-				'version'    => ! empty( $_GET['version'] ) ? sanitize_text_field( $_GET['version'] ) : '1',
-				'date_start' => current_time( 'mysql' ),
+				'version'    => ! empty( $_GET['version'] ) ? sanitize_text_field( $_GET['version'] ) : '2.99',
 			) );
 		}
 
@@ -328,30 +338,22 @@ class REST_Controller {
 	 */
 	public function file( $requested = 'php://input' ) {
 		$file = Request::get_file();
-		$type = Request::get_type();
 		// get_exchange_dir contain Plugin::try_make_dir(), Plugin::check_writable()
-		$path_dir = Plugin()->get_exchange_dir( $type );
+		$path_dir = Plugin()->get_exchange_dir( $this->type );
 		$path     = $path_dir . '/' . $file['name'] . '.' . $file['ext'];
 
-		if ( static::STEP_UNZIP === Request::get_session_arg( 'step' ) ) {
-			unzip( $path, $path_dir );
+		$from     = fopen( $requested, 'r' );
+		$resource = fopen( $path, 'a' );
+		// @todo Do you want to get ВерсияСхемы or ДатаФормирования?
+		stream_copy_to_stream( $from, $resource );
+		fclose( $from );
+		fclose( $resource );
 
-			if ( 'catalog' == $type ) {
-				exit( "success\n" );
-			}
-		} else {
-			$from     = fopen( $requested, 'r' );
-			$resource = fopen( $path, 'a' );
-			// @todo Do you want to get ВерсияСхемы or ДатаФормирования?
-			stream_copy_to_stream( $from, $resource );
-			fclose( $from );
-			fclose( $resource );
+		unzip( $path, $path_dir );
 
-			Request::set_session_args( array( 'step' => static::STEP_UNZIP ) );
-			exit( "progress\n" );
+		if ( 'catalog' == $this->type ) {
+			exit( "success\n" );
 		}
-
-		exit( "failure\n" );
 	}
 
 	/**
@@ -361,68 +363,59 @@ class REST_Controller {
 	public function query() {
 	}
 
-	function get_message_by_filename( $file_name = '' ) {
-		switch ( true ) {
-			case 0 === strpos( $file_name, 'price' ):
-				return '%s из %s цен обработано.';
-
-			case 0 === strpos( $file_name, 'rest' ):
-				return '%s из %s запасов обработано.';
-
-			default:
-				return '%s из %s предложений обработано.';
-		}
-	}
-
 	/**
 	 * D. Пошаговая загрузка данных
 	 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=import&filename=<имя файла>
 	 *
+	 * @feature Отсеевает товары без торгового предложения средствами временной таблицы
 	 * @param Parser $Parser
 	 * @param Update $Update
 	 *
 	 * @print 'progress|success|failure'
 	 */
 	public function import( $Parser, $Update ) {
-
+		// Get current exhcange file.
 		$file = Plugin()->get_exchange_file( Request::get_file() );
-		file_is_readble( $file, true );
+		check_readble( $file, $error_else = true );
 
-		$Dispatcher = Dispatcher();
-		$Dispatcher->addListener( 'CategoryEvent', array( $Parser, 'category_event' ) );
-		$Dispatcher->addListener( 'WarehouseEvent', array( $Parser, 'warehouse_event' ) );
-		$Dispatcher->addListener( 'PropertyEvent', array( $Parser, 'property_event' ) );
-		$Dispatcher->addListener( 'ProductEvent', array( $Parser, 'product_event' ) );
-		$Dispatcher->addListener( 'OfferEvent', array( $Parser, 'offer_event' ) );
-		$Dispatcher->parse( $file );
-
-		/** @var CollectionTerms $categories */
-		$categories = $Parser->get_categories()->fill_exists();
-		/** @var CollectionTerms $warehouses */
-		$warehouses = $Parser->get_warehouses()->fill_exists();
-		/** @var CollectionAttributes $attributes */
-		$attributes = $Parser->get_properties()->fill_exists();
+		// Fill parser collection.
+		$Parser->parse_all( $file );
 		/** @var CollectionPosts $products */
 		$products = $Parser->get_products();
+		/** @var CollectionTerms $categories */
+		$categories = $Parser->get_categories()->fill_exists();
+		/** @var CollectionAttributes $attributes */
+		$attributes = $Parser->get_properties()->fill_exists();
 		/** @var CollectionPosts $offers */
 		$offers = $Parser->get_offers();
+		/** @var CollectionTerms $warehouses */
+		$warehouses = $Parser->get_warehouses()->fill_exists();
 
-		$has_terms      = $categories->count() || $warehouses->count() || $attributes->count();
+		$terms_count = $categories->count() + $attributes->count() + $warehouses->count();
 		$products_count = $products->count();
 		$offers_count   = $offers->count();
 
-		if ( static::STEP_TMP_DATA !== $this->step && $has_terms ) {
+
+		if( static::STEP_TMP_DATA !== $this->step && $terms_count > 0 ) {
 			// Update terms.
 			Transaction()->set_transaction_mode();
 
-			$Update->terms( $categories )->term_meta( $categories );
-			$Update->terms( $warehouses )->term_meta( $warehouses );
 
-			$Update->properties( $attributes );
-			$attribute_terms = $attributes->get_terms();
-			$Update
-				->terms( $attribute_terms )
-				->term_meta( $attribute_terms );
+
+			// $Update->terms( $categories )->term_meta( $categories );
+			// $Update->terms( $warehouses )->term_meta( $warehouses );
+
+			// $Update->properties( $attributes );
+			// $attribute_terms = $attributes->get_terms();
+			// $Update
+			// 	->terms( $attribute_terms )
+			// 	->term_meta( $attribute_terms );
+//			$Update->properties( $attributes );
+//			$attributes->walk( function( $attribute ) use ($Update) {
+//				/** @var Attribute $attribute */
+//				$terms = $attribute->get_values();
+//				$Update->terms( $terms )->term_meta( $terms );
+//			} );
 
 			$step = '';
 			if ( $products_count || $offers_count ) {
@@ -438,42 +431,45 @@ class REST_Controller {
 			) ) );
 		}
 
-		if ( $products_count || $offers_count ) {
+		if( $products_count ) {
 			// Update temporary data.
 			Transaction()->set_transaction_mode();
 
-			if ( $products_count ) {
-				$products
-					->fill_exists()
-					->fill_exists_terms( $Parser )
-					->walk( function ( $product ) {
-						$product->write_temporary_data();
-					} );
-			}
+			$products
+				->fill_exists()
+				->fill_exists_terms( $Parser )
+				->walk( function ( $product ) {
+					/** @var $product ExchangeProduct */
+					$product->write_temporary_data();
+				} );
+			// @todo deactivate products on CommerceML2
+		}
 
-			if ( $offers_count ) {
-				$offers
-					->fill_exists_terms( $Parser )
-					->walk( function ( $offer ) use ( &$offers ) {
-						$external = $offer->get_external();
-						$merged   = false;
+		if ( $offers_count ) {
+			// Import offers
+			Transaction()->set_transaction_mode();
 
-						if ( false !== ( $pos = strpos( $external, '#' ) ) ) {
-							if ( $global_offer = $offers->offsetGet( substr( $external, 0, $pos ) ) ) {
-								$global_offer->merge( $offer );
-								$offers->remove( $offer );
-								$merged = true;
-							}
-						}
+			$offers
+				->fill_exists_terms( $Parser )
+				->walk( function ( $offer ) use ( &$offers ) {
+					$external = $offer->get_external();
+					$merged   = false;
 
-						if( $merged ) {
-							$global_offer->write_temporary_data();
+					if ( false !== ( $pos = strpos( $external, '#' ) ) ) {
+						if ( $global_offer = $offers->offsetGet( substr( $external, 0, $pos ) ) ) {
+							$global_offer->merge( $offer );
+							$offers->remove( $offer );
+							$merged = true;
 						}
-						else {
-							$offer->write_temporary_data();
-						}
-					} );
-			}
+					}
+
+					if( $merged ) {
+						$global_offer->write_temporary_data();
+					}
+					else {
+						$offer->write_temporary_data();
+					}
+				} );
 		}
 
 		Request::set_session_args( array('step' => '') );
@@ -532,10 +528,10 @@ class REST_Controller {
 		global $wpdb;
 
 		$table = Register::get_exchange_table_name();
-
+		$offset = 100;
 		$temporary_items = $wpdb->get_results( "
 			SELECT * FROM $table
-			LIMIT 500
+			LIMIT $offset
 		" );
 
 		Transaction()->set_transaction_mode();

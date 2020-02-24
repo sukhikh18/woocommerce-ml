@@ -30,10 +30,10 @@ class CollectionPosts extends Collection {
 		$Plugin   = Plugin::get_instance();
 		$settings = array(
 //            'post_name' =>
-			'skip_post_author'  => $Plugin->get_setting( 'skip_post_author' ),
-			'skip_post_title'   => $Plugin->get_setting( 'skip_post_title' ),
-			'skip_post_content' => $Plugin->get_setting( 'skip_post_content' ),
-			'skip_post_excerpt' => $Plugin->get_setting( 'skip_post_excerpt' ),
+			'skip_post_author'  => $Plugin->get( 'skip_post_author' ),
+			'skip_post_title'   => $Plugin->get( 'skip_post_title' ),
+			'skip_post_content' => $Plugin->get( 'skip_post_content' ),
+			'skip_post_excerpt' => $Plugin->get( 'skip_post_excerpt' ),
 		);
 
 		/** @var array List of external code items list in database attribute context (%s='%s') */
@@ -133,9 +133,9 @@ class CollectionPosts extends Collection {
 				$product->warehouses->walk( $extract_external );
 			}
 
-			if ( isset( $product->attributes ) ) {
-				$product->attributes->walk( $extract_external );
-			}
+//			if ( isset( $product->attributes ) ) {
+//				$product->attributes->walk( $extract_external );
+//			}
 		} );
 
 		$externals = array_unique( $externals );
@@ -175,9 +175,9 @@ class CollectionPosts extends Collection {
 					$product->warehouses->walk( $put_terms );
 				}
 
-				if ( isset( $product->attributes ) ) {
-					$product->attributes->walk( $put_terms );
-				}
+//				if ( isset( $product->attributes ) ) {
+//					$product->attributes->walk( $put_terms );
+//				}
 			} );
 		}
 

@@ -60,7 +60,7 @@ class Error {
 		if ( $message instanceof \WP_Error ) {
 			array_map( function ( $message ) use ( $code ) {
 				$this->add_message( $message, $code );
-			}, $this->WP_Error->get_error_messages() ); // $code
+			}, $message->get_error_messages() );
 
 			return $this;
 		} elseif ( is_object( $message ) ) {
@@ -104,14 +104,14 @@ class Error {
 		}
 
 		switch ( $errno ) {
-			case E_NOTICE:
-			case E_USER_NOTICE:
-				$type = "Notice";
-				break;
-			case E_WARNING:
-			case E_USER_WARNING:
-				$type = "Warning";
-				break;
+			// case E_NOTICE:
+			// case E_USER_NOTICE:
+			// 	$type = "Notice";
+			// 	break;
+			// case E_WARNING:
+			// case E_USER_WARNING:
+			// 	$type = "Warning";
+			// 	break;
 			case E_ERROR:
 			case E_USER_ERROR:
 				$type = "Fatal Error";

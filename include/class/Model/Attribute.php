@@ -6,131 +6,28 @@ use NikolayS93\Exchange\Model\Interfaces\ExternalCode;
 use NikolayS93\Exchange\Model\Interfaces\Identifiable;
 use NikolayS93\Exchange\Model\Interfaces\Taxonomy;
 use NikolayS93\Exchange\Model\Interfaces\Value;
-
 use NikolayS93\Exchange\ORM\Collection;
-use function NikolayS93\Exchange\esc_cyr;
 
 /**
  * Works with woocommerce_attribute_taxonomies
  */
-class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
-
-	/**
-	 * @todo
-	 */
-	static function valid_attribute_name() {
-		return true;
-	}
-
-	private $id;
-
-	private $attribute_name;
-	private $attribute_label;
-	private $attribute_type = 'select';
-	private $attribute_orderby = 'menu_order';
-	private $attribute_public = 1;
-	private $attribute_value = '';
-
+class Attribute implements ExternalCode { // implements Taxonomy, Identifiable, Value
 	private $ext;
 
+	private $name;
+	private $label;
+	private $type = 'text';
+	private $orderby = 'menu_order';
+	private $public = 1;
+
 	/**
-	 * @var Collection of ExchangeTerm
+	 * @var Collection of Terms
 	 */
 	private $values;
 
-	function __set( $name, $value ) {
-		// TODO: Implement __set() method.
-	}
-
 	public static function sanitize_slug( $str ) {
-		if ( 0 !== strpos( $str, 'pa_' ) ) {
-			return \wc_attribute_taxonomy_name( $str );
-		} else {
-			return \wc_sanitize_taxonomy_name( $str );
-		}
-	}
-
-	function __construct( $args = array(), $ext = '' ) {
-		$this->ext = $ext;
-
-		foreach ( (array) $args as $k => $arg ) {
-			$this->$k = $arg;
-		}
-
-		$name = esc_cyr( $this->attribute_name ? $this->attribute_name : $this->attribute_label );
-		$this->set_slug( $name );
-
-		$this->reset_values();
-	}
-
-	/**
-	 * Object params to array
-	 * @return array
-	 */
-	public function fetch() {
-		$attribute = array(
-			'slug'         => str_replace( 'pa_', '', $this->attribute_name ),
-			'name'         => $this->attribute_label,
-			'type'         => $this->attribute_type,
-			'order_by'     => $this->attribute_orderby,
-			'has_archives' => $this->attribute_public,
-		);
-
-		return $attribute;
-	}
-
-	public function get_slug() {
-		return $this->attribute_name;
-	}
-
-	public function set_slug( $slug ) {
-		$this->attribute_name = static::sanitize_slug( $slug );
-	}
-
-	public function get_name() {
-		return $this->attribute_label;
-	}
-
-	public function get_type() {
-		return $this->attribute_type;
-	}
-
-	/**
-	 * @param AttributeValue $term
-	 */
-	public function add_value( $term ) {
-		$term->set_taxonomy( $this->attribute_name );
-
-		$this->values->add( $term );
-	}
-
-	public function get_values() {
-		return $this->values;
-	}
-
-	public function reset_values() {
-		$this->values = new Collection();
-	}
-
-	public function get_value() {
-		return $this->attribute_value;
-	}
-
-	public function set_value( $value ) {
-		if ( $value instanceof Category ) {
-			$this->attribute_value = $value;
-		} else {
-			$this->attribute_value = ( $relationTerm = $this->get_values()->offsetGet( $value ) )
-				? $relationTerm : (string) $value;
-		}
-	}
-
-	public function get_id() {
-		return (int) $this->id;
-	}
-
-	public function set_id( $id ) {
-		$this->id = (int) $id;
+		return ( 0 !== strpos( $str, 'pa_' ) ) ? \wc_attribute_taxonomy_name( $str ) :
+			\wc_sanitize_taxonomy_name( $str );
 	}
 
 	static function get_external_key() {
@@ -141,10 +38,57 @@ class Attribute implements Taxonomy, ExternalCode, Identifiable, Value {
 		return $this->ext;
 	}
 
-	public function get_raw_external() {
+	function get_raw_external() {
+		return $this->ext;
 	}
 
-	public function set_external( $ext ) {
-		$this->ext = (String) $ext;
+	public function set_external( $ext = '' ) {
+		if( $ext ) {
+			$this->ext = $ext;
+		}
+	}
+
+	public function get_type() {
+		return $this->type;
+	}
+
+	function __construct( $args = array(), $ext = '' ) {
+		$this->values = new Collection();
+
+		foreach ( (array) $args as $k => $arg ) {
+			$this->$k = $arg;
+		}
+
+		$this->set_external( $ext );
+	}
+
+	public function get_slug() {
+		return static::sanitize_slug( $this->name );
+	}
+
+	/**
+	 * Object params to array
+	 * @return array
+	 */
+	public function fetch() {
+		$attribute = array(
+			'slug'         => $this->get_slug(),
+			'name'         => $this->label,
+			'type'         => $this->type,
+			'order_by'     => $this->orderby,
+			'has_archives' => $this->public,
+		);
+
+		return $attribute;
+	}
+
+	public function add_value( $AttributeValue ) {
+		$this->values->add( $AttributeValue );
+
+		return $this;
+	}
+
+	public function get_values() {
+		return $this->values;
 	}
 }

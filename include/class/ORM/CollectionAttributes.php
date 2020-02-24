@@ -21,6 +21,7 @@ class CollectionAttributes extends Collection {
 	 * @return $this
 	 */
 	public function fill_exists( $orphaned_only = true ) {
+		return $this;
 		/** @global \wpdb $wpdb wordpress database object */
 		global $wpdb;
 
@@ -101,16 +102,5 @@ class CollectionAttributes extends Collection {
 		} );
 
 		return $this;
-	}
-
-	public function get_terms() {
-		$terms = new Collection();
-
-		$this->walk( function ( $attribute ) use ( $terms ) {
-			/** @var $attribute Attribute */
-			$terms->add( $attribute->get_values() );
-		} );
-
-		return $terms;
 	}
 }

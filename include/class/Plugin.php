@@ -130,7 +130,7 @@ class Plugin {
 	 *
 	 * @return mixed
 	 */
-	public function get_setting( $prop_name = null, $default = false, $context = '' ) {
+	public function get( $prop_name = null, $default = false, $context = '' ) {
 		$option_name = $this->get_option_name( $context );
 
 		/**
@@ -160,13 +160,13 @@ class Plugin {
 	 *
 	 * @return bool                   Is updated @see update_option()
 	 */
-	public function set_setting( $prop_name, $value = '', $context = '' ) {
+	public function set( $prop_name, $value = '', $context = '' ) {
 		if ( ! $prop_name || ( $value && ! (string) $prop_name ) ) {
 			return false;
 		}
 
 		// Get all defined settings by context.
-		$option = $this->get_setting( null, false, $context );
+		$option = $this->get( null, false, $context );
 
 		if ( is_array( $prop_name ) ) {
 			$option = is_array( $option ) ? array_merge( $option, $prop_name ) : $prop_name;
@@ -200,5 +200,71 @@ class Plugin {
 
 		// load plugin languages.
 		load_plugin_textdomain( self::DOMAIN, false, basename( self::get_dir() ) . '/languages/' );
+	}
+
+	/******************************* IO methods *******************************/
+	public function get_upload_dir() {
+		$wp_upload_dir = wp_upload_dir();
+
+		return apply_filters( static::PREFIX . "get_upload_dir",
+			$wp_upload_dir['basedir'], $wp_upload_dir );
+	}
+
+	public function get_exchange_dir( $namespace = null ) {
+		$dir = trailingslashit( apply_filters( static::PREFIX . "get_exchange_dir",
+			$this->get_upload_dir() . "/1c-exchange/" . $namespace, $namespace ) );
+
+		make_dir( $dir );
+		check_writable( $dir );
+
+		return realpath( $dir );
+	}
+
+	public function get_exchange_file( $filepath, $namespace = 'catalog' ) {
+		if ( ! empty( $filepath['path'] ) ) {
+			$filepath = $filepath['path'];
+		}
+
+		$file = new \SplFileObject( $this->get_exchange_dir( $namespace ) . '/' . $filepath );
+
+		if ( $file->isFile() && $file->isReadable() && 'xml' == strtolower( $file->getExtension() ) ) {
+			return $file->getPathname();
+		}
+
+		return false;
+	}
+
+	public function get_exchange_files( $filename = null, $namespace = 'catalog' ) {
+		$arResult = array();
+
+		// Get all folder objects
+		$dir = $this->get_exchange_dir( $namespace );
+
+		$objects = new \RecursiveIteratorIterator(
+			new \RecursiveDirectoryIterator( $dir ),
+			\RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		/**
+		 * Check objects name
+		 */
+		foreach ( $objects as $path => $object ) {
+
+			if ( ! empty( $filename ) ) {
+				/**
+				 * Filename start with search string
+				 */
+				if ( 0 === strpos( $object->getBasename(), $filename ) ) {
+					$arResult[] = $path;
+				}
+			} else {
+				/**
+				 * Get all xml files
+				 */
+				$arResult[] = $path;
+			}
+		}
+
+		return $arResult;
 	}
 }

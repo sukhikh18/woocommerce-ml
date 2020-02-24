@@ -17,6 +17,9 @@
 
 namespace NikolayS93\Exchange;
 
+$_SERVER['PHP_AUTH_USER'] = 'root';
+$_SERVER['PHP_AUTH_PW'] = 'q1w2';
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );
 }
@@ -56,49 +59,11 @@ if ( ! defined( 'EXCHANGE_TMP_TABLENAME' ) ) {
 	define( 'EXCHANGE_TMP_TABLENAME', 'exchange' );
 }
 
-if ( ! function_exists( 'file_is_readble' ) ) {
-	/**
-	 * Check is file and is readble.
-	 *
-	 * @param string $path path to file
-	 * @param boolean $show_error
-	 *
-	 * @return boolean
-	 */
-	function file_is_readble( $path, $show_error = false ) {
-		if ( is_file( $path ) && is_readable( $path ) ) {
-			return true;
-		} elseif ( $show_error ) {
-			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
-		}
-
-		return false;
-	}
-}
-
-if ( ! function_exists( 'include_plugin_file' ) ) {
-	/**
-	 * Safe dynamic expression include.
-	 *
-	 * @param string $path relative path.
-	 */
-	function include_plugin_file( $path ) {
-		if ( 0 !== strpos( $path, PLUGIN_DIR ) ) {
-			$path = PLUGIN_DIR . $path;
-		}
-
-		return file_is_readble( $path ) ? require_once $path : false;
-	}
-}
-
 /**
  * include required files
  */
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
-array_map( __NAMESPACE__ . '\include_plugin_file', array(
-	'include/utils.php',
-	'include/statistic.php'
-) );
+require_once PLUGIN_DIR . 'include/utils.php';
 
 // When no have autoload.
 if ( ! include_plugin_file( 'vendor/autoload.php' ) ) {
@@ -163,15 +128,6 @@ if ( ! function_exists( __NAMESPACE__ . '\transaction' ) ) {
 	}
 }
 
-if ( ! function_exists( __NAMESPACE__ . '\dispatcher' ) ) {
-	/**
-	 * @return \CommerceMLParser\Parser
-	 */
-	function dispatcher() {
-		return \CommerceMLParser\Parser::getInstance();
-	}
-}
-
 /**
  * Initialize this plugin once all other plugins have finished loading.
  */
@@ -183,6 +139,8 @@ add_action(
 		$register->register_plugin_page();
 		// Register //example.com/exchange/ query
 		$register->register_exchange_url();
+
+		Register::log();
 
 		// Initialize the REST API routes.
 //		add_action( 'rest_api_init', function () {

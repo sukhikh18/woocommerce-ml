@@ -20,9 +20,9 @@ class Warehouse extends Term {
 		/** @var Int $term_id WP_Term->term_id */
 		$term_id = $this->get_id();
 
-		if ( check_mode( $term_id, $Plugin->get_setting( 'warehouse_mode' ) ) ) {
+		if ( check_mode( $term_id, $Plugin->get( 'warehouse_mode' ) ) ) {
 			// Do not update name?
-			switch ( $Plugin->get_setting( 'wh_name' ) ) {
+			switch ( $Plugin->get( 'wh_name' ) ) {
 				case false:
 					if ( $term_id ) {
 						$this->unset_name();
@@ -30,7 +30,7 @@ class Warehouse extends Term {
 					break;
 			}
 
-			if ( ! check_mode( $term_id, $Plugin->get_setting( 'wh_desc' ) ) ) {
+			if ( ! check_mode( $term_id, $Plugin->get( 'wh_desc' ) ) ) {
 				$this->unset_description();
 			}
 

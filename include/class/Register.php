@@ -174,39 +174,31 @@ class Register {
 
 	public function register_exchange_url() {
 		add_filter( 'query_vars', function ( $query_vars ) {
-			$query_vars[] = Plugin::DOMAIN;
-
+			array_push($query_vars, Plugin::DOMAIN);
 			return $query_vars;
 		} );
 
 		add_action( 'init', function () {
 			add_rewrite_rule( "exchange", "index.php?" . Plugin::DOMAIN . "=exchange", 'top' );
-			add_rewrite_rule( "clean", "index.php?" . Plugin::DOMAIN . "=clean" );
+			// add_rewrite_rule( "clean", "index.php?" . Plugin::DOMAIN . "=clean" );
 
 			flush_rewrite_rules();
 		}, 1000 );
 
 		add_action( 'template_redirect', function () {
-			$value = get_query_var( Plugin::DOMAIN );
+			if( $value = get_query_var( Plugin::DOMAIN ) ) {
+				if ( false !== strpos( $value, '?' ) ) {
+					list( $value, $query ) = explode( '?', $value, 2 );
+					parse_str( $query, $query );
+					$_GET = array_merge( $_GET, $query );
+				}
 
-			if ( empty( $value ) ) {
-				return;
+				if ( 'exchange' === $value ) {
+					$REST = new REST_Controller();
+					$REST->exchange_preparing();
+					$REST->exchange();
+				}
 			}
-
-			if ( false !== strpos( $value, '?' ) ) {
-				list( $value, $query ) = explode( '?', $value, 2 );
-				parse_str( $query, $query );
-				$_GET = array_merge( $_GET, $query );
-			}
-
-			if ( $value == 'exchange' ) {
-				$REST = new REST_Controller();
-				$REST->exchange();
-			}
-			// elseif ($value == 'clean') {
-			//     // require_once PLUGIN_DIR . "/include/clean.php";
-			//     exit;
-			// }
 		}, - 10 );
 	}
 
@@ -214,5 +206,17 @@ class Register {
 		global $wpdb;
 
 		return $wpdb->get_blog_prefix() . EXCHANGE_TMP_TABLENAME;
+	}
+
+	static function log() {
+		session_start();
+
+		write_log(PLUGIN_DIR . "logs/get.log", $_GET);
+		write_log(PLUGIN_DIR . "logs/post.log", $_POST);
+		write_log(PLUGIN_DIR . "logs/cookie.log", $_COOKIE);
+		write_log(PLUGIN_DIR . "logs/session.log", $_SESSION, array(
+			'session_name=' . session_name(),
+			'session_id=' . session_id(),
+		));
 	}
 }

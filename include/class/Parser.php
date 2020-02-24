@@ -4,6 +4,7 @@ namespace NikolayS93\Exchange;
 
 use CommerceMLParser\Model\Types\PropertyValue;
 use NikolayS93\Exchange\Model\AttributeValue;
+use NikolayS93\Exchange\Model\AttributeTerm;
 use NikolayS93\Exchange\Model\Category;
 use NikolayS93\Exchange\Model\Attribute;
 use NikolayS93\Exchange\Model\ExchangeProduct;
@@ -82,6 +83,18 @@ class Parser {
 			'ВидНоменклатуры',
 			'ТипНоменклатуры',
 		) );
+	}
+
+	public function parse_all( $file ) {
+		/** @var \CommerceMLParser\Parser */
+		$Dispatcher = \CommerceMLParser\Parser::getInstance();
+		$Dispatcher->addListener( 'CategoryEvent', array( $this, 'category_event' ) );
+		$Dispatcher->addListener( 'WarehouseEvent', array( $this, 'warehouse_event' ) );
+		$Dispatcher->addListener( 'PropertyEvent', array( $this, 'property_event' ) );
+		// @note Products required for properties when requisites_as_properties filter on.
+		$Dispatcher->addListener( 'ProductEvent', array( $this, 'product_event' ) );
+		$Dispatcher->addListener( 'OfferEvent', array( $this, 'offer_event' ) );
+		$Dispatcher->parse( $file );
 	}
 
 //	public function addOwnerListener()
@@ -196,16 +209,19 @@ class Parser {
 		$property = $propertyEvent->getProperty();
 
 		$attribute = new Attribute( array(
-			'attribute_label' => $property->getName(),
-			'attribute_type'  => $property->getType() === 'Строка' ? 'text' : 'select',
+			'name' => $property->getName(),
+			'label' => $property->getName(),
+			'type'  => $property->getType() === 'Строка' ? 'text' : 'select',
 		), $property->getId() );
 
-		// Fill ExchangeTerm values
-		foreach ( $property->getValues() as $code => $name ) {
-			$attribute->add_value( new AttributeValue( array(
-				'name'     => $name,
-				'taxonomy' => $attribute->get_slug(),
-			), $code ) );
+		$taxonomy = $attribute->get_slug();
+
+		if( $property->getType() !== 'Строка' ) {
+			// Fill ExchangeTerm values
+			foreach ( $property->getValues() as $ext => $name ) {
+
+				$attribute->add_value( new AttributeTerm( compact( array( 'name', 'taxonomy' ) ), $ext ) );
+			}
 		}
 
 		$this->properties->add( $attribute );
@@ -252,25 +268,69 @@ class Parser {
 					);
 
 					if( ! in_array( $arItem['name'], $this->requisites_exclude, true ) ) {
-						$code = isset( $this->requisites_as_properties[ $arItem['name'] ] ) ?
-							$this->requisites_as_properties[ $arItem['name'] ] : false;
-
-						if( $code ) {
-							$attribute = new AttributeValue( $arItem, $code );
-							$attribute->set_taxonomy( Attribute::sanitize_slug( $code ) );
+						if( ! $key = array_search($arItem['name'], $this->requisites_as_properties) ) {
+							$attribute_value = new AttributeValue( $arItem );
 						}
 						else {
-							// @todo
+							$arItem['is_taxonomy'] = 1;
+							$attribute_value = new AttributeTerm( $arItem );
+
+							if( ! $attribute = $this->properties->offsetGet( $key ) ) {
+								$attribute = new Attribute( array(
+									'label' => $this->requisites_as_properties[ $key ],
+									'name' => $this->requisites_as_properties[ $key ],
+									'type' => 'select',
+								), $key );
+
+								$attribute->add_value( $attribute_value );
+								$this->properties->add( $attribute );
+							}
 						}
+
+						$ExchangeProduct->attributes->add( $attribute_value );
 					}
 					break;
 
+				case 'CommerceMLParser\Model\Types\PropertyValue':
+					/** @var $item \CommerceMLParser\Model\Types\PropertyValue */
+					$attribute_value = new AttributeValue( array(
+						'value' => $item->getId(),
+						'is_taxonomy' => 1,
+					) );
+
+					$ExchangeProduct->attributes->add( $attribute_value );
+					break;
+
+				case 'CommerceMLParser\Model\Types\Partner':
+					/** @var $item \CommerceMLParser\Model\Types\Partner */
+					$attribute_value = new AttributeTerm( array(
+						'value' => $item->getId(),
+						'name' => 'pa_brand',
+						'is_taxonomy' => 1,
+					) );
+
+					$key = 'brand';
+
+					if( ! $attribute = $this->properties->offsetGet( $key ) ) {
+						$attribute = new Attribute( array(
+							'label' => $item->getName(),
+							'name' => $item->getName(),
+							'type' => 'select',
+						), $key );
+
+						$attribute->add_value( $attribute_value );
+						$this->properties->add( $attribute );
+					}
+
+					$ExchangeProduct->attributes->add( $attribute_value );
+					break;
+
 				default:
-					// @todo
+					print_r(get_class($item));
+					print_r($item);
+					die();
 					break;
 			}
-
-			$ExchangeProduct->attributes->add( $attribute );
 		};
 
 		array_map( $parseAttributes, $product->getProperties()->fetch() );

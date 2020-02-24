@@ -36,7 +36,7 @@ class Update {
 			'price'   => 1001,
 		) );
 
-		$this->progress = intval( Plugin()->get_setting( 'progress', 0, 'status' ) );
+		$this->progress = intval( Plugin()->get( 'progress', 0, 'status' ) );
 
 		$this->results = array(
 			'create'        => 0,
@@ -85,7 +85,7 @@ class Update {
 		// Count products will be updated
 		$this->progress += $products->count();
 
-		if ( 'off' === $post_mode = Plugin()->get_setting( 'post_mode' ) ) {
+		if ( 'off' === $post_mode = Plugin()->get( 'post_mode' ) ) {
 			return $this;
 		}
 
@@ -102,7 +102,7 @@ class Update {
 	 */
 	public function update_products_step( $product ) {
 		/** @var string $post_mode use get_option (has cache) */
-		$post_mode = Plugin()->get_setting( 'post_mode' );
+		$post_mode = Plugin()->get( 'post_mode' );
 		if ( $product->prepare( $post_mode ) ) {
 			if ( ! $product->get_id() ) {
 				// if is create only
@@ -130,10 +130,10 @@ class Update {
 		 * Update post meta
 		 */
 		$skip_post_meta = array(
-			'value' => Plugin()->get_setting( 'skip_post_meta_value', false ),
-			'sku'   => Plugin()->get_setting( 'skip_post_meta_sku', false ),
-			'unit'  => Plugin()->get_setting( 'skip_post_meta_unit', false ),
-			'tax'   => Plugin()->get_setting( 'skip_post_meta_tax', false ),
+			'value' => Plugin()->get( 'skip_post_meta_value', false ),
+			'sku'   => Plugin()->get( 'skip_post_meta_sku', false ),
+			'unit'  => Plugin()->get( 'skip_post_meta_unit', false ),
+			'tax'   => Plugin()->get( 'skip_post_meta_tax', false ),
 		);
 
 		/**
@@ -196,9 +196,9 @@ class Update {
 	 */
 	public function update_offers_meta( $offers ) {
 		$skip_offer_meta = array(
-			'offer_price'  => Plugin()->get_setting( 'offer_price', false ),
-			'offer_qty'    => Plugin()->get_setting( 'offer_qty', false ),
-			'offer_weight' => Plugin()->get_setting( 'offer_weight', false ),
+			'offer_price'  => Plugin()->get( 'offer_price', false ),
+			'offer_qty'    => Plugin()->get( 'offer_qty', false ),
+			'offer_weight' => Plugin()->get( 'offer_weight', false ),
 		);
 
 		/** @var ExchangeOffer $offer */
@@ -230,7 +230,7 @@ class Update {
 				}
 			}
 
-			if ( 'off' !== Plugin()->get_setting( 'offer_weight',
+			if ( 'off' !== Plugin()->get( 'offer_weight',
 					false ) && $weight = $offer->get_meta( 'weight' ) ) {
 				$this->update_meta( $post_id, '_weight', $weight );
 			}
@@ -284,10 +284,14 @@ class Update {
 	public function properties( $attributes ) {
 		global $wpdb;
 
+		/** @var Attribute $attribute */
 		foreach ( $attributes as $attribute ) {
 			if ( 'select' !== $attribute->get_type() ) {
 				continue;
 			}
+
+			print_r( $attribute );
+			die();
 
 			$attribute_id = $attribute->get_id();
 			$attribute_slug = $attribute->get_slug();

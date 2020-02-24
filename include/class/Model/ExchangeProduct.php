@@ -126,7 +126,7 @@ class ExchangeProduct extends ExchangePost {
 		 */
 //        $arAttributes = array();
 //
-//        if ( 'off' === ( $post_attribute_mode = Plugin()->get_setting( 'post_attribute' ) ) ) {
+//        if ( 'off' === ( $post_attribute_mode = Plugin()->get( 'post_attribute' ) ) ) {
 //            return;
 //        }
 //
@@ -210,7 +210,7 @@ class ExchangeProduct extends ExchangePost {
 		$this->categories->walk( $update_object_terms );
 		// @todo
 //        if ( ! $this->attributes->isEmpty() ) {
-//            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get_setting( 'post_attribute' ) ) ) {
+//            if ( 'off' !== ( $post_attribute = Plugin::get_instance()->get( 'post_attribute' ) ) ) {
 //                /**
 //                 * @param Attribute $attribute
 //                 */
@@ -264,6 +264,7 @@ class ExchangeProduct extends ExchangePost {
 
 		$categories = array();
 		$this->categories->walk( function ( $term ) use ( &$categories ) {
+			/** @var $term Category */
 			$categories[ $term->get_raw_external() ] = $term->get_id();
 		} );
 

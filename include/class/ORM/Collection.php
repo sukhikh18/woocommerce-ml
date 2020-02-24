@@ -111,7 +111,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate {
 			}
 		} elseif( ! empty( $item ) ) {
 			if ( $item instanceof ExternalCode ) {
-				$this->items[ $item->get_external() ] = $item;
+				$this->items[ $item->get_raw_external() ] = $item;
 			} elseif ( $item instanceof Identifiable && $item_id = $item->get_id() ) {
 				$this->items[ $item_id ] = $item;
 			} else {

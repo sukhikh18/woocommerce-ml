@@ -20,9 +20,9 @@ class Developer extends Term {
 		/** @var Int $term_id WP_Term->term_id */
 		$term_id = $this->get_id();
 
-		if ( check_mode( $term_id, $Plugin->get_setting( 'developer_mode' ) ) ) {
+		if ( check_mode( $term_id, $Plugin->get( 'developer_mode' ) ) ) {
 			// Do not update name?
-			switch ( $Plugin->get_setting( 'dev_name' ) ) {
+			switch ( $Plugin->get( 'dev_name' ) ) {
 				case false:
 					if ( $term_id ) {
 						$this->unset_name();
@@ -30,7 +30,7 @@ class Developer extends Term {
 					break;
 			}
 
-			if ( ! check_mode( $term_id, $Plugin->get_setting( 'dev_desc' ) ) ) {
+			if ( ! check_mode( $term_id, $Plugin->get( 'dev_desc' ) ) ) {
 				$this->unset_description();
 			}
 

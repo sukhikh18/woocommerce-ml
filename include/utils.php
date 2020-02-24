@@ -129,17 +129,106 @@ if ( ! function_exists( 'esc_cyr' ) ) {
 	}
 }
 
-function check_mode( $id, $setting ) {
-	switch ( $setting ) {
-		case 'off':
-			return false;
+if( ! function_exists( 'check_mode' ) ) {
+	function check_mode( $id, $setting ) {
+		switch ( $setting ) {
+			case 'off':
+				return false;
 
-		case 'create':
-			return ! $id;
+			case 'create':
+				return ! $id;
 
-		case 'update':
-			return (bool) $id;
+			case 'update':
+				return (bool) $id;
+		}
+
+		return true;
 	}
+}
 
-	return true;
+if( ! function_exists( 'make_dir' ) ) {
+	/**
+	 * @param string $dir
+	 *
+	 * @return bool is make try
+	 */
+	function make_dir( $dir = '' ) {
+		if ( ! is_dir( $dir ) ) {
+			@mkdir( $dir, 0777, true ) or Error()->add_message( printf(
+				__( "Sorry but %s not has write permissions", Plugin::DOMAIN ),
+				$dir
+			), "Error" );
+
+			return true;
+		}
+
+		return false;
+	}
+}
+
+if( ! function_exists( 'check_writable' ) ) {
+	function check_writable( $dir, $show_error = false ) {
+		if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+			if( $show_error ) {
+				Error()->add_message( printf(
+					__( "Sorry but %s not found. Direcory is writable?", Plugin::DOMAIN ),
+					$dir
+				) );
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'check_readble' ) ) {
+	/**
+	 * Check is file and is readble.
+	 *
+	 * @param string $path path to file
+	 * @param boolean $show_error
+	 *
+	 * @return boolean
+	 */
+	function check_readble( $path, $show_error = false ) {
+		if ( is_file( $path ) && is_readable( $path ) ) {
+			return true;
+		} elseif ( $show_error ) {
+			Error()->add_message( sprintf( __( 'File %s not found.', Plugin::DOMAIN ), $path ) );
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'include_plugin_file' ) ) {
+	/**
+	 * Safe dynamic expression include.
+	 *
+	 * @param string $path relative path.
+	 */
+	function include_plugin_file( $path ) {
+		if ( 0 !== strpos( $path, PLUGIN_DIR ) ) {
+			$path = PLUGIN_DIR . $path;
+		}
+
+		return check_readble( $path ) ? require_once $path : false;
+	}
+}
+
+if ( ! function_exists( 'write_log' ) ) {
+	function write_log($file, $args, $advanced = array()) {
+		if( empty($args) ) return;
+
+		$arRes = array();
+		foreach ($args as $key => $value) {
+			$arRes[] = "$key=$value";
+		}
+
+		$fw = fopen($file, "a");
+		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . implode(', ', $arRes) . implode(', ', $advanced) . "\n");
+		fclose($fw);
+	}
 }

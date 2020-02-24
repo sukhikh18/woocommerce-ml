@@ -26,9 +26,9 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 		/** @var Int $term_id WP_Term->term_id */
 		$term_id = $this->get_id();
 
-		if ( check_mode( $term_id, $Plugin->get_setting( 'category_mode' ) ) ) {
+		if ( check_mode( $term_id, $Plugin->get( 'category_mode' ) ) ) {
 			// Do not update name?
-			switch ( $Plugin->get_setting( 'cat_name' ) ) {
+			switch ( $Plugin->get( 'cat_name' ) ) {
 				case false:
 					if ( $term_id ) {
 						$this->unset_name();
@@ -36,12 +36,12 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 					break;
 			}
 
-			if ( ! check_mode( $term_id, $Plugin->get_setting( 'cat_desc' ) ) ) {
+			if ( ! check_mode( $term_id, $Plugin->get( 'cat_desc' ) ) ) {
 				$this->unset_description();
 			}
 
 			if ( $this instanceof HasParent ) {
-				if ( ! check_mode( $term_id, $Plugin->get_setting( 'skip_parent' ) ) ) {
+				if ( ! check_mode( $term_id, $Plugin->get( 'skip_parent' ) ) ) {
 					$this->unset_parent_id();
 				}
 			}
@@ -87,7 +87,7 @@ class Category extends ATerm implements Term, ExternalCode, Identifiable, HasPar
 			return false;
 		}
 
-		if ( 'off' === ( $post_relationship = Plugin()->get_setting( 'post_relationship' ) ) ) {
+		if ( 'off' === ( $post_relationship = Plugin()->get( 'post_relationship' ) ) ) {
 			return false;
 		}
 
