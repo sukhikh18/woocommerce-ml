@@ -344,7 +344,7 @@ class Plugin {
 			$message .= '.';
 		}
 
-		error_log( $message );
+		write_log(PLUGIN_DIR . "/logs/errors.log", str_replace("\n", ', ', $message));
 		echo "$message\n";
 
 		if ( static::is_debug_show() ) {
