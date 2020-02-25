@@ -42,6 +42,8 @@ class Parser {
 			return;
 		}
 
+		if( ! is_array( $files ) ) $files = array( $files );
+
 		$Parser = \CommerceMLParser\Parser::getInstance();
 		$Parser->addListener( "CategoryEvent", array( $this, 'parseCategoriesEvent' ) );
 		$Parser->addListener( "WarehouseEvent", array( $this, 'parseWarehousesEvent' ) );
@@ -51,14 +53,14 @@ class Parser {
 		/** 1c no has develop section (values only)
 		 * $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-		if ( is_array( $files ) ) {
-			foreach ( $files as $file ) {
-				if ( ! is_readable( $file ) ) {
-					Utils::error( 'File ' . $file . ' is not readble.' );
-				}
-
-				$Parser->parse( $file );
+		$dir = Parser::getDir( Plugin::get_type() );
+		foreach ( $files as $filename ) {
+			$file = $dir . '/' . $filename;
+			if ( ! is_readable( $file ) ) {
+				Utils::error( 'File ' . $file . ' is not readble.' );
 			}
+
+			$Parser->parse( $file );
 		}
 
 		$this->parseRequisites();
@@ -845,7 +847,6 @@ class Parser {
 			if ( false !== strpos( $ext, '#' ) ) {
 				list( $product_ext, $offer_ext ) = explode( '#', $ext );
 			}
-
 
 			/**
 			 * if is have several offers, merge them to single
