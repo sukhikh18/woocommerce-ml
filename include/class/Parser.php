@@ -781,7 +781,7 @@ class Parser {
 						 * @var ExchangeTerm
 						 */
 						if ( ! is_array( $meta ) ) {
-							array( 'name' => $meta );
+							$meta = array( 'name' => $meta );
 						}
 						$term = new ExchangeTerm( $meta );
 

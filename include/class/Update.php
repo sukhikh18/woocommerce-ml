@@ -204,7 +204,8 @@ class Update {
 			}
 
 			foreach ( $productMeta as $mkey => $mvalue ) {
-				update_post_meta( $post_id, $mkey, trim( $mvalue ) );
+				update_post_meta( $post_id, $mkey,
+					is_array( $mvalue ) ? array_map('trim', $mvalue) : trim( $mvalue ) );
 				$results['update'] ++;
 			}
 		}
