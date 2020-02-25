@@ -121,13 +121,17 @@ class ExchangeProduct extends ExchangePost {
 
 	private function updateObjectTerm( $product_id, $terms, $taxonomy, $append = true ) {
 		$result = array();
+		if( ! is_array( $terms ) ) $terms = array( $terms );
+		$terms = $terms;
 
 		if ( 'product_cat' == $taxonomy ) {
-			$default_term_id = get_option( 'default_' . $taxonomy );
-
 			if ( 'off' === ( $post_relationship = Utils::get( 'post_relationship' ) ) ) {
 				return 0;
-			} elseif ( 'default' == $post_relationship ) {
+			} elseif( ! empty( $terms ) ) {
+				$result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
+			}
+			elseif ( 'default' == $post_relationship ) {
+				$default_term_id = get_option( 'default_product_cat' );
 				$object_terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'ids' ) );
 
 				if ( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
@@ -138,12 +142,12 @@ class ExchangeProduct extends ExchangePost {
 			$is_object_in_term = is_object_in_term( $product_id, $taxonomy, 'uncategorized' );
 			$append            = $is_object_in_term && ! is_wp_error( $is_object_in_term ) ? false : $append;
 		} elseif ( apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) == $taxonomy ) {
-			$result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
+			$result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
 		} elseif ( apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) == $taxonomy ) {
-			$result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
+			$result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
 		} // Attributes
 		else {
-			$result = wp_set_object_terms( $product_id, array_map( 'intval', $terms ), $taxonomy, $append );
+			$result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
 		}
 
 		if ( is_wp_error( $result ) ) {
