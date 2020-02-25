@@ -131,11 +131,10 @@ class ExchangeProduct extends ExchangePost {
 				$result = wp_set_object_terms( $product_id, $terms, $taxonomy, $append );
 			}
 			elseif ( 'default' == $post_relationship ) {
-				$default_term_id = get_option( 'default_product_cat' );
 				$object_terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'ids' ) );
 
 				if ( is_wp_error( $object_terms ) || empty( $object_terms ) ) {
-					$result = wp_set_object_terms( $product_id, (int) $default_term_id, $taxonomy );
+					$result = wp_set_object_terms( $product_id, (int) get_option( 'default_product_cat' ), $taxonomy );
 				}
 			}
 
