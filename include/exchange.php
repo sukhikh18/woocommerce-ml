@@ -39,55 +39,88 @@ function do_exchange() {
 		parse_str( $query, $_GET );
 	}
 
+	Plugin::session_start();
+
 	/**
 	 * CommerceML protocol version
 	 * @var string (float value)
 	 */
-	$version = get_option( 'exchange_version', '' );
-
-	/**
-	 * @url http://v8.1c.ru/edi/edi_stnd/131/
-	 *
-	 * A. Начало сеанса (Авторизация)
-	 * Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
-	 * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
-	 *
-	 * A. Начало сеанса
-	 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
-	 * @return 'success\nCookie\nCookie_value'
-	 */
-	if ( 'checkauth' == $mode ) {
-		foreach ( array( 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $server_key ) {
-			if ( ! isset( $_SERVER[ $server_key ] ) ) {
-				continue;
-			}
-
-			list( , $auth_value ) = explode( ' ', $_SERVER[ $server_key ], 2 );
-			$auth_value = base64_decode( $auth_value );
-			list( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) = explode( ':', $auth_value );
-
-			break;
-		}
-
-		if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
-			Plugin::error( "No authentication credentials" );
-		}
-
-		$user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
-		if ( is_wp_error( $user ) ) {
-			Plugin::wp_error( $user );
-		}
-		Plugin::check_user_permissions( $user );
-
-		$expiration  = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false );
-		$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
-
-		Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
+	// $version = get_option( 'exchange_version', '' );
+	$version = Plugin::get_session_arg( 'ver' );
+	if( ! $version && ! empty( $_GET['version'] ) ) {
+		$version = floatval( str_replace(',', '.', $_GET['version']) );
+		$_SESSION[ 'ver' ] = $version;
 	}
 
-	check_wp_auth();
+	if( 'checkauth' !== $mode ) {
+		global $user_id;
+
+		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
+			return;
+		}
+
+		if ( is_user_logged_in() ) {
+			$_user = wp_get_current_user();
+			if ( ! $user_id = $_user->ID ) {
+				Plugin::error( "Unsigned user id" );
+			}
+		} elseif ( ! empty( $_SESSION[ COOKIENAME ] ) ) {
+			$_user = wp_validate_auth_cookie( $_SESSION[ COOKIENAME ], 'auth' );
+			if ( ! $user_id = $_user ) {
+				Plugin::error( "Invalid cookie" );
+			}
+		}
+
+		Plugin::check_user_permissions( $user_id );
+	}
 
 	switch ( $mode ) {
+		/**
+		 * @url http://v8.1c.ru/edi/edi_stnd/131/
+		 *
+		 * A. Начало сеанса (Авторизация)
+		 * Выгрузка данных начинается с того, что система "1С:Предприятие" отправляет http-запрос следующего вида:
+		 * http://<сайт>/<путь>/1c_exchange.php?type=catalog&mode=checkauth.
+		 *
+		 * A. Начало сеанса
+		 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=checkauth.
+		 * @return 'success\nCookie\nCookie_value'
+		 */
+		case 'checkauth':
+			foreach ( array( 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $server_key ) {
+				if ( ! isset( $_SERVER[ $server_key ] ) ) {
+					continue;
+				}
+
+				list( , $auth_value ) = explode( ' ', $_SERVER[ $server_key ], 2 );
+				$auth_value = base64_decode( $auth_value );
+				list( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) = explode( ':', $auth_value );
+
+				break;
+			}
+
+			if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
+				Plugin::error( "No authentication credentials" );
+			}
+
+			$user = wp_authenticate( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] );
+			if ( is_wp_error( $user ) ) {
+				Plugin::wp_error( $user );
+			}
+			Plugin::check_user_permissions( $user );
+
+			$expiration  = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false );
+			$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
+			$_SESSION[ COOKIENAME ] = $auth_cookie;
+
+			// Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
+			exit( implode("\n", array(
+				'success',
+				session_name(),
+				session_id(),
+				'timestamp=' . time()
+			)) . "\n" );
+			break;
 		/**
 		 * B. Запрос параметров от сайта
 		 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=init
@@ -107,12 +140,6 @@ function do_exchange() {
 			 * @var [type]
 			 */
 			if ( ! $start = get_option( 'exchange_start-date', '' ) ) {
-				/**
-				 * Refresh exchange version
-				 * @var float isset($_GET['version']) ? ver >= 3.0 : ver <= 2.99
-				 */
-				update_option( 'exchange_version', ! empty( $_GET['version'] ) ? $_GET['version'] : '' );
-
 				/**
 				 * Set start wp date sql format
 				 */

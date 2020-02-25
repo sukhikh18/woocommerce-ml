@@ -2,25 +2,6 @@
 
 namespace NikolayS93\Exchange;
 
-if ( ! function_exists( 'write_log' ) ) {
-	function write_log($file, $args, $advanced = array()) {
-		if( empty($args) ) return;
-
-		if( is_array( $args ) ) {
-			$arRes = array();
-			foreach ($args as $key => $value) {
-				$arRes[] = "$key=$value";
-			}
-
-			$args = implode(', ', $arRes);
-		}
-
-		$fw = fopen($file, "a");
-		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . $args . implode(', ', $advanced) . "\r\n");
-		fclose($fw);
-	}
-}
-
 /**
  * Register //example.com/exchange/ query
  */
@@ -53,14 +34,12 @@ function template_redirect() {
 	}
 
 	if ( $value == 'exchange' ) {
-		if ( ! is_session_started() ) {
-			session_start();
-		}
+		Plugin::session_start();
 
-		write_log(PLUGIN_DIR . "/logs/get.log", $_GET);
-		write_log(PLUGIN_DIR . "/logs/post.log", $_POST);
-		write_log(PLUGIN_DIR . "/logs/cookie.log", $_COOKIE);
-		write_log(PLUGIN_DIR . "/logs/session.log", $_SESSION, array(
+		Plugin::write_log(PLUGIN_DIR . "/logs/get.log", $_GET);
+		Plugin::write_log(PLUGIN_DIR . "/logs/post.log", $_POST);
+		Plugin::write_log(PLUGIN_DIR . "/logs/cookie.log", $_COOKIE);
+		Plugin::write_log(PLUGIN_DIR . "/logs/session.log", $_SESSION, array(
 			'session_name=' . session_name(),
 			'session_id=' . session_id(),
 		));

@@ -99,30 +99,6 @@ if ( ! function_exists( 'disable_time_limit' ) ) {
 	}
 }
 
-if ( ! function_exists( 'check_wp_auth' ) ) {
-	function check_wp_auth() {
-		global $user_id;
-
-		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
-			return;
-		}
-
-		if ( is_user_logged_in() ) {
-			$user = wp_get_current_user();
-			if ( ! $user_id = $user->ID ) {
-				Plugin::error( "Not logged in" );
-			}
-		} elseif ( ! empty( $_COOKIE[ COOKIENAME ] ) ) {
-			$user = wp_validate_auth_cookie( $_COOKIE[ COOKIENAME ], 'auth' );
-			if ( ! $user_id = $user ) {
-				Plugin::error( "Invalid cookie" );
-			}
-		}
-
-		Plugin::check_user_permissions( $user_id );
-	}
-}
-
 if ( ! function_exists( 'esc_cyr' ) ) {
 	/**
 	 * Escape cyrilic chars
