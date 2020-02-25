@@ -299,8 +299,35 @@ class Plugin {
 		return $time === false ? microtime( true ) : microtime( true ) - $time;
 	}
 
+	protected static function get_file_array() {
+		$filepath  = (string) save_get_request( 'filename' );
+		$path      = wp_parse_url( $filepath, PHP_URL_PATH );
+		$extension = pathinfo( $path, PATHINFO_EXTENSION );
+		$filename  = pathinfo( $path, PATHINFO_FILENAME );
+
+		return array(
+			'~path' => $filepath,
+			'~name' => $filename,
+			'ext'   => $extension,
+		);
+	}
+
 	static function get_filename() {
-		return save_get_request( 'filename' );
+		$file               = static::get_file_array();
+		$allowed_extensions = array( 'xml', 'zip' );
+
+		$file['path'] = ltrim( $file['~path'], "./\\" );
+		$file['name'] = ltrim( $file['~name'], "./\\" );
+
+		if ( ! $file['name'] ) {
+			Plugin::error( "Filename is empty" );
+		}
+
+		if ( ! in_array( $file['ext'], $allowed_extensions, true ) ) {
+			Error()->add_message( 'Тип файла противоречит политике безопасности.' );
+		}
+
+		return $file['name'] . '.' . $file['ext'];
 	}
 
 	static function get_type() {
@@ -409,7 +436,9 @@ class Plugin {
 	 * @return String|true    error message | all right
 	 */
 	static function unzip( $paths, $dir, $rm = false ) {
-		// if (!$paths) sprintf("No have a paths");
+		if( ! is_array( $paths ) ) {
+			$paths = array( $paths );
+		}
 
 		// распаковывает но возвращает статус 0
 		// $command = sprintf("unzip -qqo -x %s -d %s", implode(' ', array_map('escapeshellarg', $paths)), escapeshellarg($dir));

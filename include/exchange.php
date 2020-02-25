@@ -165,54 +165,31 @@ function do_exchange() {
 		 * D. Отправка файла обмена на сайт
 		 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
 		 *
-		 * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковывает его)
+		 * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковываем его)
 		 * @return success
 		 */
 		case 'file':
 			$filename = Plugin::get_filename();
-			$path_dir = Parser::getDir( Plugin::get_type() );
+			$requested = "php://input";
+			$dir = Parser::getDir( Plugin::get_type() );
+			$file     = $dir . '/' . $filename;
 
-			if ( ! empty( $filename ) ) {
-				$path      = $path_dir . '/' . ltrim( $filename, "./\\" );
-				$temp_path = "$path~";
+			$from     = fopen( $requested, 'r' );
+			$resource = fopen( $file, 'a' );
+			// @todo Do you want to get ВерсияСхемы or ДатаФормирования?
+			stream_copy_to_stream( $from, $resource );
+			fclose( $from );
+			fclose( $resource );
 
-				$input_file = fopen( "php://input", 'r' );
-				$temp_file  = fopen( $temp_path, 'w' );
-				stream_copy_to_stream( $input_file, $temp_file );
-
-				if ( is_file( $path ) ) {
-					$temp_header = file_get_contents( $temp_path, false, null, 0, 32 );
-					if ( strpos( $temp_header, "<?xml " ) !== false ) {
-						unlink( $path );
-						Plugin::addLog( "Тэг xml во временном потоке не обнаружен." );
-					}
-				}
-
-				$temp_file = fopen( $temp_path, 'r' );
-				$file      = fopen( $path, 'a' );
-				stream_copy_to_stream( $temp_file, $file );
-				fclose( $temp_file );
-				unlink( $temp_path );
-
-				if ( 0 == filesize( $path ) ) {
-					Plugin::error( sprintf( "File %s is empty", $path ) );
-				}
-			}
-
-			$zip_paths = glob( "$path_dir/*.zip" );
-			if ( empty( $zip_paths ) ) {
-				Plugin::error( 'Archives list unavalible.' );
-			}
-
-			$r = Plugin::unzip( $zip_paths, $path_dir, false );
+			$r = Plugin::unzip( $file, $dir, false );
 			if ( true !== $r ) {
 				Plugin::error( 'Unzip archive error. ' . print_r( $r, 1 ) );
 			}
 
-			if ( 'catalog' == Plugin::get_type() ) {
+			if ( 'catalog' == $type ) {
 				Plugin::exit( "success\nФайл принят." );
 			}
-			break;
+		break;
 
 		/**
 		 * D. Пошаговая загрузка данных
@@ -222,16 +199,13 @@ function do_exchange() {
 		case 'import':
 			// case 'products':
 		case 'relationships':
-			if ( ! $filename = Plugin::get_filename() ) {
-				Plugin::error( "Filename is empty" );
-			}
+			$filename = Plugin::get_filename();
 
 			/**
 			 * Parse
 			 */
-			$files  = Parser::getFiles( $filename );
 			$Parser = Parser::getInstance();
-			$Parser->__parse( $files );
+			$Parser->__parse( $filename );
 			$Parser->__fillExists();
 
 			$products      = $Parser->getProducts();
@@ -470,10 +444,10 @@ function do_exchange() {
 				$summary = Plugin::get_summary_meta( current( $files ) );
 
 				foreach ( $files as $file ) {
-					@unlink($file);
-					// $pathname = $path_dir . '/' . date( 'Ymd' ) . '_debug/';
-					// @mkdir( $pathname );
-					// @rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
+					// @unlink($file);
+					$pathname = $path_dir . '_debug_' . date( 'Ymd' ) . '/';
+					@mkdir( $pathname );
+					@rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
 				}
 
 				/**

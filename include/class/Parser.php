@@ -194,9 +194,10 @@ class Parser {
 			if ( ! $object->isFile() || ! $object->isReadable() ) {
 				continue;
 			}
-			if ( 'xml' != strtolower( $object->getExtension() ) ) {
-				continue;
-			}
+
+			// if ( 'xml' != strtolower( $object->getExtension() ) ) {
+			// 	continue;
+			// }
 
 			if ( ! empty( $filename ) ) {
 				/**
