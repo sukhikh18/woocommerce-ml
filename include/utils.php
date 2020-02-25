@@ -181,6 +181,20 @@ if ( ! function_exists( 'esc_cyr' ) ) {
 	}
 }
 
+if ( ! function_exists('is_session_started') ) {
+	function is_session_started() {
+		if ( 'cli' !== php_sapi_name() ) {
+			if ( version_compare( phpversion(), '5.4.0', '>=' ) ) {
+				return session_status() === PHP_SESSION_ACTIVE;
+			} else {
+				return session_id() !== '';
+			}
+		}
+
+		return false;
+	}
+}
+
 /**
  * Waste?
  */

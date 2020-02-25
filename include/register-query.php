@@ -53,7 +53,9 @@ function template_redirect() {
 	}
 
 	if ( $value == 'exchange' ) {
-		session_start();
+		if ( ! is_session_started() ) {
+			session_start();
+		}
 
 		write_log(PLUGIN_DIR . "/logs/get.log", $_GET);
 		write_log(PLUGIN_DIR . "/logs/post.log", $_POST);
