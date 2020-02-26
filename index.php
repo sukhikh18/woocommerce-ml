@@ -19,6 +19,7 @@ namespace NikolayS93\Exchange;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );
 }
+
 if ( version_compare( PHP_VERSION, '5.4' ) < 0 ) {
 	throw new \Exception( 'Plugin requires PHP 5.4 or above' );
 }
@@ -27,83 +28,29 @@ if ( defined( __NAMESPACE__ . '\PLUGIN_DIR' ) || defined( __NAMESPACE__ . '\PLUG
 	return;
 }
 
-if ( ! defined( __NAMESPACE__ . '\PLUGIN_DIR' ) ) {
-	define( __NAMESPACE__ . '\PLUGIN_DIR', __DIR__ );
-}
-if ( ! defined( __NAMESPACE__ . '\PLUGIN_FILE' ) ) {
-	define( __NAMESPACE__ . '\PLUGIN_FILE', __FILE__ );
-}
-
 require_once ABSPATH . "wp-admin/includes/plugin.php";
-require_once PLUGIN_DIR . '/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
+// Current plugin directory.
+define( __NAMESPACE__ . '\PLUGIN_DIR', __DIR__ );
+// Current plugin file.
+define( __NAMESPACE__ . '\PLUGIN_FILE', __FILE__ );
+// Developer taxonomy name.
 define( __NAMESPACE__ . '\DEFAULT_DEVELOPER_TAX_SLUG', 'developer' );
+// Warehouse taxonomy name.
 define( __NAMESPACE__ . '\DEFAULT_WAREHOUSE_TAX_SLUG', 'warehouse' );
-
-/**
- * Uniq prefix
- */
+// Uniq prefix.
 define( __NAMESPACE__ . '\DOMAIN', Plugin::get_plugin_data( 'TextDomain' ) );
-
-/**
- * Server can get max size
- * @todo set to filter
- */
-if ( ! defined( __NAMESPACE__ . '\FILE_LIMIT' ) ) {
-	define( __NAMESPACE__ . '\FILE_LIMIT', null );
-}
-
-/**
- * Work in charset
- */
-if ( ! defined( __NAMESPACE__ . '\XML_CHARSET' ) ) {
-	define( __NAMESPACE__ . '\XML_CHARSET', 'UTF-8' );
-}
-
-/**
- * Notice type
- * @todo check this
- */
-if ( ! defined( __NAMESPACE__ . '\SUPPRESS_NOTICES' ) ) {
-	define( __NAMESPACE__ . '\SUPPRESS_NOTICES', false );
-}
-
-/**
- * Simple products only
- * @todo check this
- */
-if ( ! defined( __NAMESPACE__ . '\DISABLE_VARIATIONS' ) ) {
-	define( __NAMESPACE__ . '\DISABLE_VARIATIONS', false );
-}
-
-/**
- * Current timestamp
- */
-if ( ! defined( __NAMESPACE__ . '\TIMESTAMP' ) ) {
-	define( __NAMESPACE__ . '\TIMESTAMP', time() );
-}
-
-/**
- * Auth cookie name
- */
-if ( ! defined( __NAMESPACE__ . '\COOKIENAME' ) ) {
-	define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
-}
-
-/**
- * Woocommerce currency for single price type
- * @todo move to function
- */
-if ( ! defined( __NAMESPACE__ . '\CURRENCY' ) ) {
-	define( __NAMESPACE__ . '\CURRENCY', null );
-}
-
-if ( ! defined( 'NikolayS93\Exchange\Model\EXT_ID' ) ) {
-	define( 'NikolayS93\Exchange\Model\EXT_ID', 'EXT_ID' );
-}
-if ( ! defined( 'EX_EXT_METAFIELD' ) ) {
-	define( 'EX_EXT_METAFIELD', 'EXT_ID' );
-}
+// Server can get max size.
+define( __NAMESPACE__ . '\FILE_LIMIT', null );
+// Work in charset.
+define( __NAMESPACE__ . '\XML_CHARSET', 'UTF-8' );
+// Current time.
+define( __NAMESPACE__ . '\TIMESTAMP', time() );
+// Auth cookie name.
+define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
+// Meta name for save external code.
+define( __NAMESPACE__ . '\Model\EXT_ID', 'EXT_ID' );
 
 register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
 // register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'uninstall' ) );
