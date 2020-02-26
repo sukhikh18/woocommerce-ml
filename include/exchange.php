@@ -477,6 +477,18 @@ function do_exchange() {
 			}
 
 			/**
+			 * Restore products with good offer when status is panding.
+			 */
+			$wpdb->query( "
+				UPDATE $wpdb->posts p SET p.post_status = 'publish'
+					WHERE p.post_type = 'product'
+						AND p.post_status = 'pending'
+						AND p.post_modified > '$start_date'
+						AND 0 < ( SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = '_price' )
+						AND 0 < ( SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = '_stock' )
+			" );
+
+			/**
 			 * Set pending status when post no has price meta
 			 * Most probably no has offer (or code error in last versions)
 			 * @var array $notExistsPrice List of objects
