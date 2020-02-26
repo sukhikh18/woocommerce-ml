@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plugin\n"
-"POT-Creation-Date: 2019-06-11 17:43+0400\n"
-"PO-Revision-Date: 2019-06-11 17:43+0400\n"
-"Last-Translator: \n"
+"POT-Creation-Date: 2020-02-26 12:31+0400\n"
+"PO-Revision-Date: 2020-02-26 12:36+0400\n"
+"Last-Translator: Nikolays93 <nikolays93@ya.ru>\n"
 "Language-Team: NikolayS93 <NikolayS93@yandex.ru>\n"
 "Language: ru_RU\n"
 "MIME-Version: 1.0\n"
@@ -20,141 +20,171 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-1: languages\n"
 "X-Poedit-SearchPathExcluded-2: .git\n"
 
-#: .register.php:117 .register.php:119
-msgid "1C Exchange"
-msgstr "Обмен данными"
+#: admin/template/metabox-deactivate.php:10
+msgid "Деактивация"
+msgstr ""
 
-#: .register.php:145
-msgid "Report"
-msgstr "Отчет"
+#: admin/template/metabox-deactivate.php:16
+msgid "What's do action if product is not exists in full exchange"
+msgstr "Что делать, если товар отсутствует в \"полной\" выгрузке"
 
-#: .register.php:153
-msgid "Posts"
-msgstr "Записи"
+#: admin/template/metabox-deactivate.php:27
+msgid "What's do action if product is not has price after exchange"
+msgstr "Что делать с товарами, которые не имеют предложения после выгрузки"
 
-#: .register.php:161
-msgid "Terms"
-msgstr "Термины"
+#: admin/template/metabox-offer.php:10
+msgid "Предложения"
+msgstr ""
 
-#: .register.php:169
+#: admin/template/metabox-post.php:10
+msgid "Товары"
+msgstr ""
+
+#: admin/template/metabox-status.php:9
 msgid "Status"
 msgstr "Состояние"
 
-#: .register.php:177
-msgid "Upload New Files"
-msgstr "Загрузить новые файлы"
-
-#: .register.php:211
-#, php-format
-msgid "%s ago"
-msgstr "%s назад"
-
-#: .register.php:213
-msgid "Y/m/d"
+#: admin/template/metabox-term.php:10
+msgid "Термины (Категории)"
 msgstr ""
 
-#: .register.php:216
-msgid "Last Modified"
-msgstr ""
+#: admin/template/metabox-term.php:154
+msgid "What's do action if is category not exists"
+msgstr "Что делать, если категории не существует"
 
-#: admin/template/section.php:68
-msgid "Finded files"
-msgstr "Найдено файлов"
+#: admin/template/metabox-term.php:166
+msgid "What's do action if is attribute not exists"
+msgstr "Что делать, если атрибута не существует"
 
-#: admin/template/section.php:74
-msgid "Products count"
-msgstr "Кол-во товаров"
-
-#: admin/template/section.php:78
-msgid "Offers count"
-msgstr "Кол-во предложений"
-
-#: admin/template/section.php:83
-msgid "Orphaned products"
-msgstr "Товаров без предложений"
-
-#: admin/template/section.php:89
-msgid "Negative counts"
-msgstr "Отрицательные остатки"
-
-#: admin/template/section.php:95
-msgid "Null price offers"
-msgstr "Предложения с нулевой стоимостью"
-
-#: admin/template/section.php:100
-msgid "Category count"
-msgstr "Кол-во категорий"
-
-#: admin/template/section.php:104
-msgid "Properties count"
-msgstr "Кол-во свойств"
-
-#: admin/template/section.php:108
-msgid "Property's value count"
-msgstr "Кол-во значений свойств"
-
-#: admin/template/section.php:112
-msgid "Manufacturers count"
-msgstr "Кол-во производителей"
-
-#: admin/template/section.php:116
-msgid "Warehouses count"
-msgstr "Кол-во складов"
-
-#: admin/template/section.php:120
-msgid "Last update"
-msgstr "Последние изменения"
-
-#: admin/template/uploadbox.php:7
+#: admin/template/metabox-upload.php:16
 msgctxt "Uploader: Drop files here - or - Select Files"
 msgid "or"
 msgstr ""
 
-#: admin/template/uploadbox.php:23
+#: admin/template/metabox-upload.php:34
 #, php-format
 msgid "Maximum upload file size: %s."
 msgstr ""
 
-#: include/Parser.php:109
+#: admin/template/section-statistic.php:9
+msgid "Report"
+msgstr "Отчет"
+
+#: include/_lang.php:7
+msgid "WooCommerce ML (1C:Enterprise exchange)"
+msgstr "WooCommerce ML (Обмен данными с 1С:Предприятием)"
+
+#: include/_lang.php:8
+msgid ""
+"Exchange data between Wordpress (with WooCommerce plugin) and 1С:Enterprise "
+"(CommerceML protocol)"
+msgstr ""
+"Обмен данными между Wordpress (с плагином WooCommerce) и 1С:Предприятием "
+"(по протоколу CommerceML)"
+
+#: include/admin-page.php:11 include/admin-page.php:13
+msgid "1C Exchange"
+msgstr "Обмен данными"
+
+#: include/admin-page.php:55
+msgid "Posts"
+msgstr "Записи"
+
+#: include/admin-page.php:63
+msgid "Terms"
+msgstr "Термины"
+
+#: include/class/Parser.php:163
 #, php-format
 msgid ""
 "<strong>%s</strong>: Sorry but <strong>%s</strong> not has write permissions"
 msgstr ""
 
-#: include/Parser.php:110 include/Parser.php:119
+#: include/class/Parser.php:164 include/class/Parser.php:173
 msgid "Fatal error"
 msgstr "Фатальная ошибка"
 
-#: include/Parser.php:118
+#: include/class/Parser.php:172
 #, php-format
 msgid "<strong>%s</strong>: Sorry but <strong>%s</strong> not readble"
 msgstr "<strong>%s</strong>: Извините но <strong>%s</strong> не читается"
 
-#: include/Update.php:318
+#: include/class/Update.php:429
 msgid "Empty attr insert or attr external by "
 msgstr ""
 
-#: include/_lang.php:7
-msgid "New plugin"
-msgstr "Новый плагин"
+#: include/statistic.php:78
+msgid "Finded files"
+msgstr "Найдено файлов"
 
-#: include/_lang.php:8
-msgid "New plugin boilerplate"
+#: include/statistic.php:84
+msgid "Products count"
+msgstr "Кол-во товаров"
+
+#: include/statistic.php:88
+msgid "Offers count"
+msgstr "Кол-во предложений"
+
+#: include/statistic.php:93
+msgid "Orphaned products"
+msgstr "Товаров без предложений"
+
+#: include/statistic.php:99
+msgid "Negative counts"
+msgstr "Отрицательные остатки"
+
+#: include/statistic.php:105
+msgid "Null price offers"
+msgstr "Предложения с нулевой стоимостью"
+
+#: include/statistic.php:110
+msgid "Category count"
+msgstr "Кол-во категорий"
+
+#: include/statistic.php:114
+msgid "Properties count"
+msgstr "Кол-во свойств"
+
+#: include/statistic.php:118
+msgid "Property's value count"
+msgstr "Кол-во значений свойств"
+
+#: include/statistic.php:122
+msgid "Manufacturers count"
+msgstr "Кол-во производителей"
+
+#: include/statistic.php:126
+msgid "Warehouses count"
+msgstr "Кол-во складов"
+
+#: include/statistic.php:130
+msgid "Last update"
+msgstr "Последние обновления"
+
+#: index.php:192
+#, php-format
+msgid "%s ago"
+msgstr "%s назад"
+
+#: index.php:194
+msgid "Y/m/d"
 msgstr ""
 
-#: vendor/NikolayS93/wp-admin-form/src/templates/select.php:8
-msgid "Choose an option"
-msgstr ""
+#: index.php:197
+msgid "Last Modified"
+msgstr "Последние изменения"
 
-#: vendor/NikolayS93/wp-admin-table/WPListTable.php:37
-msgid "Title"
-msgstr "Заголовок"
+#~ msgid "Upload New Files"
+#~ msgstr "Загрузить новые файлы"
 
-#: vendor/NikolayS93/wp-admin-table/WPListTable.php:104
-msgid "Edit"
-msgstr "Изменить"
+#~ msgid "New plugin"
+#~ msgstr "Новый плагин"
 
-#: vendor/NikolayS93/wp-admin-table/WPListTable.php:115
-#: vendor/NikolayS93/wp-admin-table/WPListTable.php:145
-msgid "Delete"
-msgstr "Удалить"
+#~ msgid "Title"
+#~ msgstr "Заголовок"
+
+#~ msgid "Edit"
+#~ msgstr "Изменить"
+
+#~ msgid "Delete"
+#~ msgstr "Удалить"

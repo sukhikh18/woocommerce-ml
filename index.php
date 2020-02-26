@@ -1,10 +1,10 @@
 <?php
 
 /*
- * Plugin Name: 1C Exchange
+ * Plugin Name: WooCommerce ML (1C:Enterprise exchange)
  * Plugin URI: https://github.com/nikolays93
- * Description: Передача данных для актуализации информации на сайте
- * Version: 0.2
+ * Description: Exchange data between Wordpress (with WooCommerce plugin) and 1С:Enterprise (CommerceML protocol)
+ * Version: 0.4
  * Author: NikolayS93
  * Author URI: https://vk.com/nikolays_93
  * Author EMAIL: NikolayS93@ya.ru
