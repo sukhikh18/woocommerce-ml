@@ -154,7 +154,7 @@ $Page->add_metabox( new Metabox(
 				'desc'    => __( 'What\'s do action if is category not exists', DOMAIN ),
 				'options' => array(
 					''        => 'Try set relative category',
-					'default' => 'Put to default category',
+					'default' => 'Force put to default',
 					'off'     => 'Do not update relative',
 					// 'create'  => 'Create new category',
 				),
