@@ -42,7 +42,8 @@ class Parser {
 			return;
 		}
 
-		if( ! is_array( $files ) ) $files = array( $files );
+		// is file basename.
+		if( ! is_array( $files ) ) $files = array( Parser::getDir( Plugin::get_type() ) . '/' . $files );
 
 		$Parser = \CommerceMLParser\Parser::getInstance();
 		$Parser->addListener( "CategoryEvent", array( $this, 'parseCategoriesEvent' ) );
@@ -53,9 +54,7 @@ class Parser {
 		/** 1c no has develop section (values only)
 		 * $Parser->addListener("DeveloperEvent", array($this, 'parseDevelopersEvent')); */
 
-		$dir = Parser::getDir( Plugin::get_type() );
-		foreach ( $files as $filename ) {
-			$file = $dir . '/' . $filename;
+		foreach ( $files as $file ) {
 			if ( ! is_readable( $file ) ) {
 				Utils::error( 'File ' . $file . ' is not readble.' );
 			}
