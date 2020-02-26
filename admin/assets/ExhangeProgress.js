@@ -12,7 +12,6 @@ jQuery(document).ready(function ($) {
      *      files: exists filenames array
      *      productsCount: counts for calculate full path
      *      OffersCount:   counts for calculate full path
-     *      debug_only: bool
      * }
      */
 

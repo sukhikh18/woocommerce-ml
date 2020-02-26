@@ -273,10 +273,6 @@ class Plugin {
 		       defined( 'WP_DEBUG_DISPLAY' ) && true == WP_DEBUG_DISPLAY;
 	}
 
-	static function is_debug() {
-		return ( defined( 'EX_DEBUG_ONLY' ) && true === EX_DEBUG_ONLY );
-	}
-
 	static function getTime( $time = false ) {
 		return $time === false ? microtime( true ) : microtime( true ) - $time;
 	}
@@ -319,9 +315,9 @@ class Plugin {
 	static function get_mode() {
 		$mode = save_get_request( 'mode' );
 
-		if( 'import' === $mode ) {
+		if ( 'import' === $mode ) {
 			$ownMode = Plugin::get( 'mode', 'false', 'status' );
-			if( $ownMode && 'false' !== $ownMode ) {
+			if ( $ownMode && 'false' !== $ownMode ) {
 				$mode = $ownMode;
 			}
 		}
@@ -353,7 +349,7 @@ class Plugin {
 			$message .= '.';
 		}
 
-		static::write_log(PLUGIN_DIR . "/logs/errors.log", str_replace("\n", ', ', $message));
+		static::write_log( PLUGIN_DIR . "/logs/errors.log", str_replace( "\n", ', ', $message ) );
 		echo "$message\n";
 
 		if ( static::is_debug_show() ) {
@@ -418,7 +414,7 @@ class Plugin {
 	 * @return String|true    error message | all right
 	 */
 	static function unzip( $paths, $dir, $rm = false ) {
-		if( ! is_array( $paths ) ) {
+		if ( ! is_array( $paths ) ) {
 			$paths = array( $paths );
 		}
 
@@ -532,10 +528,12 @@ class Plugin {
 			//     $is_moysklad = true;
 			// }
 
-			if ( strpos( $buffer, " СодержитТолькоИзменения=" ) === false && strpos( $buffer, "<СодержитТолькоИзменения>" ) === false ) {
+			if ( strpos( $buffer, " СодержитТолькоИзменения=" ) === false && strpos( $buffer,
+					"<СодержитТолькоИзменения>" ) === false ) {
 				continue;
 			}
-			$is_full = strpos( $buffer, " СодержитТолькоИзменения=\"false\"" ) !== false || strpos( $buffer, "<СодержитТолькоИзменения>false<" ) !== false;
+			$is_full = strpos( $buffer, " СодержитТолькоИзменения=\"false\"" ) !== false || strpos( $buffer,
+					"<СодержитТолькоИзменения>false<" ) !== false;
 			break;
 		}
 
@@ -551,25 +549,27 @@ class Plugin {
 		return $result;
 	}
 
-	static function write_log($file, $args, $advanced = array()) {
-		if( empty($args) ) return;
+	static function write_log( $file, $args, $advanced = array() ) {
+		if ( empty( $args ) ) {
+			return;
+		}
 
-		if( is_array( $args ) ) {
+		if ( is_array( $args ) ) {
 			$arRes = array();
-			foreach ($args as $key => $value) {
+			foreach ( $args as $key => $value ) {
 				$arRes[] = "$key=$value";
 			}
 
-			$args = implode(', ', $arRes);
+			$args = implode( ', ', $arRes );
 		}
 
-		$fw = fopen($file, "a");
-		fwrite($fw, '[' . date('d.M.Y H:i:s') . "] " . $args . implode(', ', $advanced) . "\r\n");
-		fclose($fw);
+		$fw = fopen( $file, "a" );
+		fwrite( $fw, '[' . date( 'd.M.Y H:i:s' ) . "] " . $args . implode( ', ', $advanced ) . "\r\n" );
+		fclose( $fw );
 	}
 
 	public static function exit( $message ) {
-		static::write_log(PLUGIN_DIR . "/logs/results.log", str_replace("\n", ', ', $message));
+		static::write_log( PLUGIN_DIR . "/logs/results.log", str_replace( "\n", ', ', $message ) );
 		exit( $message );
 	}
 

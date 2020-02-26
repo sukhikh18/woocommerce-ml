@@ -32,7 +32,6 @@ function admin_page() {
 		wp_localize_script( 'ExhangeProgress', 'ml2e', array(
 			'ajax_url'   => admin_url( 'admin-ajax.php' ),
 			'nonce'      => wp_create_nonce( DOMAIN ),
-			'debug_only' => Utils::is_debug(),
 			'files'      => $filenames,
 		) );
 

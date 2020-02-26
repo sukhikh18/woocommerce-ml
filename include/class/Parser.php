@@ -43,7 +43,9 @@ class Parser {
 		}
 
 		// is file basename.
-		if( ! is_array( $files ) ) $files = array( Parser::getDir( Plugin::get_type() ) . '/' . $files );
+		if ( ! is_array( $files ) ) {
+			$files = array( Parser::getDir( Plugin::get_type() ) . '/' . $files );
+		}
 
 		$Parser = \CommerceMLParser\Parser::getInstance();
 		$Parser->addListener( "CategoryEvent", array( $this, 'parseCategoriesEvent' ) );
@@ -415,7 +417,8 @@ class Parser {
 				}
 
 				if ( ! $disallow && isset( $this->arProperties[ $propertyId ] ) ) {
-					$this->arProducts[ $id ]->setRelationship( 'properties', $this->arProperties[ $propertyId ], $propertyValue );
+					$this->arProducts[ $id ]->setRelationship( 'properties', $this->arProperties[ $propertyId ],
+						$propertyValue );
 				}
 			}
 		}
@@ -438,7 +441,8 @@ class Parser {
 					// 'taxonomy'    => apply_filters( 'developerTaxonomySlug', DEFAULT_DEVELOPER_TAX_SLUG ),
 				);
 
-				$this->arProducts[ $id ]->setMeta( 'Производитель', array_merge( $developer_args, array( 'external' => $developer_id ) ) );
+				$this->arProducts[ $id ]->setMeta( 'Производитель',
+					array_merge( $developer_args, array( 'external' => $developer_id ) ) );
 				// $developer_term = new ExchangeTerm( $developer_args, $developer_id );
 				// $this->arDevelopers[ $developer_id ] = $developer_term;
 				// $this->arProducts[ $id ]->setRelationship( 'developer', $developer_term );
@@ -562,7 +566,9 @@ class Parser {
 				$warehouse_id = $warehouse->getId();
 				$qty          = $warehouse->getQuantity();
 
-				$warehouse = new ExchangeTerm( array( 'taxonomy' => apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG ) ), $warehouse_id );
+				$warehouse = new ExchangeTerm( array(
+					'taxonomy' => apply_filters( 'warehouseTaxonomySlug', DEFAULT_WAREHOUSE_TAX_SLUG )
+				), $warehouse_id );
 
 				if ( 0 < $qty ) {
 					$this->arOffers[ $id ]->setRelationship( 'warehouse', $warehouse );
@@ -589,13 +595,15 @@ class Parser {
 		 * @var array $ParseRequisitesAsCategories as $termSlug => $termLabel
 		 * @todo think about: maybe need custom taxonomies instead cats
 		 */
-		$ParseRequisitesAsCategories = (array) apply_filters( 'ParseRequisitesAsCategories', array( 'new' => 'Новинка' ) );
+		$ParseRequisitesAsCategories = (array) apply_filters( 'ParseRequisitesAsCategories',
+			array( 'new' => 'Новинка' ) );
 
 		/**
 		 * @var array $ParseRequisitesAsDevelopers ,
 		 * @var array $ParseRequisitesAsWarehouses as $termLabel
 		 */
-		$ParseRequisitesAsDevelopers = (array) apply_filters( 'ParseRequisitesAsDevelopers', array() ); // 'Производитель', 'мшПроизводитель'
+		$ParseRequisitesAsDevelopers = (array) apply_filters( 'ParseRequisitesAsDevelopers',
+			array() ); // 'Производитель', 'мшПроизводитель'
 		$ParseRequisitesAsWarehouses = (array) apply_filters( 'ParseRequisitesAsWarehouses', array( 'Склад' ) );
 
 		/**

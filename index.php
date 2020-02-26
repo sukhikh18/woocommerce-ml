@@ -16,15 +16,6 @@
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\Exchange\Model\ExchangeProduct;
-use NikolayS93\Exchange\Model\ExchangeOffer;
-
-// for debug
-// $_SERVER['PHP_AUTH_USER'] = 'root';
-// $_SERVER['PHP_AUTH_PW'] = 'q1w2';
-
-// define('EX_DEBUG_ONLY', TRUE);
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'You shall not pass' );
 }
@@ -136,14 +127,14 @@ function metas_exchange_posts_import_offset( $offset, $productsCount, $offersCou
 	return $offset;
 }
 
-add_action( 'plugins_loaded', function() {
-	if( 0 === strpos($_SERVER['REQUEST_URI'], '/exchange/') ) {
+add_action( 'plugins_loaded', function () {
+	if ( 0 === strpos( $_SERVER['REQUEST_URI'], '/exchange/' ) ) {
 		ob_start();
 	}
-}, -1 );
+}, - 1 );
 
-add_action( 'init', function() {
-	if( 0 === strpos($_SERVER['REQUEST_URI'], '/exchange/') ) {
+add_action( 'init', function () {
+	if ( 0 === strpos( $_SERVER['REQUEST_URI'], '/exchange/' ) ) {
 		ob_clean();
 	}
 }, 99 );
@@ -200,7 +191,8 @@ add_filter( 'post_date_column_status', function ( $status, $post, $strDate, $mod
 			echo __( 'Last Modified' ) . '<br />';
 
 			/** This filter is documented in wp-admin/includes/class-wp-posts-list-table.php */
-			echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime, $post, 'date', $mode ) . '</abbr><br />';
+			echo '<abbr title="' . $post->post_modified . '">' . apply_filters( 'post_date_column_time', $showTime,
+					$post, 'date', $mode ) . '</abbr><br />';
 		}
 	}
 

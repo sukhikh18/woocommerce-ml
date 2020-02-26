@@ -152,10 +152,10 @@ class Update {
 			}
 		}
 
-		if( sizeof( $updated ) ) {
+		if ( sizeof( $updated ) ) {
 			$wpdb->query( "UPDATE $wpdb->posts
 	            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
-	            WHERE ID in (" . implode( ",", $updated ) . ")" );	
+	            WHERE ID in (" . implode( ",", $updated ) . ")" );
 		}
 
 		return $results;
@@ -205,7 +205,7 @@ class Update {
 
 			foreach ( $productMeta as $mkey => $mvalue ) {
 				update_post_meta( $post_id, $mkey,
-					is_array( $mvalue ) ? array_map('trim', $mvalue) : trim( $mvalue ) );
+					is_array( $mvalue ) ? array_map( 'trim', $mvalue ) : trim( $mvalue ) );
 				$results['update'] ++;
 			}
 		}
@@ -425,7 +425,8 @@ class Update {
 							array( '%s', '%d', '%s', '%s' )
 						);
 					} else {
-						Utils::addLog( new \WP_Error( 'error', __( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) ) );
+						Utils::addLog( new \WP_Error( 'error',
+							__( 'Empty attr insert or attr external by ' . $attribute['attribute_label'] ) ) );
 					}
 
 					$retry = true;
@@ -460,7 +461,8 @@ class Update {
 		);
 	}
 
-	public static function offerPostMetas( Array &$offers ) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
+	public static function offerPostMetas( Array &$offers
+	) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
 	{
 		global $wpdb, $user_id;
 

@@ -13,7 +13,8 @@
     <div class="uploader-inline-content no-upload-message">
         <div class="upload-ui">
             <h2 class="upload-instructions drop-instructions"><?php _e( 'Drop files anywhere to upload' ); ?></h2>
-            <p class="upload-instructions drop-instructions"><?php _ex( 'or', 'Uploader: Drop files here - or - Select Files' ); ?></p>
+            <p class="upload-instructions drop-instructions"><?php _ex( 'or',
+					'Uploader: Drop files here - or - Select Files' ); ?></p>
             <button id="upload-button" type="button"
                     class="browser button button-hero"><?php _e( 'Select Files' ); ?></button>
             <input id="upload-new-files-input" type='file' name='files[]' multiple style="display: none;"/>

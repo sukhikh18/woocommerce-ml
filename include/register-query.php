@@ -36,13 +36,13 @@ function template_redirect() {
 	if ( $value == 'exchange' ) {
 		Plugin::session_start();
 
-		Plugin::write_log(PLUGIN_DIR . "/logs/get.log", $_GET);
-		Plugin::write_log(PLUGIN_DIR . "/logs/post.log", $_POST);
-		Plugin::write_log(PLUGIN_DIR . "/logs/cookie.log", $_COOKIE);
-		Plugin::write_log(PLUGIN_DIR . "/logs/session.log", $_SESSION, array(
+		Plugin::write_log( PLUGIN_DIR . "/logs/get.log", $_GET );
+		Plugin::write_log( PLUGIN_DIR . "/logs/post.log", $_POST );
+		Plugin::write_log( PLUGIN_DIR . "/logs/cookie.log", $_COOKIE );
+		Plugin::write_log( PLUGIN_DIR . "/logs/session.log", $_SESSION, array(
 			'session_name=' . session_name(),
 			'session_id=' . session_id(),
-		));
+		) );
 
 		do_action( '1c4wp_exchange' );
 	}

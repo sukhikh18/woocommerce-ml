@@ -2,8 +2,8 @@
 
 namespace NikolayS93\Exchange;
 
-use NikolayS93\WPAdminPage\Metabox;
 use NikolayS93\WPAdminForm\Form as Form;
+use NikolayS93\WPAdminPage\Metabox;
 
 $Page->add_metabox( new Metabox(
 	'settings-term',

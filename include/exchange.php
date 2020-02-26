@@ -47,12 +47,12 @@ function do_exchange() {
 	 */
 	// $version = get_option( 'exchange_version', '' );
 	$version = Plugin::get_session_arg( 'ver' );
-	if( ! $version && ! empty( $_GET['version'] ) ) {
-		$version = floatval( str_replace(',', '.', $_GET['version']) );
-		$_SESSION[ 'ver' ] = $version;
+	if ( ! $version && ! empty( $_GET['version'] ) ) {
+		$version         = floatval( str_replace( ',', '.', $_GET['version'] ) );
+		$_SESSION['ver'] = $version;
 	}
 
-	if( 'checkauth' !== $mode ) {
+	if ( 'checkauth' !== $mode ) {
 		global $user_id;
 
 		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
@@ -109,17 +109,18 @@ function do_exchange() {
 			}
 			Plugin::check_user_permissions( $user );
 
-			$expiration  = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID, false );
-			$auth_cookie = wp_generate_auth_cookie( $user->ID, $expiration );
+			$expiration             = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
+					false );
+			$auth_cookie            = wp_generate_auth_cookie( $user->ID, $expiration );
 			$_SESSION[ COOKIENAME ] = $auth_cookie;
 
 			// Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
-			exit( implode("\n", array(
-				'success',
-				session_name(),
-				session_id(),
-				'timestamp=' . time()
-			)) . "\n" );
+			exit( implode( "\n", array(
+					'success',
+					session_name(),
+					session_id(),
+					'timestamp=' . time()
+				) ) . "\n" );
 			break;
 		/**
 		 * B. Запрос параметров от сайта
@@ -169,10 +170,10 @@ function do_exchange() {
 		 * @return success
 		 */
 		case 'file':
-			$filename = Plugin::get_filename();
+			$filename  = Plugin::get_filename();
 			$requested = "php://input";
-			$dir = Parser::getDir( Plugin::get_type() );
-			$file     = $dir . '/' . $filename;
+			$dir       = Parser::getDir( Plugin::get_type() );
+			$file      = $dir . '/' . $filename;
 
 			$from     = fopen( $requested, 'r' );
 			$resource = fopen( $file, 'a' );
@@ -189,7 +190,7 @@ function do_exchange() {
 			if ( 'catalog' == $type ) {
 				Plugin::exit( "success\nФайл принят." );
 			}
-		break;
+			break;
 
 		/**
 		 * D. Пошаговая загрузка данных
@@ -271,7 +272,8 @@ function do_exchange() {
 				/** @recursive update if is $productsCount > $offset */
 				if ( $productsCount > $progress ) {
 					// Utils::set_transaction_mode();
-					$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $offersCount, $filename );
+					$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $offersCount,
+						$filename );
 
 					/**
 					 * Slice products who offset better
@@ -315,7 +317,8 @@ function do_exchange() {
 				/** @recursive update if is $offersCount > $offset */
 				if ( $offersCount > $progress ) {
 					// Utils::set_transaction_mode();
-					$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $productsCount, $offersCount, $filename );
+					$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $productsCount, $offersCount,
+						$filename );
 					/**
 					 * Slice offers who offset better
 					 */
@@ -365,7 +368,8 @@ function do_exchange() {
 
 				if ( $productsCount > $progress ) {
 					// Plugin::set_transaction_mode();
-					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount, $filename );
+					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount,
+						$filename );
 					$products       = array_slice( $products, $progress, $offset );
 					$sizeOfProducts = sizeof( $products );
 
@@ -385,7 +389,8 @@ function do_exchange() {
 
 				if ( $offersCount > $progress ) {
 					// Plugin::set_transaction_mode();
-					$offset       = apply_filters( 'exchange_offers_relationships_offset', 500, $offersCount, $filename );
+					$offset       = apply_filters( 'exchange_offers_relationships_offset', 500, $offersCount,
+						$filename );
 					$offers       = array_slice( $offers, $progress, $offset );
 					$sizeOfOffers = sizeof( $offers );
 
