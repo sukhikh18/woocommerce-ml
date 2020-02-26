@@ -268,24 +268,6 @@ class Plugin {
 		return apply_filters( "get_exchange_data_dir", $wp_upload_dir['basedir'] . "/1c-exchange/" );
 	}
 
-	/**
-	 * @todo
-	 */
-	static function addLog( $err, $thing = false ) {
-		if ( is_wp_error( $err ) ) {
-			$err = $err->get_error_code() . ': ' . $err->get_error_message();
-			// var_dump( $err );
-		}
-
-		if ( $thing ) {
-			// var_dump( $thing );
-			// echo "<br><br>";
-		}
-
-		file_put_contents( __DIR__ . '/debug.log', print_r( array( $err, $thing ), 1 ) );
-		// static::error($err);
-	}
-
 	static function is_debug_show() {
 		return ( ! defined( 'WP_DEBUG_DISPLAY' ) && defined( 'WP_DEBUG' ) && true == WP_DEBUG ) ||
 		       defined( 'WP_DEBUG_DISPLAY' ) && true == WP_DEBUG_DISPLAY;

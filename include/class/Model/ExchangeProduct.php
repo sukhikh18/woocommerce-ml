@@ -150,11 +150,11 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( is_wp_error( $result ) ) {
-			Utils::addLog( $result, array(
-				'product_id' => $product_id,
-				'taxonomy'   => $taxonomy,
-				'terms'      => $terms,
-			) );
+			// Utils::addLog( $result, array(
+			// 	'product_id' => $product_id,
+			// 	'taxonomy'   => $taxonomy,
+			// 	'terms'      => $terms,
+			// ) );
 		} else {
 			return sizeof( $result );
 		}

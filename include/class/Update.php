@@ -344,7 +344,7 @@ class Update {
 					}
 				}
 			} else {
-				Utils::addLog( $result, $arTerm );
+				// Utils::addLog( $result, $arTerm );
 			}
 		}
 
