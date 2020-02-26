@@ -445,7 +445,7 @@ function do_exchange() {
 
 				foreach ( $files as $file ) {
 					// @unlink($file);
-					$pathname = $path_dir . '_debug_' . date( 'Ymd' ) . '/';
+					$pathname = $path_dir . '/_debug_' . date( 'Ymd' ) . '/';
 					@mkdir( $pathname );
 					@rename( $file, $pathname . ltrim( basename( $file ), "./\\" ) );
 				}
