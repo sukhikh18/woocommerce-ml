@@ -171,6 +171,17 @@ if ( ! function_exists( 'is_session_started' ) ) {
 	}
 }
 
+function get_client_ip () {
+    if    ( ! empty( $_SERVER[ 'HTTP_CLIENT_IP' ] ) )       return $_SERVER[ 'HTTP_CLIENT_IP' ];
+    elseif( ! empty( $_SERVER[ 'HTTP_X_FORWARDED_FOR' ] ) ) return $_SERVER[ 'HTTP_X_FORWARDED_FOR' ];
+    elseif( ! empty( $_SERVER[ 'HTTP_X_FORWARDED' ] ) )     return $_SERVER[ 'HTTP_X_FORWARDED' ];
+    elseif( ! empty( $_SERVER[ 'HTTP_FORWARDED_FOR' ] ) )   return $_SERVER[ 'HTTP_FORWARDED_FOR' ];
+    elseif( ! empty( $_SERVER[ 'HTTP_FORWARDED' ] ) )       return $_SERVER[ 'HTTP_FORWARDED' ];
+    elseif( ! empty( $_SERVER[ 'REMOTE_ADDR' ] ) )          return $_SERVER[ 'REMOTE_ADDR' ];
+
+    return '';
+}
+
 /**
  * Waste?
  */

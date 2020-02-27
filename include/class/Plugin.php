@@ -349,7 +349,7 @@ class Plugin {
 			$message .= '.';
 		}
 
-		static::write_log( PLUGIN_DIR . "/logs/errors.log", str_replace( "\n", ', ', $message ) );
+		static::write_log( 'errors', str_replace( "\n", ', ', $message ) );
 		echo "$message\n";
 
 		if ( static::is_debug_show() ) {
@@ -549,9 +549,18 @@ class Plugin {
 		return $result;
 	}
 
-	static function write_log( $file, $args, $advanced = array() ) {
+	static function write_log( $filename, $args, $advanced = array() ) {
 		if ( empty( $args ) ) {
 			return;
+		}
+
+		$date_format = 'd.m.y H:i:s';
+		$current_ip = get_client_ip();
+		$directory = self::get_exchange_data_dir() . '/logs/';
+		$file = $directory . $filename . '.log';
+
+		if( ! is_dir( $directory ) ) {
+			mkdir( $directory );
 		}
 
 		if ( is_array( $args ) ) {
@@ -564,12 +573,12 @@ class Plugin {
 		}
 
 		$fw = fopen( $file, "a" );
-		fwrite( $fw, '[' . date( 'd.M.Y H:i:s' ) . "] " . $args . implode( ', ', $advanced ) . "\r\n" );
+		fwrite( $fw, "[{$current_ip}, " . date( $date_format ) . "] " . $args . implode( ', ', $advanced ) . "\r\n" );
 		fclose( $fw );
 	}
 
 	public static function exit( $message ) {
-		static::write_log( PLUGIN_DIR . "/logs/results.log", str_replace( "\n", ', ', $message ) );
+		static::write_log( 'results', str_replace( "\n", ', ', $message ) );
 		exit( $message );
 	}
 

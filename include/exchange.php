@@ -115,7 +115,7 @@ function do_exchange() {
 			$_SESSION[ COOKIENAME ] = $auth_cookie;
 
 			// Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
-			exit( implode( "\n", array(
+			Plugin::exit( implode( "\n", array(
 					'success',
 					session_name(),
 					session_id(),
