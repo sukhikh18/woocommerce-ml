@@ -52,10 +52,6 @@ define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
 // Meta name for save external code.
 define( __NAMESPACE__ . '\Model\EXT_ID', 'EXT_ID' );
 
-register_activation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'activate' ) );
-// register_uninstall_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'uninstall' ) );
-// register_deactivation_hook( __FILE__, array( __NAMESPACE__ . '\Plugin', 'deactivate' ) );
-
 require_once PLUGIN_DIR . '/include/utils.php';
 require_once PLUGIN_DIR . '/include/statistic.php';
 
@@ -223,3 +219,11 @@ function transaction_shutdown_function() {
 
 	Utils::wpdb_stop( $is_commit );
 }
+
+register_activation_hook( PLUGIN_FILE, function() {
+	require_once PLUGIN_DIR . '/.install.php';
+} );
+
+register_uninstall_hook( __FILE__, function () {
+	delete_option( Plugin::get_option_name() );
+} );
