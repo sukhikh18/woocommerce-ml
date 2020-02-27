@@ -82,9 +82,6 @@ add_action( 'init', function () {
 	}
 }, 99 );
 
-add_action( '1c4wp_exchange', __NAMESPACE__ . '\do_exchange', 10 );
-
-
 /**
  * Register custom taxonomies
  */
@@ -193,6 +190,9 @@ function strict_error_handler( $errno, $errstr, $errfile, $errline, $errcontext 
 	Utils::error( $message, "PHP $type" );
 }
 
+/**
+ * @param \Exception $exception
+ */
 function strict_exception_handler( $exception ) {
 	$message = sprintf( "%s in %s on line %d", $exception->getMessage(), $exception->getFile(), $exception->getLine() );
 	Utils::error( $message, "Exception" );

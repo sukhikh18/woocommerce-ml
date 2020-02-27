@@ -3,7 +3,6 @@
 namespace NikolayS93\Exchange;
 
 use NikolayS93\WPAdminPage as Admin;
-use NikolayS93\WPAdminPage\Section;
 
 function admin_page() {
 
@@ -27,12 +26,12 @@ function admin_page() {
 		}, $files );
 
 		wp_enqueue_style( 'exchange-page', Plugin::get_plugin_url( '/admin/assets/exchange-page.css' ) );
-		wp_enqueue_script( 'Timer', Plugin::get_plugin_url( '/admin/assets/Timer.js' ) );
-		wp_enqueue_script( 'ExhangeProgress', Plugin::get_plugin_url( '/admin/assets/ExhangeProgress.js' ) );
-		wp_localize_script( 'ExhangeProgress', 'ml2e', array(
-			'ajax_url'   => admin_url( 'admin-ajax.php' ),
-			'nonce'      => wp_create_nonce( DOMAIN ),
-			'files'      => $filenames,
+		wp_enqueue_script( 'Timer', Plugin::get_plugin_url( '/admin/assets/timer.js' ) );
+		wp_enqueue_script( 'exchange-progress', Plugin::get_plugin_url( '/admin/assets/exchange-progress.js' ) );
+		wp_localize_script( 'exchange-progress', 'ml2e', array(
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( DOMAIN ),
+			'files'    => $filenames,
 		) );
 
 		wp_enqueue_script( 'exchange-page-js', Plugin::get_plugin_url( '/admin/assets/admin.js' ) );
@@ -49,16 +48,16 @@ function admin_page() {
 
 	include Plugin::get_admin_template( 'section-statistic' );
 
-	$Page->add_section( new Section(
-		'postsinfo',
+	$Page->add_section( new Admin\Section(
+		'posts_info',
 		__( 'Posts', DOMAIN ),
 		function () {
 			echo get_post_statistic();
 		}
 	) );
 
-	$Page->add_section( new Section(
-		'termsinfo',
+	$Page->add_section( new Admin\Section(
+		'terms_info',
 		__( 'Terms', DOMAIN ),
 		function () {
 			echo get_term_statistic();

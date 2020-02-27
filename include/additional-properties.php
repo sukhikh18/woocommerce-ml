@@ -13,7 +13,7 @@ function woo_add_custom_general_fields() {
 	$XML = array(
 		'type'          => 'text',
 		'id'            => 'EXT_ID',
-		'label'         => 'Внешний код',
+		'label'         => __( 'External code', DOMAIN ), // 'Внешний код'
 		'wrapper_class' => 'show_if_simple',
 		// 'desc_tip'    => 'true',
 		// 'description' => 'Разрешить продажи от этого количества',
@@ -27,7 +27,7 @@ function woo_add_custom_general_fields() {
 	woocommerce_wp_text_input( array(
 		'type'          => 'text',
 		'id'            => '_unit',
-		'label'         => 'Единица измерения',
+		'label'         => __( 'Unit', DOMAIN ), // 'Единица измерения'
 		'wrapper_class' => 'show_if_simple',
 	) );
 }
