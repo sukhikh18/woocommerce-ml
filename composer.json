@@ -2,7 +2,6 @@
   "require": {
     "nikolays93/wp-admin-form": "dev-master",
     "nikolays93/wp-admin-page": "dev-master",
-    "nikolays93/wp-admin-table": "dev-master",
     "karakum/commerceml": "dev-master"
   },
   "autoload": {
@@ -11,10 +10,6 @@
     }
   },
   "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/nikolays93/wp-admin-form"
-    },
     {
       "type": "git",
       "url": "https://github.com/nikolays93/wp-admin-page"
