@@ -9,6 +9,8 @@ use NikolayS93\Exchange\Model\ProductModel;
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
 use NikolayS93\Exchange\Model\ExchangePost;
+use NikolayS93\Exchange\Model\ExchangeProduct;
+use NikolayS93\Exchange\Model\ExchangeOffer;
 
 class Update {
 
@@ -156,6 +158,14 @@ class Update {
 			$wpdb->query( "UPDATE $wpdb->posts
 	            SET `post_modified` = '$date_now', `post_modified_gmt` = '$gmdate_now'
 	            WHERE ID in (" . implode( ",", $updated ) . ")" );
+		}
+
+		/**
+		 * Has created products without ID in array
+		 */
+		if ( 0 < $results['create'] ) {
+			/** Update products array */
+			ExchangeProduct::fill_exists_from_DB( $products, $orphaned_only = true );
 		}
 
 		return $results;
@@ -455,10 +465,16 @@ class Update {
 	 * @todo write it for mltile offers
 	 */
 	public static function offers( Array &$offers ) {
-		return array(
+		$result = array(
 			'create' => 0,
 			'update' => 0,
 		);
+		// has new products without id
+		if ( 0 < $result['create'] ) {
+			ExchangeOffer::fill_exists_from_DB( $offers, $orphaned_only = true );
+		}
+
+		return $result;
 	}
 
 	public static function offerPostMetas( Array &$offers

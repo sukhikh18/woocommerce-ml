@@ -200,6 +200,14 @@ function do_exchange() {
 		case 'import':
 			// case 'products':
 		case 'relationships':
+			if( ! isset( $_SESSION['step'] ) ) {
+				$_SESSION['step'] = 0;
+			}
+
+			if( ! isset( $_SESSION['progress'] ) ) {
+				$_SESSION['progress'] = 0;
+			}
+
 			$filename = Plugin::get_filename();
 
 			/**
@@ -209,17 +217,17 @@ function do_exchange() {
 			$Parser->__parse( $filename );
 			$Parser->__fill_exists();
 
+			/** @var Collection $products */
 			$products      = $Parser->get_products();
+			/** @var Collection $offers */
 			$offers        = $Parser->get_offers();
-			$productsCount = sizeof( $products );
-			$offersCount   = sizeof( $offers );
-
-			/** @var $progress int Offset from */
-			$progress = intval( Plugin::get( 'progress', 0, 'status' ) );
-
+			/** @var Collection $categories */
 			$categories = $Parser->get_categories();
+			/** @var Collection $properties */
 			$properties = $Parser->get_properties();
+			/** @var Collection $developers */
 			$developers = $Parser->get_developers();
+			/** @var Collection $warehouses */
 			$warehouses = $Parser->get_warehouses();
 
 			$attributeValues = array();
@@ -230,177 +238,130 @@ function do_exchange() {
 				}
 			}
 
-			// if( 'import' == $mode ) {
+			/** @var Int $productsCount */
+			$productsCount = count( $products );
+			/** @var Int $offersCount */
+			$offersCount   = count( $offers );
+			/** @var Int $termsCount */
+			$termsCount = count( $categories ) + count( $properties ) + count( $developers ) + count( $warehouses ) +
+				count( $attributeValues );
 
-			/**
-			 * Write terms and meta
-			 */
-			// if( !empty($categories) ||
-			//     !empty($properties) ||
-			//     !empty($developers) ||
-			//     !empty($warehouses) ||
-			//     !empty($attributeValues) ) {
-			// Utils::set_transaction_mode();
+			if( $_SESSION['step'] < 1 && $termsCount ) {
+				Update::terms( $categories );
+				Update::termmeta( $categories );
 
-			Update::terms( $categories );
-			Update::termmeta( $categories );
+				Update::terms( $developers );
+				Update::termmeta( $developers );
 
-			Update::terms( $developers );
-			Update::termmeta( $developers );
+				Update::terms( $warehouses );
+				Update::termmeta( $warehouses );
 
-			Update::terms( $warehouses );
-			Update::termmeta( $warehouses );
+				Update::properties( $properties );
 
-			Update::properties( $properties );
+				Update::terms( $attributeValues );
+				Update::termmeta( $attributeValues );
 
-			/**
-			 * Create attribute terms
-			 */
-			Update::terms( $attributeValues );
-			Update::termmeta( $attributeValues );
-			// }
-			// }
+				$_SESSION['step'] = 1;
+				Plugin::exit( "progress\nОбновление терминов завершено." );
+			}
+			// Recursive update products.
+			if( $_SESSION['step'] < 2 && $productsCount > $_SESSION['progress'] ) {
+				$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $filename );
 
-			/**
-			 * If terms updated mode == products
-			 */
-			if ( 'import' == $mode || 'products' == $mode ) {
-				/**
-				 * Write products and offers, with meta
-				 */
+				// Slice products who offset better.
+				$products = array_slice( $products, $_SESSION['progress'], $offset );
 
-				/** @recursive update if is $productsCount > $offset */
-				if ( $productsCount > $progress ) {
-					// Utils::set_transaction_mode();
-					$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $offersCount,
+				// Count products will be updated.
+				$_SESSION['progress'] += sizeof( $products );
+
+				// Do not retry! Go next.
+				if ( $_SESSION['progress'] >= $productsCount ) {
+					$_SESSION['progress'] = 0;
+					$_SESSION['step']++;
+				}
+
+				$results = Update::posts( $products );
+				$resultsMeta = Update::postmeta( $products, $results );
+
+				$status   = array();
+				$status[] = "{$_SESSION['progress']} из $productsCount записей товаров обработано.";
+				$status[] = $results['create'] . " товаров добавлено.";
+				$status[] = $results['update'] . " товаров обновлено.";
+				$status[] = $resultsMeta['update'] . " произвольных записей товаров обновлено.";
+
+				Plugin::exit( "progress\n" . implode( ' -- ', $status ) );
+			}
+			// Recursive update offers.
+			if ( $_SESSION['step'] < 2 && $offersCount > $_SESSION['progress'] ) {
+				$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $offersCount, $filename );
+
+				// Slice offers who offset better.
+				$offers = array_slice( $offers, $_SESSION['progress'], $offset );
+
+				// Count offers who will be updated.
+				$_SESSION['progress'] += sizeof( $offers );
+
+				// Do not retry! Go next.
+				if ( $_SESSION['progress'] >= $offersCount ) {
+					$_SESSION['progress'] = 0;
+					$_SESSION['step']++;
+				}
+
+				Update::offers( $offers );
+				Update::offerPostMetas( $offers );
+
+				if ( 0 === strpos( $filename, 'price' ) ) {
+					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount цен обработано.");
+				} elseif ( 0 === strpos( $filename, 'rest' ) ) {
+					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount запасов обработано.");
+				} else {
+					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount предложений обработано.");
+				}
+
+				Plugin::exit( "progress\nОбновление предложений завершено." );
+			}
+
+			if( $_SESSION['step'] >= 2 ) {
+				$msg = 'Обновление зависимостей завершено.';
+
+				if ( $productsCount > $_SESSION['progress'] ) {
+					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount,
 						$filename );
+					$products       = array_slice( $products, $_SESSION['progress'], $offset );
+					$sizeOfProducts = sizeof( $products );
+					//
+					$_SESSION['progress'] += $sizeOfProducts;
 
-					/**
-					 * Slice products who offset better
-					 */
-					$products = array_slice( $products, $progress, $offset );
+					// @todo fix counter.
+					$relationships = Update::relationships( $products );
 
-					/** Count products will be updated */
-					$progress += sizeof( $products );
+					$summary = " (всего {$_SESSION['progress']} из $productsCount обработано)";
+					$msg = "$relationships зависимостей $sizeOfProducts товаров обновлено$summary.";
 
-					/** Require retry */
-					if ( $progress < $productsCount ) {
-						Plugin::set_mode( '', array( 'progress' => (int) $progress ) );
-					} /** Go away */
-					else {
-						Plugin::set_mode( 'relationships' );
+					// Do not retry! Go next.
+					if ( $_SESSION['progress'] >= $productsCount ) {
+						$_SESSION['progress'] = 0;
+						Plugin::exit("success\n$msg");
 					}
-
-					$resProducts = Update::posts( $products );
-
-					/**
-					 * has created products without ID in array
-					 */
-					if ( 0 < $resProducts['create'] ) {
-						/** Update products array */
-						ExchangeProduct::fill_exists_from_DB( $products, $orphaned_only = true );
-					}
-
-					$resProductsMeta = Update::postmeta( $products, $resProducts );
-
-					$status   = array();
-					$status[] = "$progress из $productsCount записей товаров обработано.";
-					$status[] = $resProducts['create'] . " товаров добавлено.";
-					$status[] = $resProducts['update'] . " товаров обновлено.";
-					$status[] = $resProductsMeta['update'] . " произвольных записей товаров обновлено.";
-
-					$msg = implode( ' -- ', $status );
 
 					Plugin::exit( "progress\n$msg" );
 				}
 
-				/** @recursive update if is $offersCount > $offset */
-				if ( $offersCount > $progress ) {
-					// Utils::set_transaction_mode();
-					$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $productsCount, $offersCount,
-						$filename );
-					/**
-					 * Slice offers who offset better
-					 */
-					$offers = array_slice( $offers, $progress, $offset );
-
-					/** Count offers who will be updated */
-					$progress += sizeof( $offers );
-
-					$answer = 'progress';
-
-					/** Require retry */
-					if ( $progress < $offersCount ) {
-						Plugin::set_mode( '', array( 'progress' => (int) $progress ) );
-					} /** Go away */
-					else {
-						if ( 0 === strpos( $filename, 'offers' ) ) {
-							Plugin::set_mode( 'relationships' );
-						} else {
-							$answer = 'success';
-							Plugin::set_mode( '' );
-						}
-					}
-
-					$resOffers = Update::offers( $offers );
-
-					// has new products without id
-					if ( 0 < $resOffers['create'] ) {
-						ExchangeOffer::fill_exists_from_DB( $offers, $orphaned_only = true );
-					}
-
-					Update::offerPostMetas( $offers );
-
-					if ( 0 === strpos( $filename, 'price' ) ) {
-						$msg = "$progress из $offersCount цен обработано.";
-					} elseif ( 0 === strpos( $filename, 'rest' ) ) {
-						$msg = "$progress из $offersCount запасов обработано.";
-					} else {
-						$msg = "$progress из $offersCount предложений обработано.";
-					}
-
-					Plugin::exit( "$answer\n$msg" );
-				}
-			}
-
-			if ( 'relationships' == $mode ) {
-				$msg = 'Обновление зависимостей завершено.';
-
-				if ( $productsCount > $progress ) {
-					// Plugin::set_transaction_mode();
-					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount,
-						$filename );
-					$products       = array_slice( $products, $progress, $offset );
-					$sizeOfProducts = sizeof( $products );
-
-					/**
-					 * @todo write realy update counter
-					 */
-					$relationships = Update::relationships( $products );
-					$progress      += $sizeOfProducts;
-					$msg           = "$relationships зависимостей $sizeOfProducts товаров обновлено (всего $progress из $productsCount обработано).";
-
-					/** Require retry */
-					if ( $progress < $productsCount ) {
-						Plugin::set_mode( 'relationships', array( 'progress' => (int) $progress ) );
-						Plugin::exit( "progress\n$msg" );
-					}
-				}
-
-				if ( $offersCount > $progress ) {
-					// Plugin::set_transaction_mode();
+				if ( $offersCount > $_SESSION['progress'] ) {
 					$offset       = apply_filters( 'exchange_offers_relationships_offset', 500, $offersCount,
 						$filename );
-					$offers       = array_slice( $offers, $progress, $offset );
+					$offers       = array_slice( $offers, $_SESSION['progress'], $offset );
 					$sizeOfOffers = sizeof( $offers );
+					//
+					$_SESSION['progress'] += $sizeOfOffers;
 
 					$relationships = Update::relationships( $offers );
-					$progress      += $sizeOfOffers;
-					$msg           = "$relationships зависимостей $sizeOfOffers предложений обновлено (всего $progress из $offersCount обработано).";
+
+					$summary = "(всего {$_SESSION['progress']} из $offersCount обработано)";
+					$msg     = "$relationships зависимостей $sizeOfOffers предложений обновлено$summary.";
 
 					/** Require retry */
-					if ( $progress < $offersCount ) {
-						Plugin::set_mode( 'relationships', array( 'progress' => (int) $progress ) );
+					if ( $_SESSION['progress'] < $offersCount ) {
 						Plugin::exit( "progress\n$msg" );
 					}
 

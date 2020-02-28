@@ -62,7 +62,7 @@ require_once PLUGIN_DIR . '/include/register-query.php';
 require_once PLUGIN_DIR . '/include/additional-properties.php';
 
 add_filter( 'exchange_posts_import_offset', __NAMESPACE__ . '\metas_exchange_posts_import_offset', 10, 4 );
-function metas_exchange_posts_import_offset( $offset, $productsCount, $offersCount, $filename ) {
+function metas_exchange_posts_import_offset( $offset, $offersCount, $filename ) {
 	if ( 0 === strpos( $filename, 'rest' ) || 0 === strpos( $filename, 'price' ) ) {
 		$offset = 1000;
 	}
