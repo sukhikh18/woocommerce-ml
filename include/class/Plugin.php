@@ -499,7 +499,7 @@ class Plugin {
 		if ( is_array( $args ) ) {
 			$arRes = array();
 			foreach ( $args as $key => $value ) {
-				$arRes[] = "$key=$value";
+				$arRes[] = "$key=" . print_r($value, 1);
 			}
 
 			$args = implode( ', ', $arRes );
