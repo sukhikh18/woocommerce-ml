@@ -24,7 +24,7 @@ function the_statistic_table( $files = array() ) {
 		'nullPrice'        => 0,
 	) );
 
-	$Parser = Parser::getInstance();
+	$Parser = Parser::get_instance();
 
 	$products = $Parser->get_products();
 	$offers   = $Parser->get_offers();
@@ -32,7 +32,7 @@ function the_statistic_table( $files = array() ) {
 		if ( ! $product->get_id() ) {
 			$newProductsCount ++;
 		}
-		if ( ! isset( $offers[ $product->getRawExternal() ] ) ) {
+		if ( ! isset( $offers[ $product->get_raw_external() ] ) ) {
 			$orphanedProducts ++;
 		} // print_r($product);
 	}
@@ -59,7 +59,7 @@ function the_statistic_table( $files = array() ) {
 	$properties = $Parser->get_properties();
 	foreach ( $properties as $property ) {
 		/** Collection to simple array */
-		foreach ( $property->getTerms() as $term ) {
+		foreach ( $property->get_terms() as $term ) {
 			$attributeValues[] = $term;
 		}
 	}
@@ -135,7 +135,7 @@ function the_statistic_table( $files = array() ) {
 }
 
 function get_post_statistic() {
-	$Parser = Parser::getInstance();
+	$Parser = Parser::get_instance();
 
 	$products = $Parser->get_products();
 	$offers   = $Parser->get_offers();
@@ -156,7 +156,7 @@ function get_post_statistic() {
 }
 
 function get_term_statistic() {
-	$Parser = Parser::getInstance();
+	$Parser = Parser::get_instance();
 
 	$categories = $Parser->get_categories();
 	$properties = $Parser->get_properties();
@@ -164,7 +164,7 @@ function get_term_statistic() {
 	$warehouses = $Parser->get_warehouses();
 
 	foreach ( $properties as $property ) {
-		$property->sliceTerms();
+		$property->slice_terms();
 	}
 
 	$html = "\n" . '<pre style="max-width: 1400px;margin: 0 auto;display: flex;flex-wrap: wrap;">';
@@ -196,7 +196,7 @@ function ajax_update_statistic() {
 
 	$filename = ! empty( $_GET['filename'] ) ? sanitize_text_field( $_GET['filename'] ) : null;
 	$files    = Parser::get_files( $filename );
-	$Parser   = Parser::getInstance();
+	$Parser   = Parser::get_instance();
 	$Parser->__parse( $files );
 	$Parser->__fill_exists();
 
