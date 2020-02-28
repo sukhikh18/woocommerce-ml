@@ -190,7 +190,7 @@ class Register {
         global $wpdb;
 
         $wpdb->delete(
-            $wpdb->prefix . ATTRIBUTE_TAXONOMYMETA_TABLE,
+            $wpdb->prefix . self::ATTRIBUTE_TAXONOMYMETA_TABLE,
             array( 'tax_id' => $id ),
             array( '%d' )
         );
