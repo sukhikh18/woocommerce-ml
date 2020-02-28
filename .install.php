@@ -43,6 +43,35 @@ if ( $wpdb->get_var( "SHOW TABLES LIKE '{$taxonomy_meta_table}'" ) !== $taxonomy
 }
 
 /**
+ * Create exhcange buffer table.
+ */
+$buffer_table = $wpdb->get_blog_prefix() . 'exchange';
+
+// Check, if table already exists.
+if ( $wpdb->get_var( "SHOW TABLES LIKE '{$buffer_table}'" ) !== $buffer_table ) {
+	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' ); // dbDelta utils required!
+	// Create table.
+	dbDelta( "CREATE TABLE {$buffer_table} (
+        `product_id` bigint(20) unsigned NULL DEFAULT '0',
+        `code` varchar(100) NOT NULL PRIMARY KEY,
+        `name` varchar(200) NULL,
+        `slug` varchar(200) NULL,
+        `qty` float NULL,
+        `price` float unsigned NULL,
+        `tax` float unsigned NULL,
+        `description` longtext NULL,
+        `meta` longtext NULL,
+        `cats` longtext NULL,
+        `warehouses` longtext NULL,
+        `attributes` longtext NULL,
+        `delete` tinyint(1) NULL
+    ) {$charset_collate};" );
+	// ..with indexes.
+    $wpdb->query( "ALTER TABLE {$buffer_table}
+		ADD UNIQUE INDEX `code` (`code`);" );
+}
+
+/**
  * Create empty folder for upload exhange data
  */
 $exchange_dir = Plugin::get_exchange_data_dir();
