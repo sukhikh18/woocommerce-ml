@@ -5,7 +5,7 @@ namespace NikolayS93\Exchange\ORM;
 trait ExchangeItemMeta {
 	private $meta = array();
 
-	function getMeta( $key = '' ) {
+	function get_meta( $key = '' ) {
 		if ( $key ) {
 
 			if ( isset( $this->meta[ '_' . $key ] ) ) {
@@ -22,7 +22,7 @@ trait ExchangeItemMeta {
 		return (array) $this->meta;
 	}
 
-	function setMeta( $key, $value = '' ) {
+	function set_meta( $key, $value = '' ) {
 		if ( ! $key ) {
 			return;
 		}
@@ -36,7 +36,7 @@ trait ExchangeItemMeta {
 		}
 	}
 
-	function delMeta( $key ) {
+	function del_meta( $key ) {
 		unset( $this->meta[ $key ] );
 	}
 }

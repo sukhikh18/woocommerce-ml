@@ -16,7 +16,7 @@ function admin_page() {
 	) );
 
 	$Page->set_assets( function () {
-		$files = Parser::getFiles();
+		$files = Parser::get_files();
 		usort( $files, function ( $a, $b ) {
 			return filemtime( $a ) > filemtime( $b );
 		} );

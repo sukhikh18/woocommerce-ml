@@ -35,12 +35,12 @@ class ExchangeOffer extends ExchangePost {
 	//      */
 
 	//     $this->post = new WP_Post( (object) $args );
-	//     $this->setMeta($meta);
+	//     $this->set_meta($meta);
 	// }
 
 	function get_quantity() {
-		$stock = $this->getMeta( 'stock' );
-		// $quantity = $this->getMeta('quantity');
+		$stock = $this->get_meta( 'stock' );
+		// $quantity = $this->get_meta('quantity');
 
 		// if( is_numeric($stock) && is_numeric($quantity) ) {
 		//     $qty = max($stock, $quantity);
@@ -60,9 +60,9 @@ class ExchangeOffer extends ExchangePost {
 	}
 
 	function set_quantity( $qty ) {
-		$this->setMeta( '_manage_stock', 'yes' );
-		$this->setMeta( '_stock_status', $qty ? 'instock' : 'outofstock' );
-		$this->setMeta( '_stock', $qty );
+		$this->set_meta( '_manage_stock', 'yes' );
+		$this->set_meta( '_stock_status', $qty ? 'instock' : 'outofstock' );
+		$this->set_meta( '_stock', $qty );
 	}
 
 	function set_stock( $qty ) {
@@ -70,12 +70,12 @@ class ExchangeOffer extends ExchangePost {
 	}
 
 	function get_price() {
-		return $this->getMeta( 'price' );
+		return $this->get_meta( 'price' );
 	}
 
 	function set_price( $price ) {
-		$this->setMeta( '_price', $price );
-		$this->setMeta( '_regular_price', $price );
+		$this->set_meta( '_price', $price );
+		$this->set_meta( '_regular_price', $price );
 	}
 
 	function merge( $args, $product ) {

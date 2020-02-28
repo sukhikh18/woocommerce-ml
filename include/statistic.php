@@ -26,8 +26,8 @@ function the_statistic_table( $files = array() ) {
 
 	$Parser = Parser::getInstance();
 
-	$products = $Parser->getProducts();
-	$offers   = $Parser->getOffers();
+	$products = $Parser->get_products();
+	$offers   = $Parser->get_offers();
 	foreach ( $products as $product ) {
 		if ( ! $product->get_id() ) {
 			$newProductsCount ++;
@@ -49,14 +49,14 @@ function the_statistic_table( $files = array() ) {
 		}
 	}
 
-	$categories = $Parser->getCategories();
+	$categories = $Parser->get_categories();
 	foreach ( $categories as $cat ) {
 		if ( ! $cat->get_id() ) {
 			$newCatsCount ++;
 		}
 	}
 
-	$properties = $Parser->getProperties();
+	$properties = $Parser->get_properties();
 	foreach ( $properties as $property ) {
 		/** Collection to simple array */
 		foreach ( $property->getTerms() as $term ) {
@@ -64,14 +64,14 @@ function the_statistic_table( $files = array() ) {
 		}
 	}
 
-	$developers = $Parser->getDevelopers();
+	$developers = $Parser->get_developers();
 	foreach ( $developers as $dev ) {
 		if ( ! $dev->get_id() ) {
 			$newDevsCount ++;
 		}
 	}
 
-	$warehouses = $Parser->getWarehouses();
+	$warehouses = $Parser->get_warehouses();
 	?>
     <table class="table widefat striped">
         <tr>
@@ -137,8 +137,8 @@ function the_statistic_table( $files = array() ) {
 function get_post_statistic() {
 	$Parser = Parser::getInstance();
 
-	$products = $Parser->getProducts();
-	$offers   = $Parser->getOffers();
+	$products = $Parser->get_products();
+	$offers   = $Parser->get_offers();
 
 	$html = "\n" . '<pre style="max-width: 1400px;margin: 0 auto;display: flex;flex-wrap: wrap;">';
 	$html .= "\n" . '   <div style="flex: 1 1 50%;overflow: auto;">';
@@ -158,10 +158,10 @@ function get_post_statistic() {
 function get_term_statistic() {
 	$Parser = Parser::getInstance();
 
-	$categories = $Parser->getCategories();
-	$properties = $Parser->getProperties();
-	$developers = $Parser->getDevelopers();
-	$warehouses = $Parser->getWarehouses();
+	$categories = $Parser->get_categories();
+	$properties = $Parser->get_properties();
+	$developers = $Parser->get_developers();
+	$warehouses = $Parser->get_warehouses();
 
 	foreach ( $properties as $property ) {
 		$property->sliceTerms();
@@ -195,10 +195,10 @@ function ajax_update_statistic() {
 	}
 
 	$filename = ! empty( $_GET['filename'] ) ? sanitize_text_field( $_GET['filename'] ) : null;
-	$files    = Parser::getFiles( $filename );
+	$files    = Parser::get_files( $filename );
 	$Parser   = Parser::getInstance();
 	$Parser->__parse( $files );
-	$Parser->__fillExists();
+	$Parser->__fill_exists();
 
 	$result = array(
 		'table' => '',

@@ -50,8 +50,8 @@ class ExchangePost {
 		 */
 
 		$this->post = new \WP_Post( (object) $args );
-		$this->setMeta( $meta );
-		$this->setExternal( $ext ? $ext : $args['post_mime_type'] );
+		$this->set_meta( $meta );
+		$this->set_external( $ext ? $ext : $args['post_mime_type'] );
 
 		$this->warehouse = new Collection();
 	}
@@ -98,7 +98,7 @@ class ExchangePost {
 		return false;
 	}
 
-	function setRelationship( $context = '', $relation, $value = false ) {
+	function set_relationship( $context = '', $relation, $value = false ) {
 		switch ( $context ) {
 			case 'product_cat':
 			case 'warehouse':
@@ -113,8 +113,8 @@ class ExchangePost {
 			case 'properties':
 				if ( $relation instanceof ExchangeAttribute ) {
 					$relationValue = clone $relation;
-					$relationValue->setValue( $value );
-					$relationValue->resetTerms();
+					$relationValue->set_value( $value );
+					$relationValue->reset_terms();
 
 					$this->$context->add( $relationValue );
 				} else {
@@ -127,7 +127,7 @@ class ExchangePost {
 		}
 	}
 
-	function isNew() {
+	function is_new() {
 		$start_date = get_option( 'exchange_start-date', '' );
 
 		if ( $start_date && strtotime( $start_date ) <= strtotime( $this->post->post_date ) ) {
@@ -155,21 +155,21 @@ class ExchangePost {
 	function prepare() {
 	}
 
-	function getObject() {
+	function get_object() {
 		return $this->post;
 	}
 
-	public function getExternal() {
+	public function get_external() {
 		return $this->post->post_mime_type;
 	}
 
-	public function getRawExternal() {
-		@list( , $ext ) = explode( '/', $this->getExternal() );
+	public function get_raw_external() {
+		@list( , $ext ) = explode( '/', $this->get_external() );
 
 		return $ext;
 	}
 
-	public function setExternal( $ext ) {
+	public function set_external( $ext ) {
 		if ( 0 !== strpos( $ext, 'XML' ) ) {
 			$ext = 'XML/' . $ext;
 		}
@@ -186,7 +186,7 @@ class ExchangePost {
 			array( 'post_status' => 'draft' ),
 			// where
 			array(
-				'post_mime_type' => $this->getExternal(),
+				'post_mime_type' => $this->get_external(),
 				'post_status'    => 'publish',
 			)
 		);
@@ -200,7 +200,7 @@ class ExchangePost {
 	 *
 	 * @return [type]                 [description]
 	 */
-	static public function fillExistsFromDB( &$products, $orphaned_only = false ) {
+	static public function fill_exists_from_DB( &$products, $orphaned_only = false ) {
 		// $startExchange = get_option( 'exchange_start-date', '' );
 		// $intStartExchange = strtotime($startExchange);
 
@@ -221,7 +221,7 @@ class ExchangePost {
 		 */
 		foreach ( $products as $rawExternalCode => $product ) {
 			if ( ! $orphaned_only || ( $orphaned_only && ! $product->get_id() ) ) {
-				list( $product_ext ) = explode( '#', $product->getExternal() );
+				list( $product_ext ) = explode( '#', $product->get_external() );
 				$post_mime_types[] = "`post_mime_type` = '" . esc_sql( $product_ext ) . "'";
 			}
 		}
@@ -261,7 +261,7 @@ class ExchangePost {
 		}
 	}
 
-	function getAllRelativeExternals( $orphaned_only = false ) {
+	function get_all_relative_externals( $orphaned_only = false ) {
 		$arExternals = array();
 
 		if ( ! empty( $this->product_cat ) ) {
@@ -269,7 +269,7 @@ class ExchangePost {
 				if ( $orphaned_only && $product_cat->get_id() ) {
 					continue;
 				}
-				$arExternals[] = $product_cat->getExternal();
+				$arExternals[] = $product_cat->get_external();
 			}
 		}
 
@@ -278,7 +278,7 @@ class ExchangePost {
 				if ( $orphaned_only && $warehouse->get_id() ) {
 					continue;
 				}
-				$arExternals[] = $warehouse->getExternal();
+				$arExternals[] = $warehouse->get_external();
 			}
 		}
 
@@ -287,18 +287,18 @@ class ExchangePost {
 				if ( $orphaned_only && $developer->get_id() ) {
 					continue;
 				}
-				$arExternals[] = $developer->getExternal();
+				$arExternals[] = $developer->get_external();
 			}
 		}
 
 		if ( ! empty( $this->properties ) ) {
 			foreach ( $this->properties as $property ) {
-				foreach ( $property->getTerms() as $ex_term ) {
+				foreach ( $property->get_terms() as $ex_term ) {
 					if ( $orphaned_only && $ex_term->get_id() ) {
 						continue;
 					}
 
-					$arExternals[] = $ex_term->getExternal();
+					$arExternals[] = $ex_term->get_external();
 				}
 			}
 		}
@@ -306,11 +306,11 @@ class ExchangePost {
 		return $arExternals;
 	}
 
-	function fillExistsRelativesFromDB() {
+	function fill_exists_relatives_from_DB() {
 		/** @global wpdb $wpdb built in wordpress db object */
 		global $wpdb;
 
-		$arExternals = $this->getAllRelativeExternals( true );
+		$arExternals = $this->get_all_relative_externals( true );
 
 		if ( ! empty( $arExternals ) ) {
 			foreach ( $arExternals as $strExternal ) {
@@ -322,7 +322,7 @@ class ExchangePost {
 			$exsists_terms_query = "
                 SELECT term_id, meta_key, meta_value
                 FROM $wpdb->termmeta
-                WHERE meta_key = '" . ExchangeTerm::getExtID() . "'
+                WHERE meta_key = '" . ExchangeTerm::get_ext_ID() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $arSqlExternals ) ) . ")";
 
 			$ardbTerms = $wpdb->get_results( $exsists_terms_query );
@@ -332,7 +332,7 @@ class ExchangePost {
 
 			if ( ! empty( $this->product_cat ) ) {
 				foreach ( $this->product_cat as &$product_cat ) {
-					$ext = $product_cat->getExternal();
+					$ext = $product_cat->get_external();
 					if ( ! empty( $arTerms[ $ext ] ) ) {
 						$product_cat->set_id( $arTerms[ $ext ] );
 					}
@@ -341,7 +341,7 @@ class ExchangePost {
 
 			if ( ! empty( $this->warehouse ) ) {
 				foreach ( $this->warehouse as &$warehouse ) {
-					$ext = $warehouse->getExternal();
+					$ext = $warehouse->get_external();
 					if ( ! empty( $arTerms[ $ext ] ) ) {
 						$warehouse->set_id( $arTerms[ $ext ] );
 					}
@@ -350,7 +350,7 @@ class ExchangePost {
 
 			if ( ! empty( $this->developer ) ) {
 				foreach ( $this->developer as &$developer ) {
-					$ext = $developer->getExternal();
+					$ext = $developer->get_external();
 					if ( ! empty( $arTerms[ $ext ] ) ) {
 						$developer->set_id( $arTerms[ $ext ] );
 					}
@@ -360,8 +360,8 @@ class ExchangePost {
 			if ( ! empty( $this->properties ) ) {
 				foreach ( $this->properties as &$property ) {
 					if ( $property instanceof ExchangeAttribute ) {
-						foreach ( $property->getTerms() as &$term ) {
-							$ext = $term->getExternal();
+						foreach ( $property->get_terms() as &$term ) {
+							$ext = $term->get_external();
 							if ( ! empty( $arTerms[ $ext ] ) ) {
 								$term->set_id( $arTerms[ $ext ] );
 							}
@@ -374,8 +374,8 @@ class ExchangePost {
 		}
 	}
 
-	function getProductMeta() {
-		$meta = $this->getMeta();
+	function get_product_meta() {
+		$meta = $this->get_meta();
 
 		unset( $meta['_price'], $meta['_regular_price'], $meta['_manage_stock'], $meta['_stock_status'], $meta['_stock'] );
 

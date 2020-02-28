@@ -11,8 +11,8 @@ use NikolayS93\Exchange\ORM\Collection;
 class ExchangeAttribute implements Interfaces\ExternalCode {
 	const EXT_ID = '_ext_ID';
 
-	static function getExtID() {
-		return apply_filters( 'ExchangeTerm::getExtID', self::EXT_ID );
+	static function get_ext_ID() {
+		return apply_filters( 'ExchangeTerm::get_ext_ID', self::EXT_ID );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 	private $ext;
 
 	/**
-	 * @var array List of ExchangeTerm
+	 * @var Collection of ExchangeTerm
 	 */
 	private $terms;
 
@@ -58,19 +58,22 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 		if ( $ext ) {
 			$this->ext = $ext;
 		}
-		$this->resetTerms();
+		$this->reset_terms();
 	}
 
-	function resetTerms() {
+	function reset_terms() {
 		$this->terms = new Collection();
 	}
 
-	public function getTerms() {
+	public function get_terms() {
 		return $this->terms;
 	}
 
-	function addTerm( $term ) {
-		$term->setTaxonomy( $this->attribute_name );
+	/**
+	 * @param ExchangeTerm $term
+	 */
+	function add_term( $term ) {
+		$term->set_taxonomy( $this->attribute_name );
 
 		$this->terms->add( $term );
 	}
@@ -91,35 +94,35 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 		return $attribute;
 	}
 
-	public function getSlug() {
+	public function get_slug() {
 		return $this->attribute_name;
 	}
 
-	public function getName() {
+	public function get_name() {
 		return $this->attribute_label;
 	}
 
-	public function getValue() {
+	public function get_value() {
 		return $this->attribute_value;
 	}
 
-	public function setValue( $value ) {
+	public function set_value( $value ) {
 		if ( $value instanceof ExchangeTerm ) {
 			$this->attribute_value = $value;
 		} else {
 			/** @var Collection */
-			$terms = $this->getTerms();
+			$terms = $this->get_terms();
 
 			$this->attribute_value = ( $relationTerm = $terms->offsetGet( $value ) ) ? $relationTerm : (string) $value;
 		}
 
-		$this->resetTerms();
+		$this->reset_terms();
 	}
 
 	/**
 	 * For demonstration
 	 */
-	public function sliceTerms() {
+	public function slice_terms() {
 		$sliced = new Collection( $this->terms->first() );
 		$sliced->add( $this->terms->last() );
 
@@ -134,19 +137,19 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 		$this->id = (int) $id;
 	}
 
-	function getExternal() {
+	function get_external() {
 		return $this->ext;
 	}
 
-	function setExternal( $ext ) {
+	function set_external( $ext ) {
 		$this->ext = (String) $ext;
 	}
 
-	function getType() {
+	function get_type() {
 		return $this->attribute_type;
 	}
 
-	static public function fillExistsFromDB( &$obAttributeTaxonomies ) // , $taxonomy = ''
+	static public function fill_exists_from_DB( &$obAttributeTaxonomies ) // , $taxonomy = ''
 	{
 		/** @global wpdb wordpress database object */
 		global $wpdb;
@@ -164,7 +167,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			 * Get taxonomy (attribute)
 			 */
 			if ( ! $obAttributeTaxonomy->get_id() ) {
-				$taxExternals[] = "`meta_value` = '" . $obAttributeTaxonomy->getExternal() . "'";
+				$taxExternals[] = "`meta_value` = '" . $obAttributeTaxonomy->get_external() . "'";
 			}
 
 			/**
@@ -172,8 +175,8 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			 * @var ExchangeTerm $term
 			 * @todo maybe add parents?
 			 */
-			foreach ( $obAttributeTaxonomy->getTerms() as $obExchangeTerm ) {
-				$termExternals[] = "`meta_value` = '" . $obExchangeTerm->getExternal() . "'";
+			foreach ( $obAttributeTaxonomy->get_terms() as $obExchangeTerm ) {
+				$termExternals[] = "`meta_value` = '" . $obExchangeTerm->get_external() . "'";
 			}
 		}
 
@@ -184,7 +187,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			$exists_query = "
                 SELECT meta_id, tax_id, meta_key, meta_value
                 FROM {$wpdb->prefix}woocommerce_attribute_taxonomymeta
-                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                WHERE `meta_key` = '" . ExchangeTerm::get_ext_ID() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $taxExternals ) ) . ")";
 
 			$results = $wpdb->get_results( $exists_query );
@@ -205,7 +208,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                WHERE `meta_key` = '" . ExchangeTerm::get_ext_ID() . "'
                     AND (" . implode( " \t\n OR ", array_unique( $termExternals ) ) . ")";
 
 			$results = $wpdb->get_results( $exists_query );
@@ -223,16 +226,16 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 			/**
 			 * Get taxonomy (attribute)
 			 */
-			if ( ! empty( $taxExists[ $obAttributeTaxonomy->getExternal() ] ) ) {
-				$obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->getExternal() ]->tax_id );
+			if ( ! empty( $taxExists[ $obAttributeTaxonomy->get_external() ] ) ) {
+				$obAttributeTaxonomy->set_id( $taxExists[ $obAttributeTaxonomy->get_external() ]->tax_id );
 			}
 
 			/**
 			 * Get terms (attribute values)
 			 * @var ExchangeTerm $term
 			 */
-			foreach ( $obAttributeTaxonomy->getTerms() as &$obExchangeTerm ) {
-				$ext = $obExchangeTerm->getExternal();
+			foreach ( $obAttributeTaxonomy->get_terms() as &$obExchangeTerm ) {
+				$ext = $obExchangeTerm->get_external();
 
 				if ( ! empty( $exists[ $ext ] ) ) {
 					$obExchangeTerm->set_id( $exists[ $ext ]->term_id );

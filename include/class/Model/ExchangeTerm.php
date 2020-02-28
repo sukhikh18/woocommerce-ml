@@ -58,8 +58,8 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 		return false;
 	}
 
-	static function getExtID() {
-		return apply_filters( 'ExchangeTerm::getExtID', EXT_ID );
+	static function get_ext_ID() {
+		return apply_filters( 'ExchangeTerm::get_ext_ID', EXT_ID );
 	}
 
 	/**
@@ -95,34 +95,34 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 			$this->set_slug( $this->term['name'] );
 		}
 
-		$this->setMeta( $meta );
+		$this->set_meta( $meta );
 
 		if ( ! $ext_id && ! empty( $term['external'] ) ) {
 			$ext_id = $term['external'];
 		}
 
 		if ( ! $ext_id ) {
-			if ( ! $ext_id = $this->getExternal() ) {
+			if ( ! $ext_id = $this->get_external() ) {
 				$ext_id = \NikolayS93\Exchange\esc_cyr( $this->term['slug'] );
 			}
 		}
-		$this->setExternal( $ext_id ); // early: $tax .'/'. $ext_id
+		$this->set_external( $ext_id ); // early: $tax .'/'. $ext_id
 	}
 
-	function getTerm() {
+	function get_term() {
 		return new \WP_Term( (object) array_merge( $this->term, $this->term_taxonomy ) );
 	}
 
-	function getExternal() {
-		return $this->getMeta( static::getExtID() );
+	function get_external() {
+		return $this->get_meta( static::get_ext_ID() );
 	}
 
-	function getParentExternal() {
+	function get_parent_external() {
 		return $this->parent_ext;
 	}
 
-	function setExternal( $ext ) {
-		$this->setMeta( static::getExtID(), $ext );
+	function set_external( $ext ) {
+		$this->set_meta( static::get_ext_ID(), $ext );
 	}
 
 	public function get_id() {
@@ -176,14 +176,14 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 		return isset( $this->term_taxonomy['count'] ) ? (string) $this->term_taxonomy['count'] : '';
 	}
 
-	public function getTaxonomy() {
+	public function get_taxonomy() {
 		return $this->term_taxonomy['taxonomy'];
 	}
 
-	public function setTaxonomy( $tax ) {
-		// $ext = $this->getExternal();
+	public function set_taxonomy( $tax ) {
+		// $ext = $this->get_external();
 		// if( false !== ($pos = strpos($ext, '/')) ) {
-		//     $this->setExternal($tax . substr($ext, $pos));
+		//     $this->set_external($tax . substr($ext, $pos));
 		// }
 
 		$this->term_taxonomy['taxonomy'] = $tax;
@@ -193,7 +193,7 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 		$this->term['name'] = preg_replace( "/(^[0-9\/|\_.*]+\. )/", "", (string) $this->term['name'] );
 	}
 
-	static public function fillExistsFromDB( &$terms ) // , $taxonomy = ''
+	static public function fill_exists_from_DB( &$terms ) // , $taxonomy = ''
 	{
 		/** @global wpdb wordpress database object */
 		global $wpdb;
@@ -211,9 +211,10 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 		$_exists = array();
 		$exists  = array();
 
+		/** @var ExchangeTerm $term */
 		foreach ( $terms as $rawExternalCode => $term ) {
-			$_external   = $term->getExternal();
-			$_p_external = $term->getParentExternal();
+			$_external   = $term->get_external();
+			$_p_external = $term->get_parent_external();
 
 			if ( ! $term->get_id() ) {
 				$externals[] = "`meta_value` = '" . $_external . "'";
@@ -234,7 +235,7 @@ class ExchangeTerm implements Interfaces\ExternalCode {
                 SELECT tm.meta_id, tm.term_id, tm.meta_value, t.name, t.slug
                 FROM $wpdb->termmeta tm
                 INNER JOIN $wpdb->terms t ON tm.term_id = t.term_id
-                WHERE `meta_key` = '" . ExchangeTerm::getExtID() . "'
+                WHERE `meta_key` = '" . ExchangeTerm::get_ext_ID() . "'
                     AND (" . implode( " \t\n OR ", $externals ) . ")";
 
 			$_exists = $wpdb->get_results( $exists_query );
@@ -249,15 +250,16 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 		unset( $_exists );
 
 		$needRepeat = false;
+		/** @var ExchangeTerm $term */
 		foreach ( $terms as &$term ) {
-			$ext = $term->getExternal();
+			$ext = $term->get_external();
 
 			if ( ! empty( $exists[ $ext ] ) ) {
 				$term->set_id( $exists[ $ext ]->term_id );
 				$term->meta_id = $exists[ $ext ]->meta_id;
 			}
 
-			$parent_ext = $term->getParentExternal();
+			$parent_ext = $term->get_parent_external();
 			if ( $parent_ext ) {
 				if ( ! empty( $exists[ $parent_ext ] ) ) {
 					$term->set_parent_id( $exists[ $parent_ext ]->term_id );

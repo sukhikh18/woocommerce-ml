@@ -36,13 +36,13 @@ class ExchangeProduct extends ExchangePost {
 		$this->developer   = new Collection();
 	}
 
-	function getAttribute( $attrExternal = '' ) {
+	function get_attribute( $attrExternal = '' ) {
 		$attribute = $this->properties->offsetGet( $attrExternal );
 
 		return $attribute;
 	}
 
-	function updateAttributes() {
+	function update_attributes() {
 		/**
 		 * Set attribute properties
 		 */
@@ -56,11 +56,11 @@ class ExchangeProduct extends ExchangePost {
 		 * @var $property Relationship
 		 */
 		foreach ( $this->properties as $property ) {
-			$label          = $property->getName();
-			$external_code  = $property->getExternal();
-			$property_value = $property->getValue();
-			$taxonomy       = $property->getSlug();
-			$type           = $property->getType();
+			$label          = $property->get_name();
+			$external_code  = $property->get_external();
+			$property_value = $property->get_value();
+			$taxonomy       = $property->get_slug();
+			$type           = $property->get_type();
 			$is_visible     = 0;
 
 			/**
@@ -86,17 +86,17 @@ class ExchangeProduct extends ExchangePost {
 					 * Get all properties from parser
 					 */
 					if ( empty( $allProperties ) ) {
-						$Parser        = Parser::getInstance();
-						$allProperties = $Parser->getProperties();
+						$Parser        = Parser::get_instance();
+						$allProperties = $Parser->get_properties();
 					}
 
 					foreach ( $allProperties as $_property ) {
-						if ( $_property->getSlug() == $taxonomy && ( $_terms = $_property->getTerms() ) ) {
+						if ( $_property->get_slug() == $taxonomy && ( $_terms = $_property->get_terms() ) ) {
 							if ( isset( $_terms[ $external_code ] ) ) {
 								$_term = $_terms[ $external_code ];
 
 								if ( $_term instanceof ExchangeTerm ) {
-									$label = $_property->getName();
+									$label = $_property->get_name();
 									$property->setValue( $_term->get_name() );
 									break;
 								}
@@ -107,7 +107,7 @@ class ExchangeProduct extends ExchangePost {
 
 				$arAttributes[ $taxonomy ] = array(
 					'name'         => $label ? $label : $taxonomy,
-					'value'        => $property->getValue(),
+					'value'        => $property->get_value(),
 					'position'     => 10,
 					'is_visible'   => $is_visible,
 					'is_variation' => 0,
@@ -119,7 +119,7 @@ class ExchangeProduct extends ExchangePost {
 		update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
 	}
 
-	private function updateObjectTerm( $product_id, $terms, $taxonomy, $append = true ) {
+	private function update_object_term( $product_id, $terms, $taxonomy, $append = true ) {
 		$result = array();
 		if ( ! is_array( $terms ) ) {
 			$terms = array( $terms );
@@ -131,7 +131,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( empty( $terms ) ) {
-			return;
+			return null;
 		}
 
 		if ( 'product_cat' == $taxonomy ) {
@@ -180,7 +180,7 @@ class ExchangeProduct extends ExchangePost {
 	/**
 	 * @note Do not merge data for KISS
 	 */
-	function updateObjectTerms() {
+	function update_object_terms() {
 		$count      = 0;
 		$product_id = $this->get_id();
 		if ( empty( $product_id ) ) {
@@ -198,11 +198,11 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( ! empty( $terms ) ) {
-			$count += $this->updateObjectTerm( $product_id, $terms, 'product_cat' ); // , 0 < $count
+			$count += $this->update_object_term( $product_id, $terms, 'product_cat' ); // , 0 < $count
 		}
 
 		// @todo think about it
-		// if( !$this->isNew() ) return $count;
+		// if( !$this->is_new() ) return $count;
 
 		/**
 		 * Update product's war-s
@@ -215,7 +215,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( ! empty( $terms ) ) {
-			$count += $this->updateObjectTerm( $product_id, $terms,
+			$count += $this->update_object_term( $product_id, $terms,
 				apply_filters( 'warehouseTaxonomySlug', \NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG ) );
 		}
 
@@ -230,7 +230,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		if ( ! empty( $terms ) ) {
-			$count += $this->updateObjectTerm( $product_id, $terms,
+			$count += $this->update_object_term( $product_id, $terms,
 				apply_filters( 'developerTaxonomySlug', \NikolayS93\Exchange\DEFAULT_DEVELOPER_TAX_SLUG ) );
 		}
 
@@ -242,12 +242,12 @@ class ExchangeProduct extends ExchangePost {
 
 			/** @var ExchangeAttribute attribute */
 			foreach ( $this->properties as $attribute ) {
-				if ( $taxonomy = $attribute->getSlug() ) {
+				if ( $taxonomy = $attribute->get_slug() ) {
 					if ( ! isset( $terms_id[ $taxonomy ] ) ) {
 						$terms_id[ $taxonomy ] = array();
 					}
 
-					$value = $attribute->getValue();
+					$value = $attribute->get_value();
 					if ( is_object( $value ) && method_exists( $value, 'get_id' ) && ( $term_id = $value->get_id() ) ) {
 						$terms_id[ $taxonomy ][] = $term_id;
 					}
@@ -255,7 +255,7 @@ class ExchangeProduct extends ExchangePost {
 			}
 
 			foreach ( $terms_id as $tax => $terms ) {
-				$count += $this->updateObjectTerm( $product_id, $terms, $tax );
+				$count += $this->update_object_term( $product_id, $terms, $tax );
 			}
 		}
 

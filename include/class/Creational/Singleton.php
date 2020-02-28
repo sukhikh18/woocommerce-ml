@@ -10,7 +10,7 @@ trait Singleton {
 	 * Creates the original or retrieves the stored singleton instance
 	 * @return static
 	 */
-	public static function getInstance() {
+	public static function get_instance() {
 		if ( ! static::$instance ) {
 			static::$instance = ( new \ReflectionClass( get_called_class() ) )
 				->newInstanceWithoutConstructor();

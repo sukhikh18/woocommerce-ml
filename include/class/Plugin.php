@@ -206,7 +206,7 @@ class Plugin {
 		       defined( 'WP_DEBUG_DISPLAY' ) && true == WP_DEBUG_DISPLAY;
 	}
 
-	static function getTime( $time = false ) {
+	static function get_time( $time = false ) {
 		return $time === false ? microtime( true ) : microtime( true ) - $time;
 	}
 

@@ -85,7 +85,7 @@ class Update {
 			 */
 			foreach ( $products as &$product ) {
 				$product->prepare();
-				$p = $product->getObject();
+				$p = $product->get_object();
 
 				if ( ! $product->get_id() ) {
 					/** if is update only */
@@ -172,7 +172,7 @@ class Update {
 		$skip_post_meta_tax   = Plugin::get( 'skip_post_meta_tax', false );
 
 		foreach ( $products as $product ) {
-			if ( $skip_post_meta_value && ! $product->isNew() ) {
+			if ( $skip_post_meta_value && ! $product->is_new() ) {
 				continue;
 			}
 
@@ -189,9 +189,9 @@ class Update {
 			 * Get list of all meta by product
 			 * ["_sku"], ["_unit"], ["_tax"], ["{$custom}"],
 			 */
-			$productMeta = $product->getProductMeta();
+			$productMeta = $product->get_product_meta();
 
-			if ( ! $product->isNew() ) {
+			if ( ! $product->is_new() ) {
 				if ( $skip_post_meta_sku ) {
 					unset( $productMeta["_sku"] );
 				}
@@ -232,7 +232,7 @@ class Update {
 			/**
 			 * @var WP_Term
 			 */
-			$obTerm = $term->getTerm();
+			$obTerm = $term->get_term();
 
 			/**
 			 * @var array
@@ -339,7 +339,7 @@ class Update {
 				$updated[ $result['term_id'] ] = $term;
 
 				foreach ( $terms as &$oTerm ) {
-					if ( $term->getExternal() === $oTerm->getParentExternal() ) {
+					if ( $term->get_external() === $oTerm->get_parent_external() ) {
 						$oTerm->set_parent_id( $term->get_id() );
 					}
 				}
@@ -368,7 +368,7 @@ class Update {
 				continue;
 			}
 
-			array_push( $insert, $term->meta_id, $term->get_id(), $term->getExtID(), $term->getExternal() );
+			array_push( $insert, $term->meta_id, $term->get_id(), $term->get_ext_ID(), $term->get_external() );
 			array_push( $phs, $sql_placeholder );
 		}
 
@@ -391,16 +391,16 @@ class Update {
 		}
 
 		foreach ( $properties as $propSlug => $property ) {
-			$slug = $property->getSlug();
+			$slug = $property->get_slug();
 
 			/**
 			 * Register Property's Taxonomies;
 			 */
-			if ( 'select' == $property->getType() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
+			if ( 'select' == $property->get_type() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
 				/**
 				 * @var Array
 				 */
-				$external  = $property->getExternal();
+				$external  = $property->get_external();
 				$attribute = $property->fetch();
 
 				$result = wc_create_attribute( $attribute );
@@ -419,7 +419,7 @@ class Update {
 							array(
 								'meta_id'    => null,
 								'tax_id'     => $attribute_id,
-								'meta_key'   => ExchangeTerm::getExtID(),
+								'meta_key'   => ExchangeTerm::get_ext_ID(),
 								'meta_value' => $external,
 							),
 							array( '%s', '%d', '%s', '%s' )
@@ -472,7 +472,7 @@ class Update {
 
 		/** @var offer ExchangeOffer */
 		foreach ( $offers as $offer ) {
-			// if ($offer->isNew())
+			// if ($offer->is_new())
 			if ( ! $post_id = $offer->get_id() ) {
 				continue;
 			}
@@ -480,12 +480,12 @@ class Update {
 			$properties = array();
 
 			// its on post only?
-			if ( $unit = $offer->getMeta( 'unit' ) ) {
+			if ( $unit = $offer->get_meta( 'unit' ) ) {
 				$properties['_unit'] = $unit;
 			}
 
 			if ( 'off' !== Plugin::get( 'offer_price', false ) ) {
-				if ( $price = $offer->getMeta( 'price' ) ) {
+				if ( $price = $offer->get_meta( 'price' ) ) {
 					$properties['_regular_price'] = $price;
 					$properties['_price']         = $price;
 				}
@@ -498,12 +498,12 @@ class Update {
 				$properties['_stock_status'] = 0 < $qty ? 'instock' : 'outofstock';
 				$properties['_stock']        = $qty;
 
-				if ( $stock_wh = $offer->getMeta( 'stock_wh' ) ) {
+				if ( $stock_wh = $offer->get_meta( 'stock_wh' ) ) {
 					$properties['_stock_wh'] = $stock_wh;
 				}
 			}
 
-			if ( 'off' !== Plugin::get( 'offer_weight', false ) && $weight = $offer->getMeta( 'weight' ) ) {
+			if ( 'off' !== Plugin::get( 'offer_weight', false ) && $weight = $offer->get_meta( 'weight' ) ) {
 				$properties['_weight'] = $weight;
 			}
 
@@ -536,12 +536,12 @@ class Update {
 				continue;
 			}
 
-			if ( method_exists( $post, 'updateObjectTerms' ) ) {
-				$updated += $post->updateObjectTerms();
+			if ( method_exists( $post, 'update_object_terms' ) ) {
+				$updated += $post->update_object_terms();
 			}
 
-			if ( method_exists( $post, 'updateAttributes' ) ) {
-				$post->updateAttributes();
+			if ( method_exists( $post, 'update_attributes' ) ) {
+				$post->update_attributes();
 			}
 		}
 

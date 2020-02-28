@@ -172,7 +172,7 @@ function do_exchange() {
 		case 'file':
 			$filename  = Plugin::get_filename();
 			$requested = "php://input";
-			$dir       = Parser::getDir( Plugin::get_type() );
+			$dir       = Parser::get_dir( Plugin::get_type() );
 			$file      = $dir . '/' . $filename;
 
 			$from     = fopen( $requested, 'r' );
@@ -205,27 +205,27 @@ function do_exchange() {
 			/**
 			 * Parse
 			 */
-			$Parser = Parser::getInstance();
+			$Parser = Parser::get_instance();
 			$Parser->__parse( $filename );
-			$Parser->__fillExists();
+			$Parser->__fill_exists();
 
-			$products      = $Parser->getProducts();
-			$offers        = $Parser->getOffers();
+			$products      = $Parser->get_products();
+			$offers        = $Parser->get_offers();
 			$productsCount = sizeof( $products );
 			$offersCount   = sizeof( $offers );
 
 			/** @var $progress int Offset from */
 			$progress = intval( Plugin::get( 'progress', 0, 'status' ) );
 
-			$categories = $Parser->getCategories();
-			$properties = $Parser->getProperties();
-			$developers = $Parser->getDevelopers();
-			$warehouses = $Parser->getWarehouses();
+			$categories = $Parser->get_categories();
+			$properties = $Parser->get_properties();
+			$developers = $Parser->get_developers();
+			$warehouses = $Parser->get_warehouses();
 
 			$attributeValues = array();
 			foreach ( $properties as $property ) {
 				/** Collection to simple array */
-				foreach ( $property->getTerms() as $term ) {
+				foreach ( $property->get_terms() as $term ) {
 					$attributeValues[] = $term;
 				}
 			}
@@ -298,7 +298,7 @@ function do_exchange() {
 					 */
 					if ( 0 < $resProducts['create'] ) {
 						/** Update products array */
-						ExchangeProduct::fillExistsFromDB( $products, $orphaned_only = true );
+						ExchangeProduct::fill_exists_from_DB( $products, $orphaned_only = true );
 					}
 
 					$resProductsMeta = Update::postmeta( $products, $resProducts );
@@ -346,7 +346,7 @@ function do_exchange() {
 
 					// has new products without id
 					if ( 0 < $resOffers['create'] ) {
-						ExchangeOffer::fillExistsFromDB( $offers, $orphaned_only = true );
+						ExchangeOffer::fill_exists_from_DB( $offers, $orphaned_only = true );
 					}
 
 					Update::offerPostMetas( $offers );
@@ -436,8 +436,8 @@ function do_exchange() {
 			/**
 			 * move .xml files from exchange folder
 			 */
-			$path_dir = Parser::getDir();
-			$files    = Parser::getFiles();
+			$path_dir = Parser::get_dir();
+			$files    = Parser::get_files();
 
 			if ( ! empty( $files ) ) {
 				reset( $files );
