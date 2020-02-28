@@ -168,12 +168,16 @@ class Update {
 			ExchangeProduct::fill_exists_from_DB( $products, $orphaned_only = true );
 		}
 
+
+		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $results['create'] );
+		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $results['update'] );
+
 		return $results;
 	}
 
 	public static function postmeta( $products ) {
 		$results = array(
-			'update' => 0,
+			'meta' => 0,
 		);
 
 		$skip_post_meta_value = Plugin::get( 'skip_post_meta_value', false );
@@ -216,9 +220,11 @@ class Update {
 			foreach ( $productMeta as $mkey => $mvalue ) {
 				update_post_meta( $post_id, $mkey,
 					is_array( $mvalue ) ? array_map( 'trim', $mvalue ) : trim( $mvalue ) );
-				$results['update'] ++;
+				$results['meta'] ++;
 			}
 		}
+
+		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $results['meta'] );
 
 		return $results;
 	}
@@ -465,16 +471,19 @@ class Update {
 	 * @todo write it for mltile offers
 	 */
 	public static function offers( Array &$offers ) {
-		$result = array(
+		$results = array(
 			'create' => 0,
 			'update' => 0,
 		);
 		// has new products without id
-		if ( 0 < $result['create'] ) {
+		if ( 0 < $results['create'] ) {
 			ExchangeOffer::fill_exists_from_DB( $offers, $orphaned_only = true );
 		}
 
-		return $result;
+		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $results['create'] );
+		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $results['update'] );
+
+		return $results;
 	}
 
 	public static function offerPostMetas( Array &$offers
@@ -482,8 +491,8 @@ class Update {
 	{
 		global $wpdb, $user_id;
 
-		$result = array(
-			'update' => 0,
+		$results = array(
+			'meta' => 0,
 		);
 
 		/** @var offer ExchangeOffer */
@@ -529,13 +538,15 @@ class Update {
 			// }
 
 			foreach ( $properties as $property_key => $property ) {
-				$result['update'] ++;
+				$results['meta'] ++;
 				update_post_meta( $post_id, $property_key, $property );
 				// wp_cache_delete( $post_id, "{$property_key}_meta" );
 			}
 		}
 
-		return $result['update'];
+		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $results['meta'] );
+
+		return $results['meta'];
 	}
 
 	/***************************************************************************
@@ -545,23 +556,21 @@ class Update {
 		/** @global wpdb $wpdb built in wordpress db object */
 		global $wpdb;
 
-		$updated = 0;
-
 		foreach ( $posts as $post ) {
 			if ( ! $post_id = $post->get_id() ) {
 				continue;
 			}
 
 			if ( method_exists( $post, 'update_object_terms' ) ) {
-				$updated += $post->update_object_terms();
+				$result = $post->update_object_terms();
+				Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $result );
 			}
 
 			if ( method_exists( $post, 'update_attributes' ) ) {
-				$post->update_attributes();
+				$result = $post->update_attributes();
+				Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $result );
 			}
 		}
-
-		return $updated;
 	}
 
 	// public static function warehouses_ext()

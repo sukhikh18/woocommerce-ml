@@ -48,8 +48,7 @@ function do_exchange() {
 	// $version = get_option( 'exchange_version', '' );
 	$version = Plugin::get_session_arg( 'ver' );
 	if ( ! $version && ! empty( $_GET['version'] ) ) {
-		$version         = floatval( str_replace( ',', '.', $_GET['version'] ) );
-		$_SESSION['ver'] = $version;
+		$version = Plugin::set_session_arg( 'version', floatval( str_replace( ',', '.', $_GET['version'] ) ) );
 	}
 
 	if ( 'checkauth' !== $mode ) {
@@ -64,8 +63,8 @@ function do_exchange() {
 			if ( ! $user_id = $_user->ID ) {
 				Plugin::error( "Unsigned user id" );
 			}
-		} elseif ( ! empty( $_SESSION[ COOKIENAME ] ) ) {
-			$_user = wp_validate_auth_cookie( $_SESSION[ COOKIENAME ], 'auth' );
+		} elseif ( $cookie = Plugin::get_session_arg(COOKIENAME) ) {
+			$_user = wp_validate_auth_cookie( $cookie, 'auth' );
 			if ( ! $user_id = $_user ) {
 				Plugin::error( "Invalid cookie" );
 			}
@@ -111,8 +110,7 @@ function do_exchange() {
 
 			$expiration             = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
 					false );
-			$auth_cookie            = wp_generate_auth_cookie( $user->ID, $expiration );
-			$_SESSION[ COOKIENAME ] = $auth_cookie;
+			$auth_cookie = Plugin::set_session_arg( COOKIENAME, wp_generate_auth_cookie( $user->ID, $expiration ) );
 
 			// Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
 			Plugin::exit( implode( "\n", array(
@@ -200,15 +198,9 @@ function do_exchange() {
 		case 'import':
 			// case 'products':
 		case 'relationships':
-			if( ! isset( $_SESSION['step'] ) ) {
-				$_SESSION['step'] = 0;
-			}
-
-			if( ! isset( $_SESSION['progress'] ) ) {
-				$_SESSION['progress'] = 0;
-			}
-
 			$filename = Plugin::get_filename();
+			$step = Plugin::get_session_arg( 'step', 0 );
+			$progress = Plugin::get_session_arg( 'progress', 0 );
 
 			/**
 			 * Parse
@@ -246,7 +238,7 @@ function do_exchange() {
 			$termsCount = count( $categories ) + count( $properties ) + count( $developers ) + count( $warehouses ) +
 				count( $attributeValues );
 
-			if( $_SESSION['step'] < 1 && $termsCount ) {
+			if( $step < 1 && $termsCount ) {
 				Update::terms( $categories );
 				Update::termmeta( $categories );
 
@@ -261,118 +253,134 @@ function do_exchange() {
 				Update::terms( $attributeValues );
 				Update::termmeta( $attributeValues );
 
-				$_SESSION['step'] = 1;
+				Plugin::set_session_arg( 'step', 1 );
 				Plugin::exit( "progress\nОбновление терминов завершено." );
 			}
-			// Recursive update products.
-			if( $_SESSION['step'] < 2 && $productsCount > $_SESSION['progress'] ) {
-				$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $filename );
 
-				// Slice products who offset better.
-				$products = array_slice( $products, $_SESSION['progress'], $offset );
+			if( $step < 2 ) {
+				// Recursive update products.
+				if( $productsCount > $progress ) {
+					$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $filename );
 
-				// Count products will be updated.
-				$_SESSION['progress'] += sizeof( $products );
+					// Slice products who offset better.
+					$products = array_slice( $products, $progress, $offset );
 
-				// Do not retry! Go next.
-				if ( $_SESSION['progress'] >= $productsCount ) {
-					$_SESSION['progress'] = 0;
-					$_SESSION['step']++;
-				}
+					// Count products will be updated.
+					$progress = Plugin::set_session_arg( 'progress', $progress + sizeof( $products ) );
 
-				$results = Update::posts( $products );
-				$resultsMeta = Update::postmeta( $products, $results );
+					$results = Update::posts( $products );
+					$resultsMeta = Update::postmeta( $products, $results );
 
-				$status   = array();
-				$status[] = "{$_SESSION['progress']} из $productsCount записей товаров обработано.";
-				$status[] = $results['create'] . " товаров добавлено.";
-				$status[] = $results['update'] . " товаров обновлено.";
-				$status[] = $resultsMeta['update'] . " произвольных записей товаров обновлено.";
-
-				Plugin::exit( "progress\n" . implode( ' -- ', $status ) );
-			}
-			// Recursive update offers.
-			if ( $_SESSION['step'] < 2 && $offersCount > $_SESSION['progress'] ) {
-				$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $offersCount, $filename );
-
-				// Slice offers who offset better.
-				$offers = array_slice( $offers, $_SESSION['progress'], $offset );
-
-				// Count offers who will be updated.
-				$_SESSION['progress'] += sizeof( $offers );
-
-				// Do not retry! Go next.
-				if ( $_SESSION['progress'] >= $offersCount ) {
-					$_SESSION['progress'] = 0;
-					$_SESSION['step']++;
-				}
-
-				Update::offers( $offers );
-				Update::offerPostMetas( $offers );
-
-				if ( 0 === strpos( $filename, 'price' ) ) {
-					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount цен обработано.");
-				} elseif ( 0 === strpos( $filename, 'rest' ) ) {
-					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount запасов обработано.");
-				} else {
-					Plugin::exit("success\n{$_SESSION['progress']} из $offersCount предложений обработано.");
-				}
-
-				Plugin::exit( "progress\nОбновление предложений завершено." );
-			}
-
-			if( $_SESSION['step'] >= 2 ) {
-				$msg = 'Обновление зависимостей завершено.';
-
-				if ( $productsCount > $_SESSION['progress'] ) {
-					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount,
-						$filename );
-					$products       = array_slice( $products, $_SESSION['progress'], $offset );
-					$sizeOfProducts = sizeof( $products );
-					//
-					$_SESSION['progress'] += $sizeOfProducts;
-
-					// @todo fix counter.
-					$relationships = Update::relationships( $products );
-
-					$summary = " (всего {$_SESSION['progress']} из $productsCount обработано)";
-					$msg = "$relationships зависимостей $sizeOfProducts товаров обновлено$summary.";
+					$status = array( "$progress из $productsCount записей товаров обработано." );
 
 					// Do not retry! Go next.
-					if ( $_SESSION['progress'] >= $productsCount ) {
-						$_SESSION['progress'] = 0;
+					if ( $progress >= $productsCount ) {
+						Plugin::delete_session_arg( 'progress', 0 );
+						Plugin::set_session_arg( 'step', $step + 1 );
+
+						$status[] = Plugin::extract_session_arg( 'create' ) . " товаров добавлено.";
+						$status[] = Plugin::extract_session_arg( 'update' ) . " товаров обновлено.";
+						$status[] = Plugin::extract_session_arg( 'meta' ) . " произвольных записей товаров обновлено.";
+					}
+
+					Plugin::exit( "progress\n" . implode( "\n\t -- ", $status ) );
+				}
+				// Recursive update offers.
+				if ( $offersCount > $progress ) {
+					$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $offersCount, $filename );
+
+					// Slice offers who offset better.
+					$offers = array_slice( $offers, $progress, $offset );
+
+					// Count offers who will be updated.
+					$progress = Plugin::set_session_arg( 'progress', $progress + sizeof( $offers ) );
+
+					Update::offers( $offers );
+					Update::offerPostMetas( $offers );
+
+					$status = array( "$progress из $offersCount предложений обработано." );
+
+					// Do not retry! Go next.
+					if ( $progress >= $offersCount ) {
+						Plugin::delete_session_arg( 'progress', 0 );
+						Plugin::set_session_arg( 'step', $step + 1 );
+
+						$status[] = Plugin::extract_session_arg( 'create' ) . " предложений добавлено.";
+						$status[] = Plugin::extract_session_arg( 'update' ) . " предложений обновлено.";
+						$status[] = Plugin::extract_session_arg( 'meta' ) . " произвольных записей предложений обновлено.";
+					}
+
+					if ( 0 === strpos( $filename, 'price' ) ) {
+						Plugin::exit("progress\n$progress из $offersCount цен обработано.");
+					} elseif ( 0 === strpos( $filename, 'rest' ) ) {
+						Plugin::exit("progress\n$progress из $offersCount запасов обработано.");
+					}
+
+					Plugin::exit( "progress\n" . implode( "\n\t -- ", $status ) );
+				}
+			}
+
+			if( $step < 3 ) {
+				$msg = 'Обновление зависимостей завершено.';
+
+				if ( $productsCount > $progress ) {
+					$offset         = apply_filters( 'exchange_products_relationships_offset', 500, $productsCount,
+						$filename );
+					$products       = array_slice( $products, $progress, $offset );
+					$sizeOfProducts = sizeof( $products );
+
+					$progress = Plugin::set_session_arg( 'progress', $progress + $sizeOfProducts );
+
+					Update::relationships( $products );
+
+					// Plugin::get_session_arg( 'update' )
+					// Plugin::get_session_arg( 'meta' )
+					// $summary = " (всего $progress из $productsCount обработано)";
+					$msg = "$sizeOfProducts зависимостей товаров обновлено.";
+
+					// Do not retry! Go next.
+					if ( $progress >= $productsCount ) {
+						Plugin::delete_session_arg( 'step' );
+						Plugin::delete_session_arg( 'progress' );
+
 						Plugin::exit("success\n$msg");
 					}
 
 					Plugin::exit( "progress\n$msg" );
 				}
 
-				if ( $offersCount > $_SESSION['progress'] ) {
+				if ( $offersCount > $progress ) {
 					$offset       = apply_filters( 'exchange_offers_relationships_offset', 500, $offersCount,
 						$filename );
-					$offers       = array_slice( $offers, $_SESSION['progress'], $offset );
+					$offers       = array_slice( $offers, $progress, $offset );
 					$sizeOfOffers = sizeof( $offers );
-					//
-					$_SESSION['progress'] += $sizeOfOffers;
 
-					$relationships = Update::relationships( $offers );
+					$progress = Plugin::set_session_arg( 'progress', $progress + $sizeOfOffers );
 
-					$summary = "(всего {$_SESSION['progress']} из $offersCount обработано)";
-					$msg     = "$relationships зависимостей $sizeOfOffers предложений обновлено$summary.";
+					Update::relationships( $offers );
+
+					// Plugin::get_session_arg( 'update' )
+					// Plugin::get_session_arg( 'meta' )
+					// $summary = "(всего {$progress} из $offersCount обработано)";
+					$msg     = "$sizeOfOffers зависимостей предложений обновлено.";
 
 					/** Require retry */
-					if ( $_SESSION['progress'] < $offersCount ) {
+					if ( $progress < $offersCount ) {
 						Plugin::exit( "progress\n$msg" );
 					}
 
-					if ( floatval( $version ) < 3 ) {
+					if ( $version < 3 ) {
 						Plugin::set_mode( 'deactivate' );
 						Plugin::exit( "progress\n$msg" );
 					}
-				}
 
-				Plugin::set_mode( '' );
-				Plugin::exit( "success\n$msg" );
+					Plugin::delete_session_arg( 'step' );
+					Plugin::delete_session_arg( 'progress' );
+					Plugin::delete_session_arg( 'update' );
+					Plugin::delete_session_arg( 'meta' );
+
+					Plugin::exit( "success\n$msg" );
+				}
 			}
 
 			Plugin::exit( "success" ); // \n$mode

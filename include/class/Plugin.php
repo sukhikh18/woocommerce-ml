@@ -519,10 +519,32 @@ class Plugin {
 		if ( ! is_session_started() ) {
 			session_start();
 		}
+
+		if( ! isset( $_SESSION['EXCHANGE'] ) ) $_SESSION['EXCHANGE'] = array();
+		// if( ! isset( $_SESSION['EXCHANGE']['auth'] ) ) $_SESSION['EXCHANGE']['auth'] = '';
+		// if( ! isset( $_SESSION['EXCHANGE']['ver'] ) ) $_SESSION['EXCHANGE']['ver'] = '';
+		// if( ! isset( $_SESSION['EXCHANGE']['create'] ) ) $_SESSION['EXCHANGE']['create'] = 0;
+		// if( ! isset( $_SESSION['EXCHANGE']['update'] ) ) $_SESSION['EXCHANGE']['update'] = 0;
+		// if( ! isset( $_SESSION['EXCHANGE']['meta'] ) ) $_SESSION['EXCHANGE']['meta'] = 0;
 	}
 
 	public static function get_session_arg( $key, $def = '' ) {
-		return isset( $_SESSION[ $key ] ) ? $_SESSION[ $key ] : $def;
+		return isset( $_SESSION['EXCHANGE'][ $key ] ) ? $_SESSION['EXCHANGE'][ $key ] : $def;
+	}
+
+	public static function set_session_arg( $key, $value ) {
+		$_SESSION['EXCHANGE'][ $key ] = $value;
+		return $_SESSION['EXCHANGE'][ $key ];
+	}
+
+	public static function delete_session_arg( $key ) {
+		unset( $_SESSION['EXCHANGE'][ $key ] );
+	}
+
+	public static function extract_session_arg( $key, $def = '' ) {
+		$res = static::get_session_arg( $key, $def );
+		static::delete_session_arg( $_SESSION['EXCHANGE'][ $key ] );
+		return $res;
 	}
 }
 
