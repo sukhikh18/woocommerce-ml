@@ -220,10 +220,12 @@ function transaction_shutdown_function() {
 	Utils::wpdb_stop( $is_commit );
 }
 
-register_activation_hook( PLUGIN_FILE, function() {
+function install() {
 	require_once PLUGIN_DIR . '/.install.php';
-} );
-
-register_uninstall_hook( __FILE__, function () {
+}
+function uninstall() {
 	delete_option( Plugin::get_option_name() );
-} );
+}
+
+register_activation_hook( PLUGIN_FILE, __NAMESPACE__ . '\install' );
+register_uninstall_hook( __FILE__, __NAMESPACE__ . '\uninstall' );
