@@ -52,13 +52,11 @@ define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
 // Meta name for save external code.
 define( __NAMESPACE__ . '\Model\EXT_ID', 'EXT_ID' );
 
+define( __NAMESPACE__ . '\IMPORT_ACTION', 'exchange');
+
 require_once PLUGIN_DIR . '/include/utils.php';
 require_once PLUGIN_DIR . '/include/statistic.php';
-
-require_once PLUGIN_DIR . '/include/post-types.php';
-require_once PLUGIN_DIR . '/include/admin-page.php';
 require_once PLUGIN_DIR . '/include/exchange.php';
-require_once PLUGIN_DIR . '/include/register-query.php';
 require_once PLUGIN_DIR . '/include/additional-properties.php';
 
 add_filter( 'exchange_posts_import_offset', __NAMESPACE__ . '\metas_exchange_posts_import_offset', 10, 4 );
@@ -82,15 +80,29 @@ add_action( 'init', function () {
 	}
 }, 99 );
 
-/**
- * Register custom taxonomies
- */
-add_action( 'init', __NAMESPACE__ . '\register_post_types' );
+if ( function_exists( 'NikolayS93\Exchange\do_exchange' ) ) {
+	add_action( IMPORT_ACTION, 'NikolayS93\Exchange\do_exchange', 99 );
+}
 
-/**
- * Add admin menu page
- */
-add_action( 'plugins_loaded', __NAMESPACE__ . '\admin_page', 10 );
+// Register warehouse taxonomy.
+add_action( 'init', array( 'NikolayS93\Exchange\Register', 'register_taxonomy__warehouse' ) );
+
+// Register admin menu page.
+add_action( 'plugins_loaded', array( 'NikolayS93\Exchange\Register', 'plugin_page' ), 10 );
+// Insert statment log before exchange.
+add_action( IMPORT_ACTION, array( 'NikolayS93\Exchange\Register', 'log' ), 10 );
+
+// Register //example.com/exchange/ query.
+add_filter( 'query_vars', array( 'NikolayS93\Exchange\Register', 'query_vars' ) );
+add_action( 'init', array( 'NikolayS93\Exchange\Register', 'rewrite_rule' ), 1000 );
+
+add_action( 'template_redirect', array( 'NikolayS93\Exchange\Register', 'template_redirect' ), - 10 );
+
+// Register ajax query to /wp-admin/admin-ajax.php.
+add_action( 'wp_ajax_1c4wp_exchange', array( 'NikolayS93\Exchange\Register', 'ajax_query' ) );
+
+// Clear meta after attribute delete.
+add_action( 'woocommerce_attribute_deleted', array( 'NikolayS93\Exchange\Register', 'attribute_taxonomymeta_delete' ), 10, 3 );
 
 /**
  * Add last modified to products table
@@ -153,16 +165,6 @@ add_action( 'restrict_manage_posts', function ( $post_type ) {
 	}
 }, 10, 1 );
 
-add_action( 'woocommerce_attribute_deleted', function ( $id, $attribute_name, $taxonomy ) {
-	global $wpdb;
-
-	$is_deleted = $wpdb->delete(
-		$wpdb->prefix . 'woocommerce_attribute_taxonomymeta',
-		array( 'tax_id' => $id ),
-		array( '%d' )
-	);
-}, 10, 3 );
-
 function strict_error_handler( $errno, $errstr, $errfile, $errline, $errcontext ) {
 	if ( 0 === error_reporting() ) {
 		return false;
@@ -220,12 +222,5 @@ function transaction_shutdown_function() {
 	Utils::wpdb_stop( $is_commit );
 }
 
-function install() {
-	require_once PLUGIN_DIR . '/.install.php';
-}
-function uninstall() {
-	delete_option( Plugin::get_option_name() );
-}
-
-register_activation_hook( PLUGIN_FILE, __NAMESPACE__ . '\install' );
-register_uninstall_hook( __FILE__, __NAMESPACE__ . '\uninstall' );
+register_activation_hook( PLUGIN_FILE, array( 'NikolayS93\Exchange\Register', 'install' ) );
+register_uninstall_hook( PLUGIN_FILE, array( 'NikolayS93\Exchange\Register', 'uninstall' ) );
