@@ -23,6 +23,7 @@ function do_exchange() {
 	if ( ! $type = Plugin::get_type() ) {
 		Plugin::error( "No type" );
 	}
+
 	if ( ! $mode = Plugin::get_mode() ) {
 		Plugin::error( "No mode" );
 	}
@@ -45,7 +46,6 @@ function do_exchange() {
 	 * CommerceML protocol version
 	 * @var string (float value)
 	 */
-	// $version = get_option( 'exchange_version', '' );
 	$version = Plugin::get_session_arg( 'ver' );
 	if ( ! $version && ! empty( $_GET['version'] ) ) {
 		$version = Plugin::set_session_arg( 'version', floatval( str_replace( ',', '.', $_GET['version'] ) ) );
@@ -54,18 +54,15 @@ function do_exchange() {
 	if ( 'checkauth' !== $mode ) {
 		global $user_id;
 
-		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
-			return;
-		}
-
 		if ( is_user_logged_in() ) {
+			/** @var $_user WP_User */
 			$_user = wp_get_current_user();
-			if ( ! $user_id = $_user->ID ) {
+
+			if ( ! $user_id = (int) $_user->ID ) {
 				Plugin::error( "Unsigned user id" );
 			}
-		} elseif ( $cookie = Plugin::get_session_arg(COOKIENAME) ) {
-			$_user = wp_validate_auth_cookie( $cookie, 'auth' );
-			if ( ! $user_id = $_user ) {
+		} elseif ( ! empty( $_SESSION[ COOKIENAME ] ) ) {
+			if ( ! wp_validate_auth_cookie( $_SESSION[ COOKIENAME ], 'auth' ) ) {
 				Plugin::error( "Invalid cookie" );
 			}
 		}
@@ -106,13 +103,13 @@ function do_exchange() {
 			if ( is_wp_error( $user ) ) {
 				Plugin::wp_error( $user );
 			}
+
 			Plugin::check_user_permissions( $user );
 
 			$expiration             = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
 					false );
 			$auth_cookie = Plugin::set_session_arg( COOKIENAME, wp_generate_auth_cookie( $user->ID, $expiration ) );
 
-			// Plugin::exit( "success\n" . COOKIENAME . "\n$auth_cookie" );
 			Plugin::exit( implode( "\n", array(
 					'success',
 					session_name(),
@@ -120,6 +117,7 @@ function do_exchange() {
 					'timestamp=' . time()
 				) ) . "\n" );
 			break;
+
 		/**
 		 * B. Запрос параметров от сайта
 		 * http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=init
@@ -155,7 +153,7 @@ function do_exchange() {
 		 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
 		 */
 		case 'query':
-			// ex_mode__query($_REQUEST['type']);
+			Plugin::exit( 'success' );
 			break;
 
 		/**
@@ -196,7 +194,6 @@ function do_exchange() {
 		 * @return 'progress|success|failure'
 		 */
 		case 'import':
-			// case 'products':
 		case 'relationships':
 			$filename = Plugin::get_filename();
 			$step = Plugin::get_session_arg( 'step', 0 );
@@ -589,8 +586,6 @@ function do_exchange() {
 			break;
 
 		case 'success':
-			// ex_mode__success($_REQUEST['type']);
-
 			Plugin::exit( "success\n" );
 			break;
 
