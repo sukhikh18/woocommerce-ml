@@ -43,13 +43,14 @@ class ExchangeProduct extends ExchangePost {
 	}
 
 	function update_attributes() {
+		$update = 0;
 		/**
 		 * Set attribute properties
 		 */
 		$arAttributes = array();
 
 		if ( 'off' === ( $post_attribute_mode = Plugin::get( 'post_attribute' ) ) ) {
-			return;
+			return $update;
 		}
 
 		/**
@@ -67,6 +68,7 @@ class ExchangeProduct extends ExchangePost {
 			 * I can write relation if term exists (term as value)
 			 */
 			if ( $property_value instanceof ExchangeTerm ) {
+				$update ++;
 				$arAttributes[ $taxonomy ] = array(
 					'name'         => $taxonomy,
 					'value'        => '',
@@ -105,6 +107,7 @@ class ExchangeProduct extends ExchangePost {
 					}
 				}
 
+				$update ++;
 				$arAttributes[ $taxonomy ] = array(
 					'name'         => $label ? $label : $taxonomy,
 					'value'        => $property->get_value(),
@@ -117,6 +120,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
+		return $update;
 	}
 
 	private function update_object_term( $product_id, $terms, $taxonomy, $append = true ) {
