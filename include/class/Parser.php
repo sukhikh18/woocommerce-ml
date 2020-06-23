@@ -38,6 +38,10 @@ class Parser {
 	function __init() {
 	}
 
+	public static function is_xml( $filename ) {
+		return 1 === preg_match( '/\.xml$/', $filename );
+	}
+
 	function __parse( $files = array() ) {
 		if ( empty( $files ) ) {
 			return;
@@ -47,6 +51,8 @@ class Parser {
 		if ( ! is_array( $files ) ) {
 			$files = array( Parser::get_dir( Plugin::get_type() ) . '/' . $files );
 		}
+
+		$files = array_filter( $files, array( __CLASS__, 'is_xml' ) );
 
 		$Parser = \CommerceMLParser\Parser::getInstance();
 		$Parser->addListener( "CategoryEvent", array( $this, 'parse_categories_event' ) );
