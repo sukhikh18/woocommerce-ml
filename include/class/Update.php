@@ -54,14 +54,14 @@ class Update {
 		// $site_url = get_site_url();
 
 		// Define empty result
-		$results = array(
+		$result = array(
 			'create' => 0,
 			'update' => 0,
 		);
 
 		// If data is empty
 		if ( empty( $products ) ) {
-			return $results;
+			return $result;
 		}
 
 		// Current date for update modify
@@ -95,9 +95,9 @@ class Update {
 						continue;
 					}
 
-					$results['create'] ++;
+					$result['create'] ++;
 				} else {
-					$results['update'] ++;
+					$result['update'] ++;
 				}
 
 				// Is date null set now
@@ -163,20 +163,20 @@ class Update {
 		/**
 		 * Has created products without ID in array
 		 */
-		if ( 0 < $results['create'] ) {
+		if ( 0 < $result['create'] ) {
 			/** Update products array */
 			ExchangeProduct::fill_exists_from_DB( $products, $orphaned_only = true );
 		}
 
 
-		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $results['create'] );
-		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $results['update'] );
+		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $result['create'] );
+		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $result['update'] );
 
-		return $results;
+		return $result;
 	}
 
 	public static function postmeta( $products ) {
-		$results = array(
+		$result = array(
 			'meta' => 0,
 		);
 
@@ -220,13 +220,13 @@ class Update {
 			foreach ( $productMeta as $mkey => $mvalue ) {
 				update_post_meta( $post_id, $mkey,
 					is_array( $mvalue ) ? array_map( 'trim', $mvalue ) : trim( $mvalue ) );
-				$results['meta'] ++;
+				$result['meta'] ++;
 			}
 		}
 
-		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $results['meta'] );
+		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $result['meta'] );
 
-		return $results;
+		return $result;
 	}
 
 	/**
@@ -471,19 +471,19 @@ class Update {
 	 * @todo write it for mltile offers
 	 */
 	public static function offers( Array &$offers ) {
-		$results = array(
+		$result = array(
 			'create' => 0,
 			'update' => 0,
 		);
 		// has new products without id
-		if ( 0 < $results['create'] ) {
+		if ( 0 < $result['create'] ) {
 			ExchangeOffer::fill_exists_from_DB( $offers, $orphaned_only = true );
 		}
 
-		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $results['create'] );
-		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $results['update'] );
+		Plugin::set_session_arg( 'create', Plugin::get_session_arg( 'create', 0 ) + $result['create'] );
+		Plugin::set_session_arg( 'update', Plugin::get_session_arg( 'update', 0 ) + $result['update'] );
 
-		return $results;
+		return $result;
 	}
 
 	public static function offerPostMetas( Array &$offers
@@ -491,7 +491,7 @@ class Update {
 	{
 		global $wpdb, $user_id;
 
-		$results = array(
+		$result = array(
 			'meta' => 0,
 		);
 
@@ -538,15 +538,15 @@ class Update {
 			// }
 
 			foreach ( $properties as $property_key => $property ) {
-				$results['meta'] ++;
+				$result['meta'] ++;
 				update_post_meta( $post_id, $property_key, $property );
 				// wp_cache_delete( $post_id, "{$property_key}_meta" );
 			}
 		}
 
-		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $results['meta'] );
+		Plugin::set_session_arg( 'meta', Plugin::get_session_arg( 'meta', 0 ) + $result['meta'] );
 
-		return $results['meta'];
+		return $result['meta'];
 	}
 
 	/***************************************************************************
