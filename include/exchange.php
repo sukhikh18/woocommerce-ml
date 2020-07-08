@@ -61,8 +61,8 @@ function do_exchange() {
 			if ( ! $user_id = (int) $_user->ID ) {
 				Plugin::error( "Unsigned user id" );
 			}
-		} elseif ( ! empty( $_SESSION[ COOKIENAME ] ) ) {
-			if ( ! wp_validate_auth_cookie( $_SESSION[ COOKIENAME ], 'auth' ) ) {
+		} elseif ( $auth_cookie = Plugin::get_session_arg( COOKIENAME ) ) {
+			if ( ! $user_id = wp_validate_auth_cookie( $auth_cookie, 'auth' ) ) {
 				Plugin::error( "Invalid cookie" );
 			}
 		}
