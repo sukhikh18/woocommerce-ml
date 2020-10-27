@@ -4,7 +4,7 @@ namespace NikolayS93\Exchange;
 
 use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\Model\ExchangeOffer;
-
+use NikolayS93\Exchange\ORM\Collection;
 
 function do_exchange() {
 	/**
@@ -17,18 +17,21 @@ function do_exchange() {
 	 */
 	Plugin::start_exchange_session();
 
+	$type = Plugin::get_type();
+	$mode = Plugin::get_mode();
+
 	/**
 	 * Check required arguments
 	 */
-	if ( ! $type = Plugin::get_type() ) {
+	if ( ! $type ) {
 		Plugin::error( "No type" );
 	}
 
-	if ( ! $mode = Plugin::get_mode() ) {
+	if ( ! $mode ) {
 		Plugin::error( "No mode" );
 	}
 
-	if ( 'catalog' != $type ) {
+	if ( 'catalog' !== $type ) {
 		Plugin::error( "Type no support" );
 	}
 
@@ -55,7 +58,7 @@ function do_exchange() {
 		global $user_id;
 
 		if ( is_user_logged_in() ) {
-			/** @var $_user WP_User */
+			/** @var $_user \WP_User */
 			$_user = wp_get_current_user();
 
 			if ( ! $user_id = (int) $_user->ID ) {
@@ -106,9 +109,9 @@ function do_exchange() {
 
 			Plugin::check_user_permissions( $user );
 
-			$expiration             = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
+			$expiration = TIMESTAMP + apply_filters( 'auth_cookie_expiration', DAY_IN_SECONDS, $user->ID,
 					false );
-			$auth_cookie = Plugin::set_session_arg( COOKIENAME, wp_generate_auth_cookie( $user->ID, $expiration ) );
+			Plugin::set_session_arg( COOKIENAME, wp_generate_auth_cookie( $user->ID, $expiration ) );
 
 			Plugin::exit( implode( "\n", array(
 					'success',
@@ -163,7 +166,7 @@ function do_exchange() {
 		 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=file&filename=<имя файла>
 		 *
 		 * Загрузка CommerceML2 файла или его части в виде POST. (Пишем поток в файл и распаковываем его)
-		 * @return success
+		 * @print 'success'
 		 */
 		case 'file':
 			$filename  = Plugin::get_filename();
@@ -196,7 +199,7 @@ function do_exchange() {
 		case 'import':
 		case 'relationships':
 			$filename = Plugin::get_filename();
-			$step = Plugin::get_session_arg( 'step', 0 );
+			$step     = Plugin::get_session_arg( 'step', 0 );
 			$progress = Plugin::get_session_arg( 'progress', 0 );
 
 			/**
@@ -207,9 +210,9 @@ function do_exchange() {
 			$Parser->__fill_exists();
 
 			/** @var Collection $products */
-			$products      = $Parser->get_products();
+			$products = $Parser->get_products();
 			/** @var Collection $offers */
-			$offers        = $Parser->get_offers();
+			$offers = $Parser->get_offers();
 			/** @var Collection $categories */
 			$categories = $Parser->get_categories();
 			/** @var Collection $properties */
@@ -230,12 +233,15 @@ function do_exchange() {
 			/** @var Int $productsCount */
 			$productsCount = count( $products );
 			/** @var Int $offersCount */
-			$offersCount   = count( $offers );
+			$offersCount = count( $offers );
 			/** @var Int $termsCount */
-			$termsCount = count( $categories ) + count( $properties ) + count( $developers ) + count( $warehouses ) +
-				count( $attributeValues );
+			$termsCount = count( $categories ) +
+			              count( $properties ) +
+			              count( $developers ) +
+			              count( $warehouses ) +
+			              count( $attributeValues );
 
-			if( $step < 1 && $termsCount ) {
+			if ( $step < 1 && $termsCount ) {
 				Update::terms( $categories );
 				Update::termmeta( $categories );
 
@@ -254,25 +260,25 @@ function do_exchange() {
 				Plugin::exit( "progress\nОбновление терминов завершено." );
 			}
 
-			if( $step < 2 ) {
+			if ( $step < 2 ) {
 				// Recursive update products.
-				if( $productsCount > $progress ) {
+				if ( $productsCount > $progress ) {
 					$offset = apply_filters( 'exchange_posts_import_offset', 500, $productsCount, $filename );
 
 					// Slice products who offset better.
-					$products = array_slice( $products, $progress, $offset );
+					$products = array_slice( (array) $products, $progress, $offset );
 
 					// Count products will be updated.
 					$progress = Plugin::set_session_arg( 'progress', $progress + sizeof( $products ) );
 
-					$results = Update::posts( $products );
+					$results     = Update::posts( $products );
 					$resultsMeta = Update::postmeta( $products, $results );
 
 					$status = array( "$progress из $productsCount записей товаров обработано." );
 
 					// Do not retry! Go next.
 					if ( $progress >= $productsCount ) {
-						Plugin::delete_session_arg( 'progress', 0 );
+						Plugin::delete_session_arg( 'progress' );
 						Plugin::set_session_arg( 'step', $step + 1 );
 
 						$status[] = Plugin::extract_session_arg( 'create' ) . " товаров добавлено.";
@@ -287,7 +293,7 @@ function do_exchange() {
 					$offset = apply_filters( 'exchange_posts_offers_offset', 1000, $offersCount, $filename );
 
 					// Slice offers who offset better.
-					$offers = array_slice( $offers, $progress, $offset );
+					$offers = array_slice( (array) $offers, $progress, $offset );
 
 					// Count offers who will be updated.
 					$progress = Plugin::set_session_arg( 'progress', $progress + sizeof( $offers ) );
@@ -299,7 +305,7 @@ function do_exchange() {
 
 					// Do not retry! Go next.
 					if ( $progress >= $offersCount ) {
-						Plugin::delete_session_arg( 'progress', 0 );
+						Plugin::delete_session_arg( 'progress' );
 						Plugin::set_session_arg( 'step', $step + 1 );
 
 						$status[] = Plugin::extract_session_arg( 'create' ) . " предложений добавлено.";
@@ -317,7 +323,7 @@ function do_exchange() {
 				}
 			}
 
-			if( $step < 3 ) {
+			if ( $step < 3 ) {
 				$msg = 'Обновление зависимостей завершено.';
 
 				if ( $productsCount > $progress ) {
@@ -340,7 +346,7 @@ function do_exchange() {
 						Plugin::delete_session_arg( 'step' );
 						Plugin::delete_session_arg( 'progress' );
 
-						Plugin::exit("success\n$msg");
+						Plugin::exit( "success\n$msg" );
 					}
 
 					Plugin::exit( "progress\n$msg" );
@@ -359,14 +365,14 @@ function do_exchange() {
 					// Plugin::get_session_arg( 'update' )
 					// Plugin::get_session_arg( 'meta' )
 					// $summary = "(всего {$progress} из $offersCount обработано)";
-					$msg     = "$sizeOfOffers зависимостей предложений обновлено.";
+					$msg = "$sizeOfOffers зависимостей предложений обновлено.";
 
 					/** Require retry */
 					if ( $progress < $offersCount ) {
 						Plugin::exit( "progress\n$msg" );
 					}
 
-					if ( $version < 3 ) {
+					if ( (float) $version < 3 ) {
 						Plugin::set_mode( 'deactivate' );
 						Plugin::exit( "progress\n$msg" );
 					}

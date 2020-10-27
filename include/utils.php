@@ -20,7 +20,7 @@ if ( ! function_exists( 'save_get_request' ) ) {
 if ( ! function_exists( 'get_full_request_uri' ) ) {
 	function get_full_request_uri() {
 		$uri = 'http';
-		if ( @$_SERVER['HTTPS'] == 'on' ) {
+		if ( isset( $_SERVER['HTTPS'] ) && 'on' === $_SERVER['HTTPS'] ) {
 			$uri .= 's';
 		}
 		$uri .= "://{$_SERVER['SERVER_NAME']}";
@@ -171,15 +171,22 @@ if ( ! function_exists( 'is_session_started' ) ) {
 	}
 }
 
-function get_client_ip () {
-    if    ( ! empty( $_SERVER[ 'HTTP_CLIENT_IP' ] ) )       return $_SERVER[ 'HTTP_CLIENT_IP' ];
-    elseif( ! empty( $_SERVER[ 'HTTP_X_FORWARDED_FOR' ] ) ) return $_SERVER[ 'HTTP_X_FORWARDED_FOR' ];
-    elseif( ! empty( $_SERVER[ 'HTTP_X_FORWARDED' ] ) )     return $_SERVER[ 'HTTP_X_FORWARDED' ];
-    elseif( ! empty( $_SERVER[ 'HTTP_FORWARDED_FOR' ] ) )   return $_SERVER[ 'HTTP_FORWARDED_FOR' ];
-    elseif( ! empty( $_SERVER[ 'HTTP_FORWARDED' ] ) )       return $_SERVER[ 'HTTP_FORWARDED' ];
-    elseif( ! empty( $_SERVER[ 'REMOTE_ADDR' ] ) )          return $_SERVER[ 'REMOTE_ADDR' ];
+function get_client_ip() {
+	if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+		return $_SERVER['HTTP_CLIENT_IP'];
+	} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+		return $_SERVER['HTTP_X_FORWARDED_FOR'];
+	} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED'] ) ) {
+		return $_SERVER['HTTP_X_FORWARDED'];
+	} elseif ( ! empty( $_SERVER['HTTP_FORWARDED_FOR'] ) ) {
+		return $_SERVER['HTTP_FORWARDED_FOR'];
+	} elseif ( ! empty( $_SERVER['HTTP_FORWARDED'] ) ) {
+		return $_SERVER['HTTP_FORWARDED'];
+	} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+		return $_SERVER['REMOTE_ADDR'];
+	}
 
-    return '';
+	return '';
 }
 
 /**

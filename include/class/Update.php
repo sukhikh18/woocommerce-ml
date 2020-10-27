@@ -83,7 +83,7 @@ class Update {
 
 			/**
 			 * Prepare data
-			 * @var $product NikolayS93\Exchange\Model\ExchangePost
+			 * @var $product ExchangePost
 			 */
 			foreach ( $products as &$product ) {
 				$product->prepare();
@@ -230,7 +230,7 @@ class Update {
 	}
 
 	/**
-	 * @param array  &$terms as $rawExt => ExchangeTerm
+	 * @param array|Collection  &$terms as $rawExt => ExchangeTerm
 	 */
 	public static function terms( &$terms ) {
 		global $wpdb, $user_id;
@@ -246,7 +246,7 @@ class Update {
 			$term_id = $term->get_id();
 
 			/**
-			 * @var WP_Term
+			 * @var \WP_Term
 			 */
 			$obTerm = $term->get_term();
 
@@ -413,9 +413,6 @@ class Update {
 			 * Register Property's Taxonomies;
 			 */
 			if ( 'select' == $property->get_type() && ! $property->get_id() && ! taxonomy_exists( $slug ) ) {
-				/**
-				 * @var Array
-				 */
 				$external  = $property->get_external();
 				$attribute = $property->fetch();
 
@@ -470,7 +467,7 @@ class Update {
 	/**
 	 * @todo write it for mltile offers
 	 */
-	public static function offers( Array &$offers ) {
+	public static function offers( array &$offers ) {
 		$result = array(
 			'create' => 0,
 			'update' => 0,
@@ -486,9 +483,7 @@ class Update {
 		return $result;
 	}
 
-	public static function offerPostMetas( Array &$offers
-	) // $columns = array('sku', 'unit', 'price', 'quantity', 'stock_wh')
-	{
+	public static function offerPostMetas( array &$offers ) {
 		global $wpdb, $user_id;
 
 		$result = array(
@@ -552,10 +547,7 @@ class Update {
 	/***************************************************************************
 	 * Update relationships
 	 */
-	public static function relationships( Array $posts, $args = array() ) {
-		/** @global wpdb $wpdb built in wordpress db object */
-		global $wpdb;
-
+	public static function relationships( array $posts, $args = array() ) {
 		foreach ( $posts as $post ) {
 			if ( ! $post_id = $post->get_id() ) {
 				continue;

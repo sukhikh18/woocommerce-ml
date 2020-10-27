@@ -65,7 +65,7 @@ class ExchangeTerm implements Interfaces\ExternalCode {
 	/**
 	 * @todo clear this
 	 */
-	function __construct( Array $term, $ext_id = '', $meta = array() ) {
+	function __construct( array $term, $ext_id = '', $meta = array() ) {
 		$this->term = shortcode_atts( array(
 			'term_id'    => 0,
 			'name'       => '',

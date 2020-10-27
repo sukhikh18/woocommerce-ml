@@ -142,7 +142,7 @@ class ExchangeAttribute implements Interfaces\ExternalCode {
 	}
 
 	function set_external( $ext ) {
-		$this->ext = (String) $ext;
+		$this->ext = (string) $ext;
 	}
 
 	function get_type() {

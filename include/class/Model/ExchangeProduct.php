@@ -28,7 +28,7 @@ class ExchangeProduct extends ExchangePost {
 	 */
 	public $developer;
 
-	function __construct( Array $post, $ext = '', $meta = array() ) {
+	function __construct( array $post, $ext = '', $meta = array() ) {
 		parent::__construct( $post, $ext, $meta );
 
 		$this->product_cat = new Collection();
@@ -120,6 +120,7 @@ class ExchangeProduct extends ExchangePost {
 		}
 
 		update_post_meta( $this->get_id(), '_product_attributes', $arAttributes );
+
 		return $update;
 	}
 

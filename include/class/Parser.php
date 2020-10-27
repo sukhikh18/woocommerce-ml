@@ -2,6 +2,12 @@
 
 namespace NikolayS93\Exchange;
 
+use CommerceMLParser\Model\Offer;
+use CommerceMLParser\Model\Types\BaseUnit;
+use CommerceMLParser\Model\Types\Partner;
+use CommerceMLParser\Model\Types\Price;
+use CommerceMLParser\Model\Types\TaxRate;
+use CommerceMLParser\Model\Types\WarehouseStock;
 use NikolayS93\Exchange\Model;
 use NikolayS93\Exchange\Model\ExchangeTerm;
 use NikolayS93\Exchange\Model\ExchangeAttribute;
@@ -9,7 +15,10 @@ use NikolayS93\Exchange\Model\ExchangeProduct;
 use NikolayS93\Exchange\Model\ExchangeOffer;
 use NikolayS93\Exchange\ORM\Collection;
 use CommerceMLParser\Event;
-
+use CommerceMLParser\Model\Product;
+use CommerceMLParser\Model\Types\ProductCharacteristic;
+use CommerceMLParser\Model\Types\PropertyValue;
+use CommerceMLParser\Model\Types\RequisiteValue;
 use NikolayS93\Exchange\Creational\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -571,7 +580,6 @@ class Parser {
 
 		/** @var collection [description] */
 		$warehousesCollection = $offer->getWarehouses();
-
 		if ( ! $warehousesCollection->isEmpty() ) {
 
 			$meta['_stock_wh'] = array();

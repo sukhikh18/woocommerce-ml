@@ -21,7 +21,7 @@ class ExchangePost {
 	 */
 	private $post;
 
-	function __construct( Array $post, $ext = '', $meta = array() ) {
+	function __construct( array $post, $ext = '', $meta = array() ) {
 		$args = wp_parse_args( $post, array(
 			'post_author'    => get_current_user_id(),
 			'post_status'    => apply_filters( 'ExchangePost__post_status', 'publish' ),
@@ -174,7 +174,7 @@ class ExchangePost {
 			$ext = 'XML/' . $ext;
 		}
 
-		$this->post->post_mime_type = (String) $ext;
+		$this->post->post_mime_type = (string) $ext;
 	}
 
 	public function deactivate() {
@@ -235,10 +235,12 @@ class ExchangePost {
                 AND (\n\t\n $post_mime_type \n)" );
 		}
 
+		/** @var $exists array products from db */
 		foreach ( $exists as $exist ) {
-			/** @var $mime post_mime_type without XML/ */
-			if ( ( $mime = substr( $exist->post_mime_type, 4 ) ) && isset( $products[ $mime ]->post ) ) {
+			/** @var $mime string post_mime_type without XML/ */
+			$mime = substr( $exist->post_mime_type, 4 );
 
+			if ( $mime && isset( $products[ $mime ] ) && isset( $products[ $mime ]->post ) ) {
 				/** Skip if selected (unset new data field from array (@care)) */
 				// if( $post_name = Plugin::get('post_name') )         unset( $exist->post_name );
 				if ( ! Plugin::get( 'skip_post_author' ) ) {

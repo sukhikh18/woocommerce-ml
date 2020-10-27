@@ -52,7 +52,7 @@ define( __NAMESPACE__ . '\COOKIENAME', 'ex-auth' );
 // Meta name for save external code.
 define( __NAMESPACE__ . '\Model\EXT_ID', 'EXT_ID' );
 
-define( __NAMESPACE__ . '\IMPORT_ACTION', 'exchange');
+define( __NAMESPACE__ . '\IMPORT_ACTION', 'exchange' );
 
 require_once PLUGIN_DIR . '/include/utils.php';
 require_once PLUGIN_DIR . '/include/statistic.php';
@@ -102,7 +102,10 @@ add_action( 'template_redirect', array( 'NikolayS93\Exchange\Register', 'templat
 add_action( 'wp_ajax_1c4wp_exchange', array( 'NikolayS93\Exchange\Register', 'ajax_query' ) );
 
 // Clear meta after attribute delete.
-add_action( 'woocommerce_attribute_deleted', array( 'NikolayS93\Exchange\Register', 'attribute_taxonomymeta_delete' ), 10, 3 );
+add_action( 'woocommerce_attribute_deleted', array(
+	'NikolayS93\Exchange\Register',
+	'attribute_taxonomymeta_delete'
+), 10, 3 );
 
 /**
  * Add last modified to products table

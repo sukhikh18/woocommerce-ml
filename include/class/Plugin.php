@@ -165,10 +165,10 @@ class Plugin {
 	 */
 	public static function set( $prop_name, $value = '', $context = 'admin' ) {
 		if ( ! $prop_name ) {
-			return;
+			return false;
 		}
 		if ( $value && ! (string) $prop_name ) {
-			return;
+			return false;
 		}
 		if ( ! is_array( $prop_name ) ) {
 			$prop_name = array( (string) $prop_name => $value );
@@ -340,9 +340,9 @@ class Plugin {
 	}
 
 	/**
-	 * @param Array $paths for ex. glob("$fld/*.zip")
-	 * @param String $dir for ex. EX_DATA_DIR . '/catalog'
-	 * @param Boolean $rm is remove after unpack
+	 * @param array|string $paths for ex. glob("$fld/*.zip")
+	 * @param string $dir for ex. EX_DATA_DIR . '/catalog'
+	 * @param boolean $rm is remove after unpack
 	 *
 	 * @return String|true    error message | all right
 	 */
@@ -435,7 +435,7 @@ class Plugin {
 	 * User validation
 	 * [check_user_permissions description]
 	 *
-	 * @param int|WP_User $user [description]
+	 * @param int|\WP_User $user [description]
 	 *
 	 * @return [type]       [description]
 	 */
@@ -488,18 +488,18 @@ class Plugin {
 		}
 
 		$date_format = 'd.m.y H:i:s';
-		$current_ip = get_client_ip();
-		$directory = self::get_exchange_data_dir() . '/logs/';
-		$file = $directory . $filename . '.log';
+		$current_ip  = get_client_ip();
+		$directory   = self::get_exchange_data_dir() . '/logs/';
+		$file        = $directory . $filename . '.log';
 
-		if( ! is_dir( $directory ) ) {
+		if ( ! is_dir( $directory ) ) {
 			mkdir( $directory );
 		}
 
 		if ( is_array( $args ) ) {
 			$arRes = array();
 			foreach ( $args as $key => $value ) {
-				$arRes[] = "$key=" . print_r($value, 1);
+				$arRes[] = "$key=" . print_r( $value, 1 );
 			}
 
 			$args = implode( ', ', $arRes );
@@ -520,7 +520,9 @@ class Plugin {
 			session_start();
 		}
 
-		if( ! isset( $_SESSION['EXCHANGE'] ) ) $_SESSION['EXCHANGE'] = array();
+		if ( ! isset( $_SESSION['EXCHANGE'] ) ) {
+			$_SESSION['EXCHANGE'] = array();
+		}
 		// if( ! isset( $_SESSION['EXCHANGE']['auth'] ) ) $_SESSION['EXCHANGE']['auth'] = '';
 		// if( ! isset( $_SESSION['EXCHANGE']['ver'] ) ) $_SESSION['EXCHANGE']['ver'] = '';
 		// if( ! isset( $_SESSION['EXCHANGE']['create'] ) ) $_SESSION['EXCHANGE']['create'] = 0;
@@ -534,6 +536,7 @@ class Plugin {
 
 	public static function set_session_arg( $key, $value ) {
 		$_SESSION['EXCHANGE'][ $key ] = $value;
+
 		return $_SESSION['EXCHANGE'][ $key ];
 	}
 
@@ -544,6 +547,7 @@ class Plugin {
 	public static function extract_session_arg( $key, $def = '' ) {
 		$res = static::get_session_arg( $key, $def );
 		static::delete_session_arg( $_SESSION['EXCHANGE'][ $key ] );
+
 		return $res;
 	}
 }

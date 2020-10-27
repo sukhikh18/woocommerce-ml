@@ -8,23 +8,23 @@ global $wpdb;
  * Add XML post_mime_type and meta index.
  */
 const MIME_TYPE_INDEX = 'id_post_mime_type';
-const META_XML_INDEX = 'ex_meta_key_meta_value';
+const META_XML_INDEX  = 'ex_meta_key_meta_value';
 
 // Check, if table already exists.
 if ( ! $wpdb->get_var( "SHOW INDEX FROM {$wpdb->posts} WHERE Key_name = '{MIME_TYPE_INDEX}';" ) ) {
-	$wpdb->query( "ALTER TABLE {$wpdb->posts} ADD INDEX {MIME_TYPE_INDEX} (ID, post_mime_type(78))" );
+	$wpdb->query( "ALTER TABLE {$wpdb->posts} ADD INDEX " . MIME_TYPE_INDEX . " (ID, post_mime_type(78))" );
 }
 
 // Check, if table already exists.
 if ( ! $wpdb->get_var( "SHOW INDEX FROM {$wpdb->termmeta} WHERE Key_name = '{META_XML_INDEX}';" ) ) {
-	$wpdb->query( "ALTER TABLE {$wpdb->termmeta} ADD INDEX {META_XML_INDEX} (ID, post_mime_type(68))" );
+	$wpdb->query( "ALTER TABLE {$wpdb->termmeta} ADD INDEX " . META_XML_INDEX . " (ID, post_mime_type(68))" );
 }
 
 /**
  * Create taxonomy meta table
  */
 $taxonomy_meta_table = $wpdb->get_blog_prefix() . 'woocommerce_attribute_taxonomymeta';
-$charset_collate = $wpdb->get_charset_collate();
+$charset_collate     = $wpdb->get_charset_collate();
 
 // Check, if table already exists.
 if ( $wpdb->get_var( "SHOW TABLES LIKE '{$taxonomy_meta_table}'" ) !== $taxonomy_meta_table ) {
@@ -49,7 +49,7 @@ $exchange_dir = Plugin::get_exchange_data_dir();
 
 if ( ! is_dir( $exchange_dir ) ) {
 	mkdir( $exchange_dir );
-    mkdir( $exchange_dir . "/logs/" );
+	mkdir( $exchange_dir . "/logs/" );
 
 	file_put_contents( $exchange_dir . "/.htaccess", "Deny from all" );
 	file_put_contents( $exchange_dir . "/index.html", '' );
