@@ -510,7 +510,7 @@ class Plugin {
 		fclose( $fw );
 	}
 
-	public static function exit( $message ) {
+	public static function stop($message ) {
 		static::write_log( 'results', str_replace( "\n", ', ', $message ) );
 		exit( $message );
 	}

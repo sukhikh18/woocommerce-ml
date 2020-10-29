@@ -113,7 +113,7 @@ function do_exchange() {
 					false );
 			Plugin::set_session_arg( COOKIENAME, wp_generate_auth_cookie( $user->ID, $expiration ) );
 
-			Plugin::exit( implode( "\n", array(
+			Plugin::stop( implode( "\n", array(
 					'success',
 					session_name(),
 					session_id(),
@@ -148,7 +148,7 @@ function do_exchange() {
 				Plugin::set_mode( '' );
 			}
 
-			Plugin::exit( "zip=yes\nfile_limit=" . get_filesize_limit() );
+			Plugin::stop( "zip=yes\nfile_limit=" . get_filesize_limit() );
 			break;
 
 		/**
@@ -156,7 +156,7 @@ function do_exchange() {
 		 * http://<сайт>/<путь> /1c_exchange.php?type=sale&mode=query.
 		 */
 		case 'query':
-			Plugin::exit( 'success' );
+			Plugin::stop( 'success' );
 			break;
 
 		/**
@@ -187,7 +187,7 @@ function do_exchange() {
 			}
 
 			if ( 'catalog' == $type ) {
-				Plugin::exit( "success\nФайл принят." );
+				Plugin::stop( "success\nФайл принят." );
 			}
 			break;
 
@@ -257,7 +257,7 @@ function do_exchange() {
 				Update::termmeta( $attributeValues );
 
 				Plugin::set_session_arg( 'step', 1 );
-				Plugin::exit( "progress\nОбновление терминов завершено." );
+				Plugin::stop( "progress\nОбновление терминов завершено." );
 			}
 
 			if ( $step < 2 ) {
@@ -286,7 +286,7 @@ function do_exchange() {
 						$status[] = Plugin::extract_session_arg( 'meta' ) . " произвольных записей товаров обновлено.";
 					}
 
-					Plugin::exit( "progress\n" . implode( "\n\t -- ", $status ) );
+					Plugin::stop( "progress\n" . implode( "\n\t -- ", $status ) );
 				}
 				// Recursive update offers.
 				if ( $offersCount > $progress ) {
@@ -314,12 +314,12 @@ function do_exchange() {
 					}
 
 					if ( 0 === strpos( $filename, 'price' ) ) {
-						Plugin::exit("progress\n$progress из $offersCount цен обработано.");
+						Plugin::stop( "progress\n$progress из $offersCount цен обработано." );
 					} elseif ( 0 === strpos( $filename, 'rest' ) ) {
-						Plugin::exit("progress\n$progress из $offersCount запасов обработано.");
+						Plugin::stop( "progress\n$progress из $offersCount запасов обработано." );
 					}
 
-					Plugin::exit( "progress\n" . implode( "\n\t -- ", $status ) );
+					Plugin::stop( "progress\n" . implode( "\n\t -- ", $status ) );
 				}
 			}
 
@@ -346,10 +346,10 @@ function do_exchange() {
 						Plugin::delete_session_arg( 'step' );
 						Plugin::delete_session_arg( 'progress' );
 
-						Plugin::exit( "success\n$msg" );
+						Plugin::stop( "success\n$msg" );
 					}
 
-					Plugin::exit( "progress\n$msg" );
+					Plugin::stop( "progress\n$msg" );
 				}
 
 				if ( $offersCount > $progress ) {
@@ -369,12 +369,12 @@ function do_exchange() {
 
 					/** Require retry */
 					if ( $progress < $offersCount ) {
-						Plugin::exit( "progress\n$msg" );
+						Plugin::stop( "progress\n$msg" );
 					}
 
 					if ( (float) $version < 3 ) {
 						Plugin::set_mode( 'deactivate' );
-						Plugin::exit( "progress\n$msg" );
+						Plugin::stop( "progress\n$msg" );
 					}
 
 					Plugin::delete_session_arg( 'step' );
@@ -382,11 +382,11 @@ function do_exchange() {
 					Plugin::delete_session_arg( 'update' );
 					Plugin::delete_session_arg( 'meta' );
 
-					Plugin::exit( "success\n$msg" );
+					Plugin::stop( "success\n$msg" );
 				}
 			}
 
-			Plugin::exit( "success" ); // \n$mode
+			Plugin::stop( "success" ); // \n$mode
 			break;
 
 		/**
@@ -402,7 +402,7 @@ function do_exchange() {
 			 */
 			if ( ! $start_date = get_option( 'exchange_start-date', '' ) ) {
 				Plugin::set_mode( 'complete' );
-				Plugin::exit( "success\nDeactivate not required." );
+				Plugin::stop( "success\nDeactivate not required." );
 			}
 
 			/**
@@ -553,10 +553,10 @@ function do_exchange() {
 
 			if ( floatval( $version ) < 3 ) {
 				Plugin::set_mode( 'complete' );
-				Plugin::exit( "progress\n$msg" );
+				Plugin::stop( "progress\n$msg" );
 			}
 
-			Plugin::exit( "success\n$msg" );
+			Plugin::stop( "success\n$msg" );
 			break;
 
 		/**
@@ -588,11 +588,11 @@ function do_exchange() {
 			Plugin::set_mode( '' );
 			update_option( 'exchange_last-update', current_time( 'mysql' ) );
 
-			Plugin::exit( "success\nВыгрузка данных завершена" );
+			Plugin::stop( "success\nВыгрузка данных завершена" );
 			break;
 
 		case 'success':
-			Plugin::exit( "success\n" );
+			Plugin::stop( "success\n" );
 			break;
 
 		default:
