@@ -58,9 +58,9 @@ class Register {
 			static::get_warehouse_taxonomy_slug(),
 			array( 'product' ),
 			array(
-				'label'       => $warehouse_labels['name'],
-				'labels'      => $warehouse_labels,
-				'public'      => true,
+				'label'  => $warehouse_labels['name'],
+				'labels' => $warehouse_labels,
+				'public' => true,
 			)
 		);
 	}
@@ -134,7 +134,6 @@ class Register {
 		include Plugin::get_admin_template( 'metabox-deactivate' );
 		include Plugin::get_admin_template( 'metabox-offer' );
 		include Plugin::get_admin_template( 'metabox-term' );
-		// include Plugin::get_admin_template('metabox-upload');
 	}
 
 	public static function log() {
@@ -165,12 +164,6 @@ class Register {
 			return;
 		}
 
-		// if ( false !== strpos( $value, '?' ) ) {
-		//     list( $value, $query ) = explode( '?', $value, 2 );
-		//     parse_str( $query, $query );
-		//     $_GET = array_merge( $_GET, $query );
-		// }
-
 		if ( IMPORT_ACTION === $value ) {
 			do_action( IMPORT_ACTION );
 		}
@@ -178,7 +171,7 @@ class Register {
 
 	public static function ajax_query() {
 		if ( ! wp_verify_nonce( $_REQUEST['exchange_nonce'], DOMAIN ) ) {
-			_e('Error! security rules violated.'); // 'Ошибка! нарушены правила безопасности'
+			_e( 'Error! security rules violated.' ); // 'Ошибка! нарушены правила безопасности'
 			wp_die();
 		}
 

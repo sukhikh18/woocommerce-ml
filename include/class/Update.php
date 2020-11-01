@@ -2,6 +2,7 @@
 
 namespace NikolayS93\Exchange;
 
+use NikolayS93\Exchange\ORM\Collection;
 use NikolayS93\Exchange\Utils;
 use NikolayS93\Exchange\Model\TermModel;
 use NikolayS93\Exchange\Model\ProductModel;
@@ -464,9 +465,12 @@ class Update {
 		return $retry;
 	}
 
-	/**
-	 * @todo write it for mltile offers
-	 */
+    /**
+     * @todo write it for mltile offers
+     *
+     * @param Iterable $offers
+     * @return int[]
+     */
 	public static function offers( array &$offers ) {
 		$result = array(
 			'create' => 0,
@@ -483,7 +487,12 @@ class Update {
 		return $result;
 	}
 
-	public static function offerPostMetas( array &$offers ) {
+    /**
+     * @param Iterable $offers
+     * @param string $filename
+     * @return int
+     */
+	public static function offerPostMetas( array &$offers, $filename = '' ) {
 		global $wpdb, $user_id;
 
 		$result = array(

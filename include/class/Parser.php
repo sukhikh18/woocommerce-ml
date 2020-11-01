@@ -165,7 +165,8 @@ class Parser {
 
 		if ( ! empty( $this->arOffers ) ) {
 			ExchangeProduct::fill_exists_from_DB( $this->arOffers );
-			foreach ( $this->arOffers as &$offer ) {
+			/** @var ExchangeOffer $offer */
+            foreach ( $this->arOffers as &$offer ) {
 				$offer->fill_exists_relatives_from_DB();
 			}
 		}

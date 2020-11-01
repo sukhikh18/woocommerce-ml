@@ -204,17 +204,16 @@ class ExchangePost {
 		// $startExchange = get_option( 'exchange_start-date', '' );
 		// $intStartExchange = strtotime($startExchange);
 
-		/** @global wpdb wordpress database object */
+		/** @global \WP_Query $wpdb wordpress database object */
 		global $wpdb;
 
-		/** @var List of external code items list in database attribute context (%s='%s') */
+		/** @var array $post_mime_types List of external code items list in database attribute context (%s='%s') */
 		$post_mime_types = array();
 
 		/** @var array list of objects exists from posts db */
 		$exists = array();
 
-		/** @var $product NikolayS93\Exchange\Model\ProductModel or */
-		/** @var $product NikolayS93\Exchange\Model\OfferModel */
+		/** @var $product ExchangePost */
 		/**
 		 * EXPLODE FOR SIMPLE ONLY
 		 * @todo
@@ -240,7 +239,7 @@ class ExchangePost {
 			/** @var $mime string post_mime_type without XML/ */
 			$mime = substr( $exist->post_mime_type, 4 );
 
-			if ( $mime && isset( $products[ $mime ] ) && isset( $products[ $mime ]->post ) ) {
+			if ( $mime && isset( $products[ $mime ], $products[ $mime ]->post ) ) {
 				/** Skip if selected (unset new data field from array (@care)) */
 				// if( $post_name = Plugin::get('post_name') )         unset( $exist->post_name );
 				if ( ! Plugin::get( 'skip_post_author' ) ) {

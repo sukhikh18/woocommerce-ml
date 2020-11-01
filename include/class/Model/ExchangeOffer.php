@@ -3,6 +3,7 @@
 namespace NikolayS93\Exchange\Model;
 
 use NikolayS93\Exchange\Utils;
+use const NikolayS93\Exchange\DEFAULT_WAREHOUSE_TAX_SLUG;
 
 /**
  * Works with posts, postmeta
