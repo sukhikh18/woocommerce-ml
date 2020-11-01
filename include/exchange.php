@@ -57,6 +57,10 @@ function do_exchange() {
 	if ( 'checkauth' !== $mode ) {
 		global $user_id;
 
+		if ( preg_match( "/ Development Server$/", $_SERVER['SERVER_SOFTWARE'] ) ) {
+			return false;
+		}
+
 		if ( is_user_logged_in() ) {
 			/** @var $_user \WP_User */
 			$_user = wp_get_current_user();
